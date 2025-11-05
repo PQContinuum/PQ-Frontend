@@ -3,19 +3,19 @@
   "version": "3.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbo",
-    "build": "tsx lib/db/migrate && next build",
-    "start": "next start",
-    "lint": "npx ultracite@latest check",
-    "format": "npx ultracite@latest fix",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "npx tsx lib/db/migrate.ts",
-    "db:studio": "drizzle-kit studio",
-    "db:push": "drizzle-kit push",
-    "db:pull": "drizzle-kit pull",
-    "db:check": "drizzle-kit check",
-    "db:up": "drizzle-kit up",
-    "test": "export PLAYWRIGHT=True && pnpm exec playwright test"
+    "dev": "bunx next dev --turbo",
+    "build": "bunx tsx lib/db/migrate && bunx next build",
+    "start": "bunx next start",
+    "lint": "node_modules/.bin/ultracite check",
+    "format": "node_modules/.bin/ultracite fix",
+    "db:generate": "bunx drizzle-kit generate",
+    "db:migrate": "bunx tsx lib/db/migrate.ts",
+    "db:studio": "bunx drizzle-kit studio",
+    "db:push": "bunx drizzle-kit push",
+    "db:pull": "bunx drizzle-kit pull",
+    "db:check": "bunx drizzle-kit check",
+    "db:up": "bunx drizzle-kit up",
+    "test": "PLAYWRIGHT=True bunx playwright test"
   },
   "dependencies": {
     "@ai-sdk/gateway": "^1.0.15",
@@ -108,5 +108,5 @@
     "typescript": "^5.6.3",
     "ultracite": "5.3.9"
   },
-  "packageManager": "pnpm@9.12.3"
+  "packageManager": "bun@1.1.34"
 }
