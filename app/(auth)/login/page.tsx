@@ -11,8 +11,6 @@ import { toast } from "@/components/toast";
 import { type LoginActionState, login } from "../actions";
 
 export default function Page() {
-  const router = useRouter();
-
   const [email, setEmail] = useState("");
   const [isSuccessful, setIsSuccessful] = useState(false);
 
@@ -23,6 +21,7 @@ export default function Page() {
     }
   );
 
+  const router = useRouter();
   const { update: updateSession } = useSession();
 
   useEffect(() => {
@@ -41,8 +40,7 @@ export default function Page() {
       updateSession();
       router.refresh();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.status]);
+  }, [router.refresh, state.status, updateSession]);
 
   const handleSubmit = (formData: FormData) => {
     setEmail(formData.get("email") as string);
