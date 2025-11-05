@@ -44,10 +44,12 @@ You will need to use the environment variables [defined in `.env.example`](.env.
 2. Link local instance with Vercel and GitHub accounts (creates `.vercel` directory): `vercel link`
 3. Download your environment variables: `vercel env pull`
 
+First, install [Bun](https://bun.sh/docs/installation) (v1.1.34 or newer), then:
+
 ```bash
-pnpm install
-pnpm db:migrate # Setup database or apply latest database changes
-pnpm dev
+bun install
+bun run db:migrate # Setup database or apply latest database changes
+bun run dev
 ```
 
 Your app template should now be running on [localhost:3000](http://localhost:3000).

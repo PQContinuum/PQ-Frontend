@@ -255,8 +255,11 @@ function PureMultimodalInput({
       try {
         const uploadPromises = imageItems.map(async (item) => {
           const file = item.getAsFile();
-          if (!file) return;
-          return uploadFile(file);
+          if (!file) {
+            return;
+          }
+
+          return await uploadFile(file);
         });
 
         const uploadedAttachments = await Promise.all(uploadPromises);
@@ -391,9 +394,9 @@ function PureMultimodalInput({
           ) : (
             <PromptInputSubmit
               className="size-8 rounded-full bg-primary text-primary-foreground transition-colors duration-200 hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground"
+              data-testid="send-button"
               disabled={!input.trim() || uploadQueue.length > 0}
               status={status}
-	      data-testid="send-button"
             >
               <ArrowUpIcon size={14} />
             </PromptInputSubmit>
@@ -488,7 +491,7 @@ function PureModelSelectorCompact({
       value={selectedModel?.name}
     >
       <Trigger asChild>
-        <Button variant="ghost" className="h-8 px-2">
+        <Button className="h-8 px-2" variant="ghost">
           <CpuIcon size={16} />
           <span className="hidden font-medium text-xs sm:block">
             {selectedModel?.name}

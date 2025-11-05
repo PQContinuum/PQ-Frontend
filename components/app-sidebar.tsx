@@ -9,8 +9,8 @@ import { useSWRConfig } from "swr";
 import { unstable_serialize } from "swr/infinite";
 import { PlusIcon, TrashIcon } from "@/components/icons";
 import {
-  SidebarHistory,
   getChatHistoryPaginationKey,
+  SidebarHistory,
 } from "@/components/sidebar-history";
 import { SidebarUserNav } from "@/components/sidebar-user-nav";
 import { Button } from "@/components/ui/button";

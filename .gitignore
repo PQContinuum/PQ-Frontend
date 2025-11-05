@@ -16,6 +16,8 @@ build
 # misc
 .DS_Store
 *.pem
+bun.lockb
+.bun/
 
 # debug
 npm-debug.log*
