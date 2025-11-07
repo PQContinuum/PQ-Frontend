@@ -1,55 +1,85 @@
-## Features
+# next-ai-base
 
-- [Next.js](https://nextjs.org) App Router
-  - Advanced routing for seamless navigation and performance
-  - React Server Components (RSCs) and Server Actions for server-side rendering and increased performance
-- [AI SDK](https://ai-sdk.dev/docs/introduction)
-  - Unified API for generating text, structured objects, and tool calls with LLMs
-  - Hooks for building dynamic chat and generative user interfaces
-  - Supports xAI (default), OpenAI, Fireworks, and other model providers
-- [shadcn/ui](https://ui.shadcn.com)
-  - Styling with [Tailwind CSS](https://tailwindcss.com)
-  - Component primitives from [Radix UI](https://radix-ui.com) for accessibility and flexibility
-- Data Persistence
-  - [Neon Serverless Postgres](https://vercel.com/marketplace/neon) for saving chat history and user data
-  - [Vercel Blob](https://vercel.com/storage/blob) for efficient file storage
-- [Auth.js](https://authjs.dev)
-  - Simple and secure authentication
+Minimal, production-ready scaffold for an AI-focused chat application built with Next.js 15 App Router and a modern TypeScript toolchain.
 
-## Model Providers
+## Tech Stack
+- **Next.js 15 + App Router** – server components, file-based routing, API routes.
+- **TypeScript** – strict typing across app, lib, and store code.
+- **TailwindCSS 4** – utility-first styling ready to extend (no custom UI yet).
+- **TanStack Query** – async data caching with a shared `QueryClient` provider.
+- **Zustand** – lightweight client-side UI state.
+- **Zod** – schema validation for future API payloads.
+- **Supabase** – auth-ready browser/server helpers via `@supabase/ssr`.
+- **Stripe SDK** – server-side billing client (lazy-instantiated).
+- **OpenAI SDK** – server-side client instance, ready for AI chat flows.
+- **Bun** – fast dependency installer (`bun i`). Development scripts still run with `npm`.
 
-This template uses the [Vercel AI Gateway](https://vercel.com/docs/ai-gateway) to access multiple AI models through a unified interface. The default configuration includes [xAI](https://x.ai) models (`grok-2-vision-1212`, `grok-3-mini`) routed through the gateway.
+## Folder Structure
+- `app/` – App Router pages and API routes. Includes placeholder routes for `/`, `/dashboard`, `/chat`, `/billing`, plus `/api/health`.
+- `components/` – placeholder folder for shared UI components (empty `.gitkeep`).
+- `providers/` – client-side React context/providers (currently the TanStack Query provider).
+- `store/` – Zustand stores (`useUiStore` exposes a basic `isOpen` boolean).
+- `lib/` – service clients and shared utilities:
+  - `supabase.ts` – browser + server helpers with SSR-ready cookies integration.
+  - `stripe.ts` – Stripe server client (null until `STRIPE_SECRET_KEY` is set).
+  - `openai.ts` – OpenAI client instance (null until `OPENAI_API_KEY` exists).
+  - `zod-schemas.ts` – example chat message schema + inferred type.
+- `.env.example` – environment variable template.
 
-### AI Gateway Authentication
-
-**For Vercel deployments**: Authentication is handled automatically via OIDC tokens.
-
-**For non-Vercel deployments**: You need to provide an AI Gateway API key by setting the `AI_GATEWAY_API_KEY` environment variable in your `.env.local` file.
-
-With the [AI SDK](https://ai-sdk.dev/docs/introduction), you can also switch to direct LLM providers like [OpenAI](https://openai.com), [Anthropic](https://anthropic.com), [Cohere](https://cohere.com/), and [many more](https://ai-sdk.dev/providers/ai-sdk-providers) with just a few lines of code.
-
-## Deploy Your Own
-
-You can deploy your own version of the Next.js AI Chatbot to Vercel with one click:
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/templates/next.js/nextjs-ai-chatbot)
-
-## Running locally
-
-You will need to use the environment variables [defined in `.env.example`](.env.example) to run Next.js AI Chatbot. It's recommended you use [Vercel Environment Variables](https://vercel.com/docs/projects/environment-variables) for this, but a `.env` file is all that is necessary.
-
-> Note: You should not commit your `.env` file or it will expose secrets that will allow others to control access to your various AI and authentication provider accounts.
-
-1. Install Vercel CLI: `npm i -g vercel`
-2. Link local instance with Vercel and GitHub accounts (creates `.vercel` directory): `vercel link`
-3. Download your environment variables: `vercel env pull`
-
-First, install [Bun](https://bun.sh/docs/installation) (v1.1.34 or newer), then:
-
-```bash
-bun install
-bun run db:migrate # Setup database or apply latest database changes
-bun run dev
+## Architecture Overview
+```
+┌────────────────────────────────────────────────────────────────────┐
+│ Client (App Router pages)                                          │
+│ ┌────────────┬────────────┬────────────┬────────────┐              │
+│ │   /        │ /dashboard │   /chat    │  /billing  │ <-- RSC/SSR │
+│ └────────────┴────────────┴────────────┴────────────┘              │
+│          │                │                │                      │
+│          ▼                ▼                ▼                      │
+│   QueryProvider (TanStack Query) + Zustand stores (`store/`)       │
+│          │                                                       │
+├──────────┴───────────────────────────────────────────────────────┤
+│ Server Components / API Routes (`app/api/*`)                      │
+│   • `/api/health` – liveness probe                                │
+│   • Future routes consume shared libs                             │
+├──────────┬───────────────────────────────────────────────────────┤
+│ Shared Services (`lib/`)                                          │
+│   • `supabase.ts` – browser + server clients w/ cookies           │
+│   • `stripe.ts` – server-only Stripe SDK                          │
+│   • `openai.ts` – OpenAI SDK instance                             │
+│   • `zod-schemas.ts` – validation layer                           │
+└──────────┴───────────────────────────────────────────────────────┘
+            │
+            ▼
+ External Providers (Supabase Auth, Stripe Billing, OpenAI API)
 ```
 
-Your app template should now be running on [localhost:3000](http://localhost:3000).
+## Local Development
+1. **Install dependencies**
+   ```bash
+   bun i
+   ```
+   (or `npm install` if you prefer Node’s package manager.)
+2. **Environment variables**
+   ```bash
+   cp .env.example .env.local
+   # Fill in Supabase, Stripe, and OpenAI keys before using those SDKs.
+   ```
+3. **Run the dev server**
+   ```bash
+   npm run dev
+   ```
+4. Open `http://localhost:3000` to browse the placeholder pages.
+
+## Health Check Endpoint
+Verify the API surface is live:
+```bash
+curl http://localhost:3000/api/health
+# => { "status": "ok" }
+```
+
+## Future Expansion Points
+1. **AI Chat Flows** – hook `/chat` into OpenAI responses, stream completions, and persist message history via Supabase.
+2. **Authentication** – wire Supabase Auth in `app/(auth)` routes, secure the dashboard, and hydrate Zustand with session info.
+3. **Billing** – connect Stripe pricing, webhooks, and a full `/billing` management UI.
+4. **Data Fetching** – define TanStack Query hooks for chats, usage metrics, and billing status with Zod validation per request.
+5. **UI System** – build shared components (buttons, layouts) inside `components/` and integrate Tailwind tokens/themes when ready.
