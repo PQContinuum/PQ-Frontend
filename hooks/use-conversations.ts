@@ -1,5 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { Conversation } from '@/db/schema';
+import type { Conversation, Message } from '@/db/schema';
+
+export type ConversationWithMessages = Conversation & {
+  messages: Message[];
+};
 
 // Query keys
 export const conversationKeys = {
@@ -26,7 +30,7 @@ async function fetchConversations(): Promise<Conversation[]> {
 }
 
 // Fetch conversación específica
-async function fetchConversation(id: string) {
+async function fetchConversation(id: string): Promise<ConversationWithMessages> {
   const response = await fetch(`/api/conversations/${id}`);
 
   if (!response.ok) {
@@ -34,7 +38,7 @@ async function fetchConversation(id: string) {
   }
 
   const data = await response.json();
-  return data.conversation;
+  return data.conversation as ConversationWithMessages;
 }
 
 // Crear conversación
@@ -145,7 +149,7 @@ export function useDeleteConversation() {
 
       return { previousConversations };
     },
-    onError: (err, deletedId, context) => {
+    onError: (_err, _deletedId, context) => {
       // Revertir en caso de error
       if (context?.previousConversations) {
         queryClient.setQueryData(

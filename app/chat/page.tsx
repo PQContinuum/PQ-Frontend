@@ -229,15 +229,15 @@ export default function ChatPage() {
           </div>
         </header>
 
-        <motion.div
-          className="flex-1 overflow-y-auto"
-          animate={isCreatingNew ? { opacity: [1, 0.3, 1] } : { opacity: 1 }}
-          transition={{ duration: 0.5, ease: "easeInOut" }}
-        >
-          <div className="mx-auto w-full max-w-4xl px-4 py-4">
+        <div className="flex-1 overflow-y-auto">
+          <motion.div
+            className="mx-auto w-full max-w-4xl px-4 py-4"
+            animate={isCreatingNew ? { opacity: [1, 0.3, 1] } : { opacity: 1 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+          >
             <ChatWindow />
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
 
         <div className="sticky bottom-0 z-10 shrink-0 border-t border-black/5 bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.05)] [backface-visibility:hidden] [transform:translateZ(0)]">
           <div className="mx-auto w-full max-w-4xl px-4 py-4">

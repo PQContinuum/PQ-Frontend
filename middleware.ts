@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import type { CookieSerializeOptions } from 'next/dist/compiled/@edge-runtime/cookies';
 
 export async function middleware(request: NextRequest) {
   const response = NextResponse.next({
@@ -17,10 +18,10 @@ export async function middleware(request: NextRequest) {
         get(name: string) {
           return request.cookies.get(name)?.value;
         },
-        set(name: string, value: string, options: any) {
+        set(name: string, value: string, options?: CookieSerializeOptions) {
           response.cookies.set(name, value, options);
         },
-        remove(name: string, options: any) {
+        remove(name: string, options?: CookieSerializeOptions) {
           response.cookies.set(name, '', { ...options, maxAge: 0 });
         },
       },

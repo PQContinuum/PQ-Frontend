@@ -16,6 +16,21 @@ export default function AuthPage() {
   const [message, setMessage] = useState<string | null>(null);
   const router = useRouter();
 
+  const getErrorMessage = (error: unknown, fallback: string) => {
+    if (error instanceof Error && error.message) {
+      return error.message;
+    }
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'message' in error &&
+      typeof (error as { message?: unknown }).message === 'string'
+    ) {
+      return (error as { message: string }).message;
+    }
+    return fallback;
+  };
+
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -50,8 +65,8 @@ export default function AuthPage() {
         router.push('/chat');
         router.refresh();
       }
-    } catch (err: any) {
-      setError(err.message || 'Ocurrió un error. Intenta nuevamente.');
+    } catch (error: unknown) {
+      setError(getErrorMessage(error, 'Ocurrió un error. Intenta nuevamente.'));
     } finally {
       setLoading(false);
     }
@@ -83,9 +98,9 @@ export default function AuthPage() {
       }
 
       if (error) throw error;
-    } catch (err: any) {
-      console.error('❌ Error en Google OAuth:', err);
-      setError(err.message || 'Error al autenticar con Google');
+    } catch (error: unknown) {
+      console.error('❌ Error en Google OAuth:', error);
+      setError(getErrorMessage(error, 'Error al autenticar con Google'));
       setLoading(false);
     }
   };

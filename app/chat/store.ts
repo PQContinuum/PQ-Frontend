@@ -2,6 +2,7 @@
 
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
+import type { NamedSet } from 'zustand/middleware';
 
 export type ChatRole = 'user' | 'assistant';
 
@@ -22,6 +23,8 @@ export const TYPING_STATES = [
 
 export type TypingState = (typeof TYPING_STATES)[number];
 
+const TYPING_CYCLE_INTERVAL = 2000;
+
 // Solo UI state - Server state se maneja con TanStack Query
 type ChatStore = {
   // Current conversation UI state
@@ -35,10 +38,55 @@ type ChatStore = {
   updateMessage: (id: string, updater: (previous: string) => string) => void;
   replaceMessages: (messages: ChatMessage[]) => void;
   setStreaming: (value: boolean) => void;
-  cycleTypingState: () => void;
   setConversationId: (id: string | null) => void;
   reset: () => void;
 };
+
+const createTypingCycleController = () => {
+  let interval: ReturnType<typeof setInterval> | null = null;
+
+  return {
+    start: (set: NamedSet<ChatStore>) => {
+      if (interval) return;
+      interval = setInterval(() => {
+        set(
+          (state) => ({
+            ...state,
+            typingStateIndex:
+              (state.typingStateIndex + 1) % TYPING_STATES.length,
+          }),
+          false,
+          'typingCycle.tick'
+        );
+      }, TYPING_CYCLE_INTERVAL);
+    },
+    stop: (set: NamedSet<ChatStore>) => {
+      if (!interval) return;
+      clearInterval(interval);
+      interval = null;
+      set(
+        (state) => ({
+          ...state,
+          typingStateIndex: 0,
+        }),
+        false,
+        'typingCycle.reset'
+      );
+    },
+    resetIndex: (set: NamedSet<ChatStore>) => {
+      set(
+        (state) => ({
+          ...state,
+          typingStateIndex: 0,
+        }),
+        false,
+        'typingCycle.resetIndex'
+      );
+    },
+  };
+};
+
+const typingCycleController = createTypingCycleController();
 
 const createInitialMessages = (): ChatMessage[] => [
   {
@@ -98,27 +146,21 @@ const createChatStore = create<ChatStore>()(
           'replaceMessages'
         ),
 
-      setStreaming: (value) =>
-        set(
-          { isStreaming: value, typingStateIndex: 0 },
-          false,
-          'setStreaming'
-        ),
-
-      cycleTypingState: () =>
-        set(
-          (state) => ({
-            typingStateIndex:
-              (state.typingStateIndex + 1) % TYPING_STATES.length,
-          }),
-          false,
-          'cycleTypingState'
-        ),
+      setStreaming: (value) => {
+        set({ isStreaming: value }, false, 'setStreaming');
+        if (value) {
+          typingCycleController.resetIndex(set);
+          typingCycleController.start(set);
+        } else {
+          typingCycleController.stop(set);
+        }
+      },
 
       setConversationId: (id) =>
         set({ conversationId: id }, false, 'setConversationId'),
 
-      reset: () =>
+      reset: () => {
+        typingCycleController.stop(set);
         set(
           {
             messages: createInitialMessages(),
@@ -128,7 +170,8 @@ const createChatStore = create<ChatStore>()(
           },
           false,
           'reset'
-        ),
+        );
+      },
     }),
     { name: 'ChatStore' }
   )
