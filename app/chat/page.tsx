@@ -108,7 +108,7 @@ export default function ChatPage() {
             <div className="rounded-full border border-black/10 bg-white px-4 py-1.5 text-sm text-[#111111]">
               <span className="flex items-center gap-2">
                 <Sparkles className="size-4" />
-                PQ Model v0.0.1
+                PQ ßeta v0.0.1
               </span>
             </div>
           </div>

@@ -20,23 +20,28 @@ export const createSupabaseBrowserClient = () => {
   return createBrowserClient(url, anonKey);
 };
 
-export const createSupabaseServerClient = () => {
+export const createSupabaseServerClient = async () => {
   const { url, anonKey } = getSupabaseConfig();
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
 
   return createServerClient(url, anonKey, {
     cookies: {
-      getAll() {
-        return cookieStore.getAll();
+      get(name: string) {
+        return cookieStore.get(name)?.value;
       },
-      setAll(cookiesToSet) {
-        const mutableCookies = cookies() as unknown as {
-          set: (name: string, value: string, options?: Record<string, unknown>) => void;
-        };
-
-        cookiesToSet.forEach(({ name, value, options }) => {
-          mutableCookies.set(name, value, options);
-        });
+      set(name: string, value: string, options: any) {
+        try {
+          cookieStore.set(name, value, options);
+        } catch {
+          // Server Component - can't set cookies
+        }
+      },
+      remove(name: string, options: any) {
+        try {
+          cookieStore.set(name, '', { ...options, maxAge: 0 });
+        } catch {
+          // Server Component - can't remove cookies
+        }
       },
     },
   });
