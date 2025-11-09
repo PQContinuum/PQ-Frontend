@@ -22,6 +22,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
+  SidebarRail,
   SidebarSeparator,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
@@ -29,13 +30,6 @@ import {
 import { ChatWindow } from './components/ChatWindow';
 import { MessageInput } from './components/MessageInput';
 import { useChatStore } from './store';
-
-const suggestions = [
-  'Explica teoría de juegos aplicada a startups.',
-  'Genera ideas para mejorar mi flujo creativo.',
-  'Elabora un resumen de mi jornada de trabajo.',
-  'Ayúdame a escribir una introducción inspiradora.',
-];
 
 export default function ChatPage() {
   const { replaceMessages } = useChatStore();
@@ -46,106 +40,92 @@ export default function ChatPage() {
         id: 'welcome',
         role: 'assistant',
         content:
-          'Hola, soy ChatGPT. Estoy listo para ayudarte con cualquier idea. ¿Sobre qué quieres conversar hoy?',
+          'Hola, soy tu asistente IA. Estoy listo para ayudarte con cualquier idea. ¿Sobre qué quieres conversar hoy?',
       },
     ]);
   };
 
   return (
-    <SidebarProvider className="bg-white text-[#111111]">
-      <div className="flex min-h-screen w-full bg-white text-[#111111]">
-        <Sidebar
-          collapsible="icon"
-          className="border-r border-black/5 bg-[#f6f6f6] text-[#111111]"
-        >
-          <SidebarHeader className="px-4 pt-6">
-            <button
-              type="button"
-              onClick={handleNewConversation}
-              className="flex w-full items-center justify-center gap-2 rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-medium text-[#111111] transition hover:border-black/40"
-            >
-              <Plus className="h-4 w-4" />
-              New chat
-            </button>
-          </SidebarHeader>
+    <SidebarProvider>
+      <Sidebar collapsible="icon" className="border-r border-black/5">
+        <SidebarHeader className="border-b border-black/5 bg-[#f6f6f6]">
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                size="lg"
+                onClick={handleNewConversation}
+                className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              >
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-white text-[#111111]">
+                  <Plus className="size-4" />
+                </div>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-semibold">Nuevo Chat</span>
+                  <span className="truncate text-xs text-[#4c4c4c]">
+                    Empezar una conversación
+                  </span>
+                </div>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarHeader>
 
-          <SidebarContent className="px-2">
-            <SidebarGroup>
-              <SidebarGroupLabel className="flex items-center gap-2 text-[0.7rem] uppercase tracking-[0.2em] text-[#4c4c4c]">
-                <History className="h-4 w-4" />
-                Recents
-              </SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {suggestions.map((item) => (
-                    <SidebarMenuItem key={item}>
-                      <SidebarMenuButton className="rounded-2xl border border-transparent bg-transparent text-[#111111]/70 transition hover:-translate-y-0.5 hover:border-black/10 hover:bg-white hover:text-[#111111]">
-                        <MessageSquareText className="h-4 w-4 text-[#4c4c4c]" />
-                        <span className="truncate">{item}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </SidebarContent>
+        <SidebarContent className="bg-[#f6f6f6]">
+          <SidebarGroup>
+            <SidebarGroupLabel className='gap-2'>
+              <History className="size-4" />
+              Recientes
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
 
-          <SidebarSeparator className="bg-black/5" />
+        <SidebarFooter className="border-t border-black/5 bg-[#f6f6f6]">
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton tooltip="Settings">
+                <Settings className="size-4" />
+                <span>Settings</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
 
-          <SidebarFooter className="gap-3 px-4 pb-6">
-            <button
-              type="button"
-              className="flex items-center gap-3 rounded-2xl border border-black/10 bg-white px-3 py-2 text-sm text-[#111111]/70 transition hover:border-black/40"
-            >
-              <Sparkles className="h-4 w-4 text-[#111111]" />
-              Explore
-            </button>
-            <button
-              type="button"
-              className="flex items-center gap-3 rounded-2xl border border-black/10 bg-white px-3 py-2 text-sm text-[#111111]/70 transition hover:border-black/40"
-            >
-              <LifeBuoy className="h-4 w-4 text-[#4c4c4c]" />
-              Help
-            </button>
-            <button
-              type="button"
-              className="flex items-center gap-3 rounded-2xl border border-black/10 bg-white px-3 py-2 text-sm text-[#111111]/70 transition hover:border-black/40"
-            >
-              <Settings className="h-4 w-4 text-[#4c4c4c]" />
-              Settings
-            </button>
-          </SidebarFooter>
-        </Sidebar>
+        <SidebarRail />
+      </Sidebar>
 
-        <SidebarInset className="bg-white text-[#111111] max-w-4xl mx-auto">
-          <header className="flex items-center justify-between border-b border-black/5 bg-white px-4 py-4 sm:px-8">
-            <div className="flex items-center gap-3">
-              <SidebarTrigger className="text-[#4c4c4c] hover:text-[#111111] md:hidden" />
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-[#4c4c4c]">
-                  Teorema PQ
-                </p>
-                <h1 className="text-2xl font-semibold text-[#111111]">ChatGPT</h1>
-              </div>
+      <SidebarInset>
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b border-black/5 px-4">
+          <SidebarTrigger className="-ml-1" />
+          <div className="flex flex-1 items-center justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-[#4c4c4c]">
+                Teorema PQ
+              </p>
+              <h1 className="text-2xl font-semibold text-[#111111]">ChatGPT</h1>
             </div>
-            <div className="rounded-full border border-black/10 bg-white px-4 py-1 text-sm text-[#111111]">
+            <div className="rounded-full border border-black/10 bg-white px-4 py-1.5 text-sm text-[#111111]">
               <span className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-[#111111]" />
+                <Sparkles className="size-4" />
                 GPT-4o mini
               </span>
             </div>
-          </header>
+          </div>
+        </header>
 
-          <main className="relative flex flex-1 min-h-0 flex-col px-4 pb-8 pt-6 sm:px-8">
-            <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="flex flex-1 flex-col gap-4 overflow-hidden p-4 pt-0">
+          <div className="mx-auto flex h-full w-full max-w-4xl flex-col gap-4 pt-4">
+            <div className="flex-1 overflow-y-auto">
               <ChatWindow />
             </div>
-            <div className="sticky bottom-0 left-0 right-0 w-full bg-white/95 px-0 pb-0 p-6 backdrop-blur supports-[backdrop-filter]:bg-white/80 sm:px-0">
-              <MessageInput />
-            </div>
-          </main>
-        </SidebarInset>
-      </div>
+            <MessageInput />
+          </div>
+        </div>
+      </SidebarInset>
     </SidebarProvider>
   );
 }
