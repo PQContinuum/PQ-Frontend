@@ -2,8 +2,6 @@
 
 import {
   History,
-  LifeBuoy,
-  MessageSquareText,
   Plus,
   Settings,
   Sparkles,
@@ -23,7 +21,6 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarRail,
-  SidebarSeparator,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 
@@ -89,7 +86,7 @@ export default function ChatPage() {
             <SidebarMenuItem>
               <SidebarMenuButton tooltip="Settings">
                 <Settings className="size-4" />
-                <span>Settings</span>
+                <span>Configuración</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
@@ -99,30 +96,32 @@ export default function ChatPage() {
       </Sidebar>
 
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b border-black/5 px-4">
+        <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b border-black/5 bg-white px-4">
           <SidebarTrigger className="-ml-1" />
           <div className="flex flex-1 items-center justify-between">
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-[#4c4c4c]">
-                Teorema PQ
+                Asistente
               </p>
-              <h1 className="text-2xl font-semibold text-[#111111]">ChatGPT</h1>
+              <h1 className="text-2xl font-semibold text-[#111111]">AI PQ</h1>
             </div>
             <div className="rounded-full border border-black/10 bg-white px-4 py-1.5 text-sm text-[#111111]">
               <span className="flex items-center gap-2">
                 <Sparkles className="size-4" />
-                GPT-4o mini
+                PQ Model v0.0.1
               </span>
             </div>
           </div>
         </header>
 
-        <div className="flex flex-1 flex-col gap-4 overflow-hidden p-4 pt-0">
-          <div className="mx-auto flex h-full w-full max-w-4xl flex-col gap-4 pt-4">
-            <div className="flex-1 overflow-y-auto">
-              <ChatWindow />
+        <div className="relative flex-1">
+          <div className="mx-auto h-full w-full max-w-4xl overflow-y-auto px-4 pb-32 pt-4">
+            <ChatWindow />
+          </div>
+          <div className="sticky bottom-0 z-10 border-t border-black/5 bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
+            <div className="mx-auto w-full max-w-4xl px-4 py-4">
+              <MessageInput />
             </div>
-            <MessageInput />
           </div>
         </div>
       </SidebarInset>
