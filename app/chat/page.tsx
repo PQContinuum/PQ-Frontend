@@ -95,8 +95,8 @@ export default function ChatPage() {
         <SidebarRail />
       </Sidebar>
 
-      <SidebarInset>
-        <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b border-black/5 bg-white px-4">
+      <SidebarInset className="flex flex-col">
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b border-black/5 bg-white px-4">
           <SidebarTrigger className="-ml-1" />
           <div className="flex flex-1 items-center justify-between">
             <div>
@@ -114,14 +114,15 @@ export default function ChatPage() {
           </div>
         </header>
 
-        <div className="relative flex-1">
-          <div className="mx-auto h-full w-full max-w-4xl overflow-y-auto px-4 pb-32 pt-4">
+        <div className="flex-1 overflow-y-auto">
+          <div className="mx-auto w-full max-w-4xl px-4 py-4">
             <ChatWindow />
           </div>
-          <div className="sticky bottom-0 z-10 border-t border-black/5 bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
-            <div className="mx-auto w-full max-w-4xl px-4 py-4">
-              <MessageInput />
-            </div>
+        </div>
+
+        <div className="shrink-0 border-t border-black/5 bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
+          <div className="mx-auto w-full max-w-4xl px-4 py-4">
+            <MessageInput />
           </div>
         </div>
       </SidebarInset>
