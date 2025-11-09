@@ -1,5 +1,6 @@
 'use client';
 
+import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useRef } from 'react';
 
 import { useChatStore } from '@/app/chat/store';
@@ -30,16 +31,46 @@ export function ChatWindow() {
   }, [messages, isStreaming]);
 
   return (
-    <div ref={containerRef} className="space-y-4">
-      {messages.map((message) => (
-        <MessageBubble key={message.id} message={message} />
-      ))}
-      {isStreaming && (
-        <div className="px-2">
-          <TypingIndicator />
-        </div>
-      )}
+    <motion.div
+      ref={containerRef}
+      className="space-y-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      <AnimatePresence mode="popLayout">
+        {messages.map((message, index) => (
+          <motion.div
+            key={message.id}
+            initial={isStreaming ? false : { opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, x: -100, scale: 0.9 }}
+            transition={isStreaming ? { duration: 0 } : {
+              type: "spring",
+              stiffness: 500,
+              damping: 30,
+              delay: index * 0.05,
+            }}
+            layout
+          >
+            <MessageBubble message={message} />
+          </motion.div>
+        ))}
+      </AnimatePresence>
+      <AnimatePresence>
+        {isStreaming && (
+          <motion.div
+            className="px-2"
+            initial={{ opacity: 0, y: 10, scale: 0.8 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+          >
+            <TypingIndicator />
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div ref={endRef} />
-    </div>
+    </motion.div>
   );
 }

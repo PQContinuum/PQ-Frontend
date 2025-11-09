@@ -1,6 +1,8 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import Image from 'next/image';
+import React from 'react';
 import {
   History,
   Plus,
@@ -30,25 +32,47 @@ import { MessageInput } from './components/MessageInput';
 import { useChatStore } from './store';
 
 export default function ChatPage() {
-  const { replaceMessages } = useChatStore();
+  const { messages, replaceMessages } = useChatStore();
+  const [isCreatingNew, setIsCreatingNew] = React.useState(false);
 
   const handleNewConversation = () => {
-    replaceMessages([
-      {
-        id: 'welcome',
-        role: 'assistant',
-        content:
-          'Hola, soy tu asistente IA. Estoy listo para ayudarte con cualquier idea. ¿Sobre qué quieres conversar hoy?',
-      },
-    ]);
+    setIsCreatingNew(true);
+    setTimeout(() => {
+      replaceMessages([
+        {
+          id: 'welcome',
+          role: 'assistant',
+          content:
+            'Hola, soy tu asistente IA. Estoy listo para ayudarte con cualquier idea. ¿Sobre qué quieres conversar hoy?',
+        },
+      ]);
+      setIsCreatingNew(false);
+    }, 300);
+  };
+
+  const getConversationTitle = () => {
+    const firstUserMessage = messages.find((msg) => msg.role === 'user');
+    if (!firstUserMessage) {
+      return 'Nueva conversación';
+    }
+    const title = firstUserMessage.content.slice(0, 25);
+    return title.length < firstUserMessage.content.length ? `${title}...` : title;
   };
 
   return (
     <SidebarProvider>
       <Sidebar collapsible="icon" className="border-r border-black/5">
         <SidebarHeader className="space-y-2 bg-[#f6f6f6]">
-          <div className="flex items-center gap-2 px-2 py-2 group-data-[collapsible=icon]:justify-center">
-            <div className="flex aspect-square size-12 items-center justify-center rounded-lg">
+          <motion.div
+            className="flex items-center gap-2 px-2 py-2 group-data-[collapsible=icon]:justify-center cursor-pointer"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <motion.div
+              className="flex aspect-square size-12 items-center justify-center rounded-lg"
+              whileHover={{ rotate: [0, -10, 10, -10, 0] }}
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+            >
               <Image
                 src="/logo.png"
                 alt="PQ Logo"
@@ -56,27 +80,76 @@ export default function ChatPage() {
                 height={48}
                 className="size-12"
               />
-            </div>
-            <span className="text-xl font-bold text-[#111111] group-data-[collapsible=icon]:hidden">PQ Continuum</span>
-          </div>
+            </motion.div>
+            <motion.span
+              className="text-xl font-bold text-[#111111] group-data-[collapsible=icon]:hidden"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              PQ Continuum
+            </motion.span>
+          </motion.div>
 
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton
-                size="lg"
-                onClick={handleNewConversation}
-                className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              <motion.div
+                className="relative"
+                whileHover={{ scale: 1.02, x: 4 }}
+                whileTap={{ scale: 0.98 }}
+                animate={isCreatingNew ? { scale: [1, 1.05, 1] } : {}}
+                transition={isCreatingNew ? { duration: 0.4, ease: "easeInOut" } : { type: "spring", stiffness: 400, damping: 17 }}
               >
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-white text-[#111111]">
-                  <Plus className="size-4" />
-                </div>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">Nuevo Chat</span>
-                  <span className="truncate text-xs text-[#4c4c4c]">
-                    Empezar una conversación
-                  </span>
-                </div>
-              </SidebarMenuButton>
+                <motion.div
+                  className="absolute -inset-[2px] rounded-lg opacity-0"
+                  style={{
+                    background: 'linear-gradient(90deg, #00552b, #00aa56, #00552b, #00aa56)',
+                    backgroundSize: '200% 100%'
+                  }}
+                  whileHover={{
+                    opacity: 1,
+                    backgroundPosition: ['0% 0%', '200% 0%']
+                  }}
+                  transition={{
+                    opacity: { duration: 0.2 },
+                    backgroundPosition: { duration: 1.5, ease: "linear", repeat: Infinity }
+                  }}
+                />
+                <SidebarMenuButton
+                  size="lg"
+                  onClick={handleNewConversation}
+                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground relative overflow-hidden bg-[#f6f6f6]"
+                >
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-r from-[#00552b]/0 via-[#00552b]/10 to-[#00552b]/0"
+                    initial={{ x: '-100%' }}
+                    whileHover={{ x: '100%' }}
+                    animate={isCreatingNew ? { x: '100%' } : {}}
+                    transition={{ duration: 0.8, ease: "easeInOut" }}
+                  />
+                  <motion.div
+                    className="flex aspect-square size-8 items-center justify-center rounded-lg bg-white text-[#111111] relative z-10"
+                    whileHover={{ rotate: 720 }}
+                    animate={isCreatingNew ? { rotate: 180, scale: [1, 1.2, 1] } : { rotate: 0 }}
+                    transition={isCreatingNew ? { duration: 0.4, ease: "easeInOut" } : { duration: 0.6, ease: "easeOut" }}
+                  >
+                    <Plus className="size-4" />
+                  </motion.div>
+                  <div className="grid flex-1 text-left text-sm leading-tight relative z-10">
+                    <motion.span
+                      className="truncate font-semibold"
+                      animate={isCreatingNew ? { opacity: [1, 0.5, 1] } : {}}
+                      transition={{ duration: 0.4, ease: "easeInOut" }}
+                      whileHover={{ color: "#00552b" }}
+                    >
+                      Nuevo Chat
+                    </motion.span>
+                    <span className="truncate text-xs text-[#4c4c4c]">
+                      Empezar una conversación
+                    </span>
+                  </div>
+                </SidebarMenuButton>
+              </motion.div>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarHeader>
@@ -114,10 +187,9 @@ export default function ChatPage() {
           <SidebarTrigger className="-ml-1" />
           <div className="flex flex-1 items-center justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-[#4c4c4c]">
-                Asistente
+              <p className="text-md font-semibold tracking-wide text-[#4c4c4c] truncate max-w-md">
+                {getConversationTitle()}
               </p>
-              <h1 className="text-2xl font-semibold text-[#111111]">AI PQ</h1>
             </div>
             <div className="group rounded-full border-2 border-yellow-600 bg-yellow-50 px-4 py-1.5 text-sm text-[#111111] cursor-pointer transition-all hover:shadow-lg hover:scale-105">
               <span className="flex items-center gap-2 text-yellow-600 font-semibold">
@@ -128,11 +200,15 @@ export default function ChatPage() {
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto">
+        <motion.div
+          className="flex-1 overflow-y-auto"
+          animate={isCreatingNew ? { opacity: [1, 0.3, 1] } : { opacity: 1 }}
+          transition={{ duration: 0.5, ease: "easeInOut" }}
+        >
           <div className="mx-auto w-full max-w-4xl px-4 py-4">
             <ChatWindow />
           </div>
-        </div>
+        </motion.div>
 
         <div className="sticky bottom-0 z-10 shrink-0 border-t border-black/5 bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.05)] [backface-visibility:hidden] [transform:translateZ(0)]">
           <div className="mx-auto w-full max-w-4xl px-4 py-4">
