@@ -75,9 +75,16 @@ export function MessageBubble({ message }: MessageBubbleProps) {
               remarkPlugins={[remarkGfm]}
               rehypePlugins={[rehypeHighlight]}
               components={{
+                pre: ({ children }) => {
+                  const codeElement = children as React.ReactElement;
+                  const codeProps = codeElement?.props as { className?: string; children?: React.ReactNode };
+                  const className = codeProps?.className || '';
+                  const language = className.replace('language-', '') || 'text';
+                  const value = String(codeProps?.children || '');
+
+                  return <CodeBlock language={language} value={value} />;
+                },
                 code({ inline, className, children, ...props }: MarkdownCodeProps) {
-                  const language = className?.replace('language-', '') ?? 'text';
-                  const value = String(children);
                   if (inline) {
                     return (
                       <code
@@ -88,7 +95,8 @@ export function MessageBubble({ message }: MessageBubbleProps) {
                       </code>
                     );
                   }
-                  return <CodeBlock language={language} value={value} />;
+                  // For non-inline code, let the pre component handle it
+                  return <code {...props} className={className}>{children}</code>;
                 },
                 a: (props) => (
                   <a
