@@ -80,7 +80,23 @@ const createChatStore = create<ChatStore>()(
         ),
 
       replaceMessages: (messages) =>
-        set({ messages }, false, 'replaceMessages'),
+        set(
+          (state) => {
+            // Solo actualizar si realmente cambió (evita re-renders innecesarios)
+            if (state.messages.length === messages.length) {
+              const hasChanges = messages.some(
+                (msg, idx) =>
+                  !state.messages[idx] ||
+                  state.messages[idx].id !== msg.id ||
+                  state.messages[idx].content !== msg.content
+              );
+              if (!hasChanges) return state;
+            }
+            return { messages };
+          },
+          false,
+          'replaceMessages'
+        ),
 
       setStreaming: (value) =>
         set(
