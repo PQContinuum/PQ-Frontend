@@ -137,15 +137,11 @@ export default function ChatPage() {
           </header>
 
           <main className="relative flex flex-1 min-h-0 flex-col px-4 pb-8 pt-6 sm:px-8">
-            <div className="flex-1 min-h-0">
+            <div className="flex-1 min-h-0 overflow-y-auto">
               <ChatWindow />
             </div>
-            <div className="sticky bottom-0 left-0 right-0 w-full bg-white/95 px-0 pb-0 pt-6 backdrop-blur supports-[backdrop-filter]:bg-white/80 sm:px-0">
+            <div className="sticky bottom-0 left-0 right-0 w-full bg-white/95 px-0 pb-0 p-6 backdrop-blur supports-[backdrop-filter]:bg-white/80 sm:px-0">
               <MessageInput />
-              <p className="mt-4 text-center text-xs text-[#4c4c4c]">
-                PQ puede generar información inexacta. Verifica los datos
-                importantes.
-              </p>
             </div>
           </main>
         </SidebarInset>
