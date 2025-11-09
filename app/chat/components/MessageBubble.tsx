@@ -65,7 +65,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
       <div
         className={`message-bubble inline-flex max-w-full rounded-4xl border px-4 py-2 text-[15px] leading-relaxed ${
           isUser
-            ? 'border-transparent bg-black text-white font-medium'
+            ? 'border-transparent bg-[#00552b] text-white font-medium'
             : 'border-transparent bg-transparent text-black'
         }`}
       >
