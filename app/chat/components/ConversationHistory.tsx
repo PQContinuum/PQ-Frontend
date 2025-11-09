@@ -5,7 +5,13 @@ import { motion } from 'framer-motion';
 import { MessageSquare, Ellipsis, Loader2 } from 'lucide-react';
 import { useChatStore } from '../store';
 import { SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
-import { useConversations, useDeleteConversation, usePrefetchConversation, conversationKeys } from '@/hooks/use-conversations';
+import {
+  useConversations,
+  useDeleteConversation,
+  usePrefetchConversation,
+  conversationKeys,
+} from '@/hooks/use-conversations';
+import type { ConversationWithMessages } from '@/hooks/use-conversations';
 import { useQueryClient } from '@tanstack/react-query';
 
 export function ConversationHistory() {
@@ -25,22 +31,24 @@ export function ConversationHistory() {
     setConversationId(id);
 
     // 2. Intentar obtener datos del cache primero (instantáneo)
-    const cachedData = queryClient.getQueryData(conversationKeys.detail(id));
+    const cachedConversation = queryClient.getQueryData<ConversationWithMessages>(
+      conversationKeys.detail(id)
+    );
 
-    if (cachedData) {
+    if (cachedConversation) {
       // Si hay cache, actualizar mensajes inmediatamente
-      replaceMessages((cachedData as any).messages);
+      replaceMessages(cachedConversation.messages);
     }
 
     // 3. Fetch en background para actualizar/validar datos
     try {
-      const conversation = await queryClient.fetchQuery({
+      const conversation = await queryClient.fetchQuery<ConversationWithMessages>({
         queryKey: conversationKeys.detail(id),
         queryFn: async () => {
           const response = await fetch(`/api/conversations/${id}`);
           if (!response.ok) throw new Error('Failed to load conversation');
           const data = await response.json();
-          return data.conversation;
+          return data.conversation as ConversationWithMessages;
         },
         staleTime: 1000 * 60 * 10, // 10 minutos
       });
@@ -50,7 +58,7 @@ export function ConversationHistory() {
     } catch (error) {
       console.error('Error loading conversation:', error);
       // Si falla y no hay cache, revertir
-      if (!cachedData) {
+      if (!cachedConversation) {
         setConversationId(null);
       }
     }
@@ -93,30 +101,6 @@ export function ConversationHistory() {
   const truncateTitle = (title: string, maxLength: number = 35): string => {
     if (title.length <= maxLength) return title.trim() + '...';
     return title.substring(0, maxLength).trim() + '...';
-  };
-
-  const formatDate = (dateInput: string | Date | null | undefined) => {
-    if (!dateInput) return 'Reciente';
-
-    const date = new Date(dateInput);
-
-    if (isNaN(date.getTime())) {
-      console.error('Invalid date received:', dateInput);
-      return 'Reciente';
-    }
-
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-    if (days === 0) return 'Hoy';
-    if (days === 1) return 'Ayer';
-    if (days < 7) return `Hace ${days} días`;
-
-    return date.toLocaleDateString('es-ES', {
-      day: 'numeric',
-      month: 'short',
-    });
   };
 
   if (isLoading) {

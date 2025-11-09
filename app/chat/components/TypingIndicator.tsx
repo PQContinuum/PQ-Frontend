@@ -1,44 +1,9 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
 import { useChatStore, TYPING_STATES } from '@/app/chat/store';
-
-const TYPING_CYCLE_INTERVAL = 2000; // 2 seconds
-
-/**
- * Custom hook to automatically cycle through typing states
- * Only runs when streaming is active
- */
-function useTypingStateCycle(interval: number = TYPING_CYCLE_INTERVAL) {
-  const { isStreaming, cycleTypingState } = useChatStore();
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    if (!isStreaming) {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-      return;
-    }
-
-    intervalRef.current = setInterval(() => {
-      cycleTypingState();
-    }, interval);
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, [isStreaming, cycleTypingState, interval]);
-}
 
 export function TypingIndicator() {
   const typingStateIndex = useChatStore((state) => state.typingStateIndex);
-
-  useTypingStateCycle();
 
   return (
     <div className="flex items-center gap-2 rounded-full bg-white px-2 py-2 text-sm text-[#4c4c4c]">

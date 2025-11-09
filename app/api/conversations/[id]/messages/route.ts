@@ -60,10 +60,7 @@ export async function POST(
 }
 
 // PATCH /api/conversations/[id]/messages - Actualizar un mensaje
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: NextRequest) {
   try {
     const supabase = await createSupabaseServerClient();
 

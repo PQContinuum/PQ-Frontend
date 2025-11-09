@@ -4,7 +4,6 @@ import {
   FormEvent,
   KeyboardEvent as ReactKeyboardEvent,
   useCallback,
-  useEffect,
   useRef,
   useState,
 } from 'react';
@@ -71,10 +70,6 @@ export function MessageInput() {
   } = useChatStore();
 
   const createConversationMutation = useCreateConversation();
-
-  useEffect(() => {
-    textareaRef.current?.focus();
-  }, []);
 
   const submitMessage = useCallback(
     async (event?: FormEvent<HTMLFormElement>) => {
@@ -248,6 +243,7 @@ export function MessageInput() {
     >
       <textarea
         ref={textareaRef}
+        autoFocus
         value={input}
         onChange={(event) => setInput(event.target.value)}
         onKeyDown={handleKeyDown}
