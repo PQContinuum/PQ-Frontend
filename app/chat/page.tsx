@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import {
   History,
   Plus,
@@ -45,7 +46,20 @@ export default function ChatPage() {
   return (
     <SidebarProvider>
       <Sidebar collapsible="icon" className="border-r border-black/5">
-        <SidebarHeader className="border-b border-black/5 bg-[#f6f6f6]">
+        <SidebarHeader className="space-y-2 bg-[#f6f6f6]">
+          <div className="flex items-center gap-2 px-2 py-2 group-data-[collapsible=icon]:justify-center">
+            <div className="flex aspect-square size-12 items-center justify-center rounded-lg">
+              <Image
+                src="/logo.png"
+                alt="PQ Logo"
+                width={48}
+                height={48}
+                className="size-12"
+              />
+            </div>
+            <span className="text-xl font-bold text-[#111111] group-data-[collapsible=icon]:hidden">PQ Continuum</span>
+          </div>
+
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton
