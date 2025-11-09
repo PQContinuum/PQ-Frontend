@@ -59,8 +59,16 @@ export function MessageInput() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [input, setInput] = useState('');
 
-  const { messages, addMessage, updateMessage, isStreaming, setStreaming } =
-    useChatStore();
+  const {
+    messages,
+    addMessage,
+    updateMessage,
+    isStreaming,
+    setStreaming,
+    conversationId,
+    setConversationId,
+    addConversation,
+  } = useChatStore();
 
   useEffect(() => {
     textareaRef.current?.focus();
@@ -84,7 +92,48 @@ export function MessageInput() {
       setInput('');
       setStreaming(true);
 
+      let currentConversationId = conversationId;
+
       try {
+        // Si no hay conversación activa, crear una nueva
+        if (!currentConversationId) {
+          try {
+            const title =
+              value.length > 50 ? value.substring(0, 50) + '...' : value;
+            const createResponse = await fetch('/api/conversations', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ title }),
+            });
+
+            if (createResponse.ok) {
+              const { conversation } = await createResponse.json();
+              currentConversationId = conversation.id;
+              setConversationId(conversation.id);
+              addConversation(conversation);
+            }
+          } catch (error) {
+            console.error('Error creating conversation:', error);
+          }
+        }
+
+        // Guardar mensaje del usuario en Supabase
+        if (currentConversationId) {
+          try {
+            await fetch(`/api/conversations/${currentConversationId}/messages`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                id: userMessageId,
+                role: 'user',
+                content: value,
+              }),
+            });
+          } catch (error) {
+            console.error('Error saving user message:', error);
+          }
+        }
+
         const response = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -101,6 +150,7 @@ export function MessageInput() {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let buffer = '';
+        let assistantContent = '';
 
         const processBuffer = () => {
           let boundary = buffer.indexOf('\n\n');
@@ -112,19 +162,23 @@ export function MessageInput() {
               if (event.event === 'response.output_text.delta') {
                 const delta = event.data?.delta ?? '';
                 const snapshot = event.data?.snapshot;
-                updateMessage(assistantMessageId, (prev) =>
-                  snapshot ? snapshot : prev + delta,
-                );
+                updateMessage(assistantMessageId, (prev) => {
+                  const newContent = snapshot ? snapshot : prev + delta;
+                  assistantContent = newContent;
+                  return newContent;
+                });
               } else if (event.event === 'response.failed') {
                 const message =
                   event.data?.response?.error?.message ??
                   'El asistente no pudo completar la respuesta.';
                 updateMessage(assistantMessageId, () => message);
+                assistantContent = message;
               } else if (event.event === 'error') {
                 const message =
                   event.data?.message ??
                   'Ocurrió un problema al procesar la respuesta.';
                 updateMessage(assistantMessageId, () => message);
+                assistantContent = message;
               }
             }
             boundary = buffer.indexOf('\n\n');
@@ -142,6 +196,23 @@ export function MessageInput() {
 
         buffer += decoder.decode();
         processBuffer();
+
+        // Guardar mensaje del asistente en Supabase
+        if (currentConversationId && assistantContent) {
+          try {
+            await fetch(`/api/conversations/${currentConversationId}/messages`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                id: assistantMessageId,
+                role: 'assistant',
+                content: assistantContent,
+              }),
+            });
+          } catch (error) {
+            console.error('Error saving assistant message:', error);
+          }
+        }
       } catch (err) {
         const message =
           err instanceof Error
@@ -152,7 +223,17 @@ export function MessageInput() {
         setStreaming(false);
       }
     },
-    [addMessage, input, isStreaming, messages, setStreaming, updateMessage],
+    [
+      addMessage,
+      input,
+      isStreaming,
+      messages,
+      setStreaming,
+      updateMessage,
+      conversationId,
+      setConversationId,
+      addConversation,
+    ],
   );
 
   const handleKeyDown = (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
