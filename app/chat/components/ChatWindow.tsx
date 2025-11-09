@@ -22,7 +22,7 @@ export function ChatWindow() {
   }, [messages, isStreaming]);
 
   return (
-    <section className="relative flex flex-1 flex-col overflow-hidden rounded-[32px] border border-black/5 bg-white shadow-[0_25px_80px_rgba(0,0,0,0.08)]">
+    <section className="relative flex flex-1 flex-col overflow-hidden rounded-[32px]">
       <div
         ref={containerRef}
         className="chat-scrollbar flex-1 space-y-4 overflow-y-auto px-4 py-6 sm:px-8"

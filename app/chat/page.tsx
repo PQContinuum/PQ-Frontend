@@ -117,7 +117,7 @@ export default function ChatPage() {
           </SidebarFooter>
         </Sidebar>
 
-        <SidebarInset className="bg-white text-[#111111]">
+        <SidebarInset className="bg-white text-[#111111] max-w-4xl mx-auto">
           <header className="flex items-center justify-between border-b border-black/5 bg-white px-4 py-4 sm:px-8">
             <div className="flex items-center gap-3">
               <SidebarTrigger className="text-[#4c4c4c] hover:text-[#111111] md:hidden" />
@@ -136,13 +136,17 @@ export default function ChatPage() {
             </div>
           </header>
 
-          <main className="flex flex-1 flex-col gap-6 px-4 pb-8 pt-6 sm:px-8">
-            <ChatWindow />
-            <MessageInput />
-            <p className="text-center text-xs text-[#4c4c4c]">
-              ChatGPT puede generar información inexacta. Verifica los datos
-              importantes.
-            </p>
+          <main className="relative flex flex-1 min-h-0 flex-col px-4 pb-8 pt-6 sm:px-8">
+            <div className="flex-1 min-h-0">
+              <ChatWindow />
+            </div>
+            <div className="sticky bottom-0 left-0 right-0 w-full bg-white/95 px-0 pb-0 pt-6 backdrop-blur supports-[backdrop-filter]:bg-white/80 sm:px-0">
+              <MessageInput />
+              <p className="mt-4 text-center text-xs text-[#4c4c4c]">
+                PQ puede generar información inexacta. Verifica los datos
+                importantes.
+              </p>
+            </div>
           </main>
         </SidebarInset>
       </div>
