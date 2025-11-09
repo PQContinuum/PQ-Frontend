@@ -81,7 +81,21 @@ export function useConversation(id: string | null) {
     queryKey: conversationKeys.detail(id!),
     queryFn: () => fetchConversation(id!),
     enabled: !!id, // Solo ejecutar si hay ID
+    staleTime: 1000 * 60 * 10, // 10 minutos - cache más agresivo
   });
+}
+
+// Hook: Prefetch de conversación (para hover)
+export function usePrefetchConversation() {
+  const queryClient = useQueryClient();
+
+  return (id: string) => {
+    queryClient.prefetchQuery({
+      queryKey: conversationKeys.detail(id),
+      queryFn: () => fetchConversation(id),
+      staleTime: 1000 * 60 * 10, // 10 minutos
+    });
+  };
 }
 
 // Hook: Crear conversación

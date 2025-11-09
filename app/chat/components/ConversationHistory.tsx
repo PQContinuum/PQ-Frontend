@@ -5,7 +5,8 @@ import { motion } from 'framer-motion';
 import { MessageSquare, Ellipsis, Loader2 } from 'lucide-react';
 import { useChatStore } from '../store';
 import { SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
-import { useConversations, useDeleteConversation } from '@/hooks/use-conversations';
+import { useConversations, useDeleteConversation, usePrefetchConversation, conversationKeys } from '@/hooks/use-conversations';
+import { useQueryClient } from '@tanstack/react-query';
 
 export function ConversationHistory() {
   const {
@@ -14,25 +15,50 @@ export function ConversationHistory() {
     replaceMessages,
   } = useChatStore();
 
+  const queryClient = useQueryClient();
   const { data: conversations = [], isLoading, isError } = useConversations();
   const deleteMutation = useDeleteConversation();
+  const prefetchConversation = usePrefetchConversation();
 
   const handleSelectConversation = async (id: string) => {
+    // 1. Cambiar conversación activa inmediatamente (optimistic)
+    setConversationId(id);
+
+    // 2. Intentar obtener datos del cache primero (instantáneo)
+    const cachedData = queryClient.getQueryData(conversationKeys.detail(id));
+
+    if (cachedData) {
+      // Si hay cache, actualizar mensajes inmediatamente
+      replaceMessages((cachedData as any).messages);
+    }
+
+    // 3. Fetch en background para actualizar/validar datos
     try {
-      const response = await fetch(`/api/conversations/${id}`);
+      const conversation = await queryClient.fetchQuery({
+        queryKey: conversationKeys.detail(id),
+        queryFn: async () => {
+          const response = await fetch(`/api/conversations/${id}`);
+          if (!response.ok) throw new Error('Failed to load conversation');
+          const data = await response.json();
+          return data.conversation;
+        },
+        staleTime: 1000 * 60 * 10, // 10 minutos
+      });
 
-      if (!response.ok) {
-        throw new Error('Failed to load conversation');
-      }
-
-      const data = await response.json();
-      const { conversation } = data;
-
+      // Actualizar con datos frescos (solo si cambió)
       replaceMessages(conversation.messages);
-      setConversationId(id);
     } catch (error) {
       console.error('Error loading conversation:', error);
+      // Si falla y no hay cache, revertir
+      if (!cachedData) {
+        setConversationId(null);
+      }
     }
+  };
+
+  // Prefetch cuando pasa el mouse (hover)
+  const handleMouseEnter = (id: string) => {
+    prefetchConversation(id);
   };
 
   const handleDeleteConversation = async (
@@ -132,6 +158,7 @@ export function ConversationHistory() {
             whileTap={{ scale: 0.98 }}
             transition={{ type: 'spring', stiffness: 400, damping: 17 }}
             className="relative group"
+            onMouseEnter={() => handleMouseEnter(conversation.id)}
           >
             <SidebarMenuButton
               onClick={() => handleSelectConversation(conversation.id)}
