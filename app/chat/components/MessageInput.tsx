@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { ArrowUp } from 'lucide-react';
 
 import { useChatStore } from '@/app/chat/store';
 
@@ -182,7 +183,7 @@ export function MessageInput() {
           disabled={!input.trim() || isStreaming}
           className="rounded-full bg-black p-2 text-xs font-semibold text-white transition hover:bg-[#111111]/80 disabled:cursor-not-allowed disabled:bg-black/40"
         >
-          Enviar
+          <ArrowUp className='size-5'/>   
         </button>
       </div>
     </form>
