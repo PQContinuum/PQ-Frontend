@@ -11,13 +11,26 @@ export type ChatMessage = {
   content: string;
 };
 
+export const TYPING_STATES = [
+  'Pensando',
+  'Analizando',
+  'Escribiendo',
+  'Razonando',
+  'Procesando',
+  'Componiendo',
+] as const;
+
+export type TypingState = (typeof TYPING_STATES)[number];
+
 type ChatStore = {
   messages: ChatMessage[];
   isStreaming: boolean;
+  typingStateIndex: number;
   addMessage: (message: ChatMessage) => void;
   updateMessage: (id: string, updater: (previous: string) => string) => void;
   replaceMessages: (messages: ChatMessage[]) => void;
   setStreaming: (value: boolean) => void;
+  cycleTypingState: () => void;
   reset: () => void;
 };
 
@@ -53,6 +66,7 @@ export const useChatStore = create<ChatStore>()(
     (set) => ({
       messages: createInitialMessages(),
       isStreaming: false,
+      typingStateIndex: 0,
       addMessage: (message) =>
         set((state) => ({
           messages: [...state.messages, message],
@@ -64,11 +78,17 @@ export const useChatStore = create<ChatStore>()(
           ),
         })),
       replaceMessages: (messages) => set({ messages }),
-      setStreaming: (value) => set({ isStreaming: value }),
+      setStreaming: (value) =>
+        set({ isStreaming: value, typingStateIndex: 0 }),
+      cycleTypingState: () =>
+        set((state) => ({
+          typingStateIndex: (state.typingStateIndex + 1) % TYPING_STATES.length,
+        })),
       reset: () =>
         set({
           messages: createInitialMessages(),
           isStreaming: false,
+          typingStateIndex: 0,
         }),
     }),
     {
