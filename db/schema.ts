@@ -5,11 +5,10 @@ import { relations } from "drizzle-orm";
 export const messageRoleEnum = pgEnum("message_role", ["user", "assistant"]);
 
 // Tabla de conversaciones
+// user_id referencia a auth.users de Supabase (sin foreign key porque está en otro schema)
 export const conversations = pgTable("conversations", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull(), // Referencia a auth.users (sin FK)
   title: text("title").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
@@ -32,19 +31,9 @@ export const messages = pgTable("messages", {
     .defaultNow(),
 });
 
-// Tabla de usuarios (referencia a auth.users de Supabase)
-// Esta tabla es virtual, solo para referencias FK
-export const users = pgTable("users", {
-  id: uuid("id").primaryKey(),
-});
-
 // Relaciones
-export const conversationsRelations = relations(conversations, ({ many, one }) => ({
+export const conversationsRelations = relations(conversations, ({ many }) => ({
   messages: many(messages),
-  user: one(users, {
-    fields: [conversations.userId],
-    references: [users.id],
-  }),
 }));
 
 export const messagesRelations = relations(messages, ({ one }) => ({
