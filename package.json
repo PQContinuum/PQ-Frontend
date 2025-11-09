@@ -45,9 +45,9 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/cookie": "^0.5.4",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@types/cookie": "^1.0.0",
     "drizzle-kit": "^0.31.6",
     "eslint": "^9",
     "eslint-config-next": "16.0.1",
