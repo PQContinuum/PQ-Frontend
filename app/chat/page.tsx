@@ -119,9 +119,9 @@ export default function ChatPage() {
               </p>
               <h1 className="text-2xl font-semibold text-[#111111]">AI PQ</h1>
             </div>
-            <div className="rounded-full border border-black/10 bg-white px-4 py-1.5 text-sm text-[#111111]">
-              <span className="flex items-center gap-2">
-                <Sparkles className="size-4" />
+            <div className="group rounded-full border-2 border-yellow-600 bg-yellow-50 px-4 py-1.5 text-sm text-[#111111] cursor-pointer transition-all hover:shadow-lg hover:scale-105">
+              <span className="flex items-center gap-2 text-yellow-600 font-semibold">
+                <Sparkles className="size-4 text-yellow-600 transition-transform duration-700 ease-in-out group-hover:rotate-[720deg]" />
                 PQ ßeta v0.0.1
               </span>
             </div>
