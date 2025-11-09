@@ -165,7 +165,7 @@ export function MessageInput() {
   return (
     <form
       onSubmit={submitMessage}
-      className="flex flex-row align-center items-center justify-between rounded-4xl border border-black/5 bg-white p-4 shadow-[0_20px_50px_rgba(0,0,0,0.08)]"
+      className="flex flex-row items-center justify-between gap-3 rounded-[2rem] border border-black/5 bg-white px-4 py-2 shadow-[0_20px_50px_rgba(0,0,0,0.08)]"
     >
       <textarea
         ref={textareaRef}
@@ -173,19 +173,17 @@ export function MessageInput() {
         onChange={(event) => setInput(event.target.value)}
         onKeyDown={handleKeyDown}
         rows={1}
-        placeholder="Comparte tu idea..."
+        placeholder="Empieza con una idea..."
         disabled={isStreaming}
         className="w-full resize-none bg-transparent text-base text-[#111111] outline-none placeholder:text-[#111111]/40 disabled:opacity-60"
       />
-      <div className="flex items-center justify-between text-xs text-[#4c4c4c]">
-        <button
-          type="submit"
-          disabled={!input.trim() || isStreaming}
-          className="rounded-full bg-black p-2 text-xs font-semibold text-white transition hover:bg-[#111111]/80 disabled:cursor-not-allowed disabled:bg-black/40"
-        >
-          <ArrowUp className='size-5'/>   
-        </button>
-      </div>
+      <button
+        type="submit"
+        disabled={!input.trim() || isStreaming}
+        className="flex shrink-0 items-center justify-center rounded-full bg-black p-2 text-white transition hover:bg-[#111111]/80 disabled:cursor-not-allowed disabled:bg-black/40"
+      >
+        <ArrowUp className="size-5" />
+      </button>
     </form>
   );
 }
