@@ -81,7 +81,7 @@ export default function ChatPage() {
           </SidebarGroup>
         </SidebarContent>
 
-        <SidebarFooter className="border-t border-black/5 bg-[#f6f6f6]">
+        <SidebarFooter className="bg-[#f6f6f6]">
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton tooltip="Settings">
