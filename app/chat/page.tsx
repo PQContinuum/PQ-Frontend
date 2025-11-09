@@ -8,6 +8,31 @@ import {
   useRef,
   useState,
 } from 'react';
+import {
+  History,
+  LifeBuoy,
+  MessageSquareText,
+  Plus,
+  Settings,
+  Sparkles,
+} from 'lucide-react';
+
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarSeparator,
+  SidebarTrigger,
+} from '@/components/ui/sidebar';
 
 type Role = 'user' | 'assistant';
 
@@ -33,6 +58,13 @@ type SSEvent = {
 
 const createId = () => Math.random().toString(36).slice(2);
 
+const createAssistantGreeting = (): Message => ({
+  id: createId(),
+  role: 'assistant',
+  content:
+    'Hola, soy tu asistente. Puedo ayudarte a escribir, idear y explicar cualquier tema. ¿Sobre qué quieres hablar hoy?',
+});
+
 const parseSSEChunk = (chunk: string): SSEvent | null => {
   if (!chunk?.trim()) return null;
   const lines = chunk.split('\n');
@@ -56,14 +88,38 @@ const parseSSEChunk = (chunk: string): SSEvent | null => {
   }
 };
 
+const quickPrompts = [
+  'Explícame una idea compleja como si fuera para niños.',
+  'Dame ideas frescas para mejorar mi productividad.',
+  'Planifica un itinerario creativo para un fin de semana.',
+];
+
+const savedChats = [
+  {
+    id: 'daily-brief',
+    title: 'Resumen diario del equipo',
+    prompt: 'Haz un resumen del día destacando logros y pendientes.',
+  },
+  {
+    id: 'launch-plan',
+    title: 'Plan de lanzamiento',
+    prompt: 'Ayúdame a planificar un lanzamiento creativo para un producto SaaS.',
+  },
+  {
+    id: 'blog-draft',
+    title: 'Ideas para blog',
+    prompt: 'Genera tres conceptos de blog sobre IA aplicada a la educación.',
+  },
+  {
+    id: 'pitch-refine',
+    title: 'Mejorar pitch',
+    prompt: 'Refina este pitch y hazlo más convincente.',
+  },
+];
+
 export default function ChatPage() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 'welcome',
-      role: 'assistant',
-      content:
-        'Hola, soy tu asistente. Puedo ayudarte a escribir, idear y explicar cualquier tema. ¿Sobre qué quieres hablar hoy?',
-    },
+  const [messages, setMessages] = useState<Message[]>(() => [
+    createAssistantGreeting(),
   ]);
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
@@ -71,10 +127,18 @@ export default function ChatPage() {
 
   const endOfChatRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     endOfChatRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  const handleNewChat = useCallback(() => {
+    setMessages([createAssistantGreeting()]);
+    setInput('');
+    setError(null);
+    textareaRef.current?.focus();
+  }, []);
 
   const handleStreamEvent = useCallback(
     (assistantId: string, event: SSEvent) => {
@@ -223,67 +287,134 @@ export default function ChatPage() {
     }
   };
 
-  const quickPrompts = [
-    'Explícame una idea compleja como si fuera para niños.',
-    'Dame ideas frescas para mejorar mi productividad.',
-    'Planifica un itinerario creativo para un fin de semana.',
-  ];
-
   return (
-    <main className="flex min-h-screen flex-col bg-[#343541] text-white">
-      <header className="border-b border-white/10 bg-[#343541]/80 px-6 py-4 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-4xl items-center justify-between">
-          <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-white/50">PQ Labs</p>
-            <h1 className="text-2xl font-semibold text-white">Chat Experiments</h1>
-          </div>
-          <div className="rounded-full bg-[#10A37F]/10 px-4 py-1 text-sm text-[#10A37F]">
-            En línea
-          </div>
-        </div>
-      </header>
-
-      <section className="flex flex-1 flex-col">
-        <div className="mx-auto flex h-full w-full max-w-4xl flex-1 flex-col gap-6 px-4 pb-32 pt-6">
-          {error && (
-            <div className="rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
-              {error}
-            </div>
-          )}
-
-          <div className="flex flex-wrap gap-3">
-            {quickPrompts.map((prompt) => (
-              <button
-                key={prompt}
-                type="button"
-                onClick={() => setInput(prompt)}
-                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/80 transition hover:border-white/30 hover:bg-white/10"
-              >
-                {prompt}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex-1 overflow-y-auto rounded-3xl bg-[#444654]/60 p-6 shadow-2xl">
-            <div className="flex flex-col gap-6">
-              {messages.map((message) => {
-                const isUser = message.role === 'user';
-                return (
-                  <div key={message.id} className="flex gap-3">
-                    {!isUser && (
-                      <div className="mt-1 flex h-8 w-8 items-center justify-center rounded-full bg-[#10A37F]/20 text-sm font-semibold text-[#10A37F]">
-                        PQ
-                      </div>
-                    )}
-                    <div className="flex flex-1 flex-col gap-2">
-                      <span className="text-xs uppercase tracking-wide text-white/40">
-                        {isUser ? 'Tú' : 'Asistente'}
-                      </span>
-                      <div
-                        className={`w-fit rounded-2xl px-4 py-3 text-sm leading-relaxed shadow
-                          ${isUser ? 'ml-auto bg-[#3E3F68]' : 'bg-[#343541]'}
-                        `}
+    <SidebarProvider className="bg-[#202123] text-white">
+      <div className="flex min-h-screen w-full bg-[#202123]">
+        <Sidebar
+          collapsible="icon"
+          className="border-r border-white/5 bg-[#202123] text-white"
+        >
+          <SidebarHeader className="px-4 pt-6">
+            <button
+              type="button"
+              onClick={handleNewChat}
+              className="flex w-full items-center justify-center gap-2 rounded-3xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:border-white/40 hover:bg-white/10"
+            >
+              <Plus className="h-4 w-4" />
+              Nueva conversación
+            </button>
+          </SidebarHeader>
+          <SidebarContent className="px-2">
+            <SidebarGroup>
+              <SidebarGroupLabel className="flex items-center gap-2 text-[0.7rem] uppercase tracking-[0.2em] text-white/40">
+                <History className="h-4 w-4" />
+                Recientes
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {savedChats.map((chat) => (
+                    <SidebarMenuItem key={chat.id}>
+                      <SidebarMenuButton
+                        className="bg-transparent text-white/80 hover:bg-white/10 hover:text-white"
+                        onClick={() => {
+                          setInput(chat.prompt);
+                          textareaRef.current?.focus();
+                        }}
                       >
+                        <MessageSquareText className="h-4 w-4 text-white/50" />
+                        <span className="truncate">{chat.title}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </SidebarContent>
+          <SidebarSeparator className="bg-white/5" />
+          <SidebarFooter className="gap-3 px-4 pb-6">
+            <button
+              type="button"
+              className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/70 transition hover:border-white/40 hover:text-white"
+            >
+              <Sparkles className="h-4 w-4 text-[#10A37F]" />
+              Explorar novedades
+            </button>
+            <button
+              type="button"
+              className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/70 transition hover:border-white/40 hover:text-white"
+            >
+              <LifeBuoy className="h-4 w-4 text-white/60" />
+              Ayuda
+            </button>
+            <button
+              type="button"
+              className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/70 transition hover:border-white/40 hover:text-white"
+            >
+              <Settings className="h-4 w-4 text-white/60" />
+              Ajustes
+            </button>
+          </SidebarFooter>
+        </Sidebar>
+        <SidebarInset className="bg-[#343541] text-white">
+          <section className="flex min-h-screen flex-col bg-[#343541]">
+            <header className="flex items-center justify-between border-b border-white/5 px-4 py-4 sm:px-8">
+              <div className="flex items-center gap-3">
+                <SidebarTrigger className="text-white/60 hover:text-white md:hidden" />
+                <div>
+                  <p className="text-xs uppercase tracking-[0.3em] text-white/40">
+                    PQ Labs
+                  </p>
+                  <h1 className="text-2xl font-semibold text-white">
+                    ChatGPT Replica
+                  </h1>
+                </div>
+              </div>
+              <div className="rounded-full border border-white/10 px-4 py-1 text-sm text-white/80">
+                <span className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-[#10A37F]" />
+                  Modelo activo
+                </span>
+              </div>
+            </header>
+
+            <div className="flex-1 overflow-y-auto px-4 pb-8 pt-6 sm:px-8">
+              {error && (
+                <div className="mb-6 rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+                  {error}
+                </div>
+              )}
+
+              <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {quickPrompts.map((prompt) => (
+                  <button
+                    key={prompt}
+                    type="button"
+                    onClick={() => {
+                      setInput(prompt);
+                      textareaRef.current?.focus();
+                    }}
+                    className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left text-sm text-white/80 transition hover:border-white/40 hover:text-white"
+                  >
+                    <Sparkles className="mt-1 h-4 w-4 text-[#10A37F]" />
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+
+              <div className="space-y-4">
+                {messages.map((message) => {
+                  const isUser = message.role === 'user';
+                  return (
+                    <div
+                      key={message.id}
+                      className={`rounded-3xl px-6 py-5 text-[15px] leading-relaxed shadow-lg ${
+                        isUser ? 'bg-[#3E3F4B]' : 'bg-[#444654]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-white/40">
+                        {isUser ? 'Tú' : 'ChatGPT'}
+                      </div>
+                      <div className="mt-3 whitespace-pre-line text-[#ECECF1]">
                         {message.content || (
                           <span className="flex items-center gap-2 text-white/50">
                             <span className="h-2 w-2 animate-pulse rounded-full bg-white/60" />
@@ -292,38 +423,42 @@ export default function ChatPage() {
                         )}
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-              <div ref={endOfChatRef} />
+                  );
+                })}
+                <div ref={endOfChatRef} />
+              </div>
             </div>
-          </div>
-        </div>
-      </section>
 
-      <form
-        ref={formRef}
-        onSubmit={handleSubmit}
-        className="sticky bottom-0 flex w-full justify-center bg-gradient-to-t from-[#343541] via-[#343541]/95 to-transparent px-4 pb-6 pt-6"
-      >
-        <div className="flex w-full max-w-3xl items-end gap-3 rounded-3xl border border-white/10 bg-[#40414F]/80 p-4 shadow-2xl backdrop-blur">
-          <textarea
-            value={input}
-            onChange={(event) => setInput(event.target.value)}
-            onKeyDown={handleKeyDown}
-            rows={1}
-            placeholder="Envía un mensaje a tu asistente..."
-            className="w-full resize-none bg-transparent text-sm text-white outline-none placeholder:text-white/40"
-          />
-          <button
-            type="submit"
-            disabled={!input.trim() || isStreaming}
-            className="rounded-2xl bg-[#10A37F] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#0E8A6A] disabled:cursor-not-allowed disabled:bg-[#10A37F]/50"
-          >
-            {isStreaming ? 'Enviando...' : 'Enviar'}
-          </button>
-        </div>
-      </form>
-    </main>
+            <div className="border-t border-white/10 bg-[#343541]/95 px-4 py-6 sm:px-8">
+              <form
+                ref={formRef}
+                onSubmit={handleSubmit}
+                className="flex w-full items-end gap-3 rounded-3xl border border-white/10 bg-[#40414F]/80 p-4 shadow-2xl backdrop-blur"
+              >
+                <textarea
+                  ref={textareaRef}
+                  value={input}
+                  onChange={(event) => setInput(event.target.value)}
+                  onKeyDown={handleKeyDown}
+                  rows={1}
+                  placeholder="Envía un mensaje a tu asistente..."
+                  className="w-full resize-none bg-transparent text-sm text-white outline-none placeholder:text-white/40"
+                />
+                <button
+                  type="submit"
+                  disabled={!input.trim() || isStreaming}
+                  className="rounded-2xl bg-[#10A37F] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#0E8A6A] disabled:cursor-not-allowed disabled:bg-[#10A37F]/50"
+                >
+                  {isStreaming ? 'Enviando...' : 'Enviar'}
+                </button>
+              </form>
+              <p className="mt-3 text-center text-xs text-white/40">
+                ChatGPT recreado para PQ. Es posible que el asistente cometa errores.
+              </p>
+            </div>
+          </section>
+        </SidebarInset>
+      </div>
+    </SidebarProvider>
   );
 }
