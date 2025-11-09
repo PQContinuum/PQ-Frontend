@@ -180,7 +180,7 @@ export function MessageInput() {
       <button
         type="submit"
         disabled={!input.trim() || isStreaming}
-        className="flex shrink-0 items-center justify-center rounded-full bg-black p-2 text-white transition hover:bg-[#111111]/80 disabled:cursor-not-allowed disabled:bg-black/40"
+        className="flex shrink-0 items-center justify-center rounded-full bg-[#00552b] p-2 text-white transition hover:bg-[#00552b]/80 disabled:cursor-not-allowed disabled:bg-[#00552b]/40"
       >
         <ArrowUp className="size-5" />
       </button>
