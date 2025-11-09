@@ -8,6 +8,7 @@ import {
   Plus,
   Settings,
   Sparkles,
+  LogOut,
 } from 'lucide-react';
 
 import {
@@ -29,11 +30,15 @@ import {
 
 import { ChatWindow } from './components/ChatWindow';
 import { MessageInput } from './components/MessageInput';
+import { ConversationHistory } from './components/ConversationHistory';
 import { useChatStore } from './store';
+import { createSupabaseBrowserClient } from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
 
 export default function ChatPage() {
-  const { messages, replaceMessages } = useChatStore();
+  const { messages, replaceMessages, setConversationId } = useChatStore();
   const [isCreatingNew, setIsCreatingNew] = React.useState(false);
+  const router = useRouter();
 
   const handleNewConversation = () => {
     setIsCreatingNew(true);
@@ -46,6 +51,7 @@ export default function ChatPage() {
             'Hola, soy tu asistente IA. Estoy listo para ayudarte con cualquier idea. ¿Sobre qué quieres conversar hoy?',
         },
       ]);
+      setConversationId(null);
       setIsCreatingNew(false);
     }, 300);
   };
@@ -57,6 +63,13 @@ export default function ChatPage() {
     }
     const title = firstUserMessage.content.slice(0, 25);
     return title.length < firstUserMessage.content.length ? `${title}...` : title;
+  };
+
+  const handleLogout = async () => {
+    const supabase = createSupabaseBrowserClient();
+    await supabase.auth.signOut();
+    router.push('/auth');
+    router.refresh();
   };
 
   return (
@@ -162,7 +175,7 @@ export default function ChatPage() {
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                
+                <ConversationHistory />
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
@@ -171,10 +184,26 @@ export default function ChatPage() {
         <SidebarFooter className="bg-[#f6f6f6]">
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton tooltip="Settings">
+              <SidebarMenuButton tooltip="Configuración">
                 <Settings className="size-4" />
                 <span>Configuración</span>
               </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <motion.div
+                whileHover={{ scale: 1.02, x: 4 }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+              >
+                <SidebarMenuButton
+                  onClick={handleLogout}
+                  tooltip="Cerrar sesión"
+                  className="hover:bg-red-50 hover:text-red-600"
+                >
+                  <LogOut className="size-4" />
+                  <span>Cerrar sesión</span>
+                </SidebarMenuButton>
+              </motion.div>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarFooter>
