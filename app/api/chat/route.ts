@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { getAssistantReply } from "@/lib/openai";
+import { streamAssistantReply } from "@/lib/openai";
 
 export async function POST(req: NextRequest) {
     try {
         const { message } = await req.json();
-        const reply = await getAssistantReply(message);
+        const stream = await streamAssistantReply(message);
 
-        return NextResponse.json({ reply });
+        return new Response(stream, {
+            headers: {
+                "Content-Type": "text/event-stream; charset=utf-8",
+                "Cache-Control": "no-cache, no-transform",
+                Connection: "keep-alive",
+            },
+        });
     } catch (error) {
         const message = error instanceof Error ? error.message : "Unknown error";
         const status = message === "Message is required" ? 400 : 500;
