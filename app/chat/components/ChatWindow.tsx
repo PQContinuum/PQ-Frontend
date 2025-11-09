@@ -9,14 +9,28 @@ import { TypingIndicator } from './TypingIndicator';
 
 export function ChatWindow() {
   const { messages, isStreaming } = useChatStore();
+  const containerRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  const previousMessageCountRef = useRef(messages.length);
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const currentCount = messages.length;
+    const previousCount = previousMessageCountRef.current;
+
+    if (currentCount < previousCount) {
+      const scrollContainer = containerRef.current?.parentElement?.parentElement;
+      if (scrollContainer) {
+        scrollContainer.scrollTop = 0;
+      }
+    } else {
+      endRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    previousMessageCountRef.current = currentCount;
   }, [messages, isStreaming]);
 
   return (
-    <div className="space-y-4">
+    <div ref={containerRef} className="space-y-4">
       {messages.map((message) => (
         <MessageBubble key={message.id} message={message} />
       ))}

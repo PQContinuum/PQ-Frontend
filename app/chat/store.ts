@@ -26,6 +26,7 @@ type ChatStore = {
   messages: ChatMessage[];
   isStreaming: boolean;
   typingStateIndex: number;
+  conversationId: string;
   addMessage: (message: ChatMessage) => void;
   updateMessage: (id: string, updater: (previous: string) => string) => void;
   replaceMessages: (messages: ChatMessage[]) => void;
@@ -61,12 +62,15 @@ const clientStorage =
 
 const fallbackStorage = createPersistStorage(noopStorage);
 
+const generateConversationId = () => crypto.randomUUID();
+
 export const useChatStore = create<ChatStore>()(
   persist(
     (set) => ({
       messages: createInitialMessages(),
       isStreaming: false,
       typingStateIndex: 0,
+      conversationId: generateConversationId(),
       addMessage: (message) =>
         set((state) => ({
           messages: [...state.messages, message],
@@ -77,7 +81,11 @@ export const useChatStore = create<ChatStore>()(
             msg.id === id ? { ...msg, content: updater(msg.content) } : msg,
           ),
         })),
-      replaceMessages: (messages) => set({ messages }),
+      replaceMessages: (messages) =>
+        set({
+          messages,
+          conversationId: generateConversationId(),
+        }),
       setStreaming: (value) =>
         set({ isStreaming: value, typingStateIndex: 0 }),
       cycleTypingState: () =>
@@ -89,6 +97,7 @@ export const useChatStore = create<ChatStore>()(
           messages: createInitialMessages(),
           isStreaming: false,
           typingStateIndex: 0,
+          conversationId: generateConversationId(),
         }),
     }),
     {
