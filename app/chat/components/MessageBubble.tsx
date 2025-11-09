@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ComponentPropsWithoutRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
 import remarkGfm from 'remark-gfm';
@@ -11,6 +11,11 @@ import 'highlight.js/styles/github.css';
 
 type MessageBubbleProps = {
   message: ChatMessage;
+};
+
+type MarkdownCodeProps = ComponentPropsWithoutRef<'code'> & {
+  inline?: boolean;
+  className?: string;
 };
 
 const copyToClipboard = async (text: string) => {
@@ -58,31 +63,27 @@ export function MessageBubble({ message }: MessageBubbleProps) {
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
       <div
-        className={`message-bubble inline-flex max-w-[min(90%,640px)] rounded-3xl border px-5 py-4 text-[15px] leading-relaxed shadow-sm ${
+        className={`message-bubble inline-flex max-w-[min(90%,640px)] rounded-4xl border px-4 py-2 text-[15px] leading-relaxed ${
           isUser
-            ? 'border-transparent bg-[#d4f3e4] text-[#0f2d1f]'
-            : 'border-black/5 bg-[#f7f7f7] text-[#111111]'
+            ? 'border-transparent bg-[#00552b]/30 text-[#00552b] font-medium'
+            : 'border-transparent bg-transparent text-black'
         }`}
       >
         <div className="flex w-full flex-col gap-2">
-          <div
-            className={`text-xs font-semibold uppercase tracking-[0.25em] ${
-              isUser ? 'text-[#0f2d1f]' : 'text-[#555555]'
-            }`}
-          >
-            {isUser ? 'You' : 'ChatGPT'}
-          </div>
           <div className="markdown prose prose-sm max-w-none text-current prose-headings:text-[#111111] prose-strong:text-[#111111]">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               rehypePlugins={[rehypeHighlight]}
               components={{
-                code({ inline, className, children }) {
+                code({ inline, className, children, ...props }: MarkdownCodeProps) {
                   const language = className?.replace('language-', '') ?? 'text';
                   const value = String(children);
                   if (inline) {
                     return (
-                      <code className="rounded-md bg-black/5 px-1.5 py-0.5 text-[0.92em] text-[#111111]">
+                      <code
+                        {...props}
+                        className="rounded-md bg-black/5 px-1.5 py-0.5 text-[0.92em] text-[#111111]"
+                      >
                         {children}
                       </code>
                     );
