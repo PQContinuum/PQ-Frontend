@@ -2,51 +2,20 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { MessageSquare, Trash2, Loader2 } from 'lucide-react';
+import { MessageSquare, Ellipsis, Loader2 } from 'lucide-react';
 import { useChatStore } from '../store';
 import { SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
-import { createSupabaseBrowserClient } from '@/lib/supabase';
+import { useConversations, useDeleteConversation } from '@/hooks/use-conversations';
 
 export function ConversationHistory() {
   const {
-    conversations,
     conversationId,
-    isLoadingConversations,
-    setConversations,
-    setLoadingConversations,
-    removeConversation,
-    replaceMessages,
     setConversationId,
+    replaceMessages,
   } = useChatStore();
 
-  const [deletingId, setDeletingId] = React.useState<string | null>(null);
-
-  // Cargar conversaciones al montar
-  React.useEffect(() => {
-    loadConversations();
-  }, []);
-
-  const loadConversations = async () => {
-    try {
-      setLoadingConversations(true);
-      const response = await fetch('/api/conversations');
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          console.log('User not authenticated');
-          return;
-        }
-        throw new Error('Failed to fetch conversations');
-      }
-
-      const data = await response.json();
-      setConversations(data.conversations);
-    } catch (error) {
-      console.error('Error loading conversations:', error);
-    } finally {
-      setLoadingConversations(false);
-    }
-  };
+  const { data: conversations = [], isLoading, isError } = useConversations();
+  const deleteMutation = useDeleteConversation();
 
   const handleSelectConversation = async (id: string) => {
     try {
@@ -77,18 +46,8 @@ export function ConversationHistory() {
     }
 
     try {
-      setDeletingId(id);
-      const response = await fetch(`/api/conversations/${id}`, {
-        method: 'DELETE',
-      });
+      await deleteMutation.mutateAsync(id);
 
-      if (!response.ok) {
-        throw new Error('Failed to delete conversation');
-      }
-
-      removeConversation(id);
-
-      // Si estamos viendo la conversación eliminada, resetear
       if (conversationId === id) {
         setConversationId(null);
         replaceMessages([
@@ -102,37 +61,53 @@ export function ConversationHistory() {
       }
     } catch (error) {
       console.error('Error deleting conversation:', error);
-      alert('Error al eliminar la conversación');
-    } finally {
-      setDeletingId(null);
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+  const truncateTitle = (title: string, maxLength: number = 35): string => {
+    if (title.length <= maxLength) return title.trim() + '...';
+    return title.substring(0, maxLength).trim() + '...';
+  };
+
+  const formatDate = (dateInput: string | Date | null | undefined) => {
+    if (!dateInput) return 'Reciente';
+
+    const date = new Date(dateInput);
+
+    if (isNaN(date.getTime())) {
+      console.error('Invalid date received:', dateInput);
+      return 'Reciente';
+    }
+
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-    if (days === 0) {
-      return 'Hoy';
-    } else if (days === 1) {
-      return 'Ayer';
-    } else if (days < 7) {
-      return `Hace ${days} días`;
-    } else {
-      return date.toLocaleDateString('es-ES', {
-        day: 'numeric',
-        month: 'short',
-      });
-    }
+    if (days === 0) return 'Hoy';
+    if (days === 1) return 'Ayer';
+    if (days < 7) return `Hace ${days} días`;
+
+    return date.toLocaleDateString('es-ES', {
+      day: 'numeric',
+      month: 'short',
+    });
   };
 
-  if (isLoadingConversations) {
+  if (isLoading) {
     return (
       <SidebarMenuItem>
         <div className="flex items-center justify-center py-8">
           <Loader2 className="size-6 animate-spin text-[#00552b]" />
+        </div>
+      </SidebarMenuItem>
+    );
+  }
+
+  if (isError) {
+    return (
+      <SidebarMenuItem>
+        <div className="px-4 py-8 text-center text-sm text-red-600">
+          Error al cargar conversaciones
         </div>
       </SidebarMenuItem>
     );
@@ -161,30 +136,27 @@ export function ConversationHistory() {
             <SidebarMenuButton
               onClick={() => handleSelectConversation(conversation.id)}
               isActive={conversationId === conversation.id}
-              className="data-[active=true]:bg-[#00552b]/10 data-[active=true]:text-[#00552b] hover:bg-[#00552b]/5 transition-colors"
+              className="data-[active=true]:bg-[#00552b]/10 data-[active=true]:text-[#00552b] hover:bg-[#00552b]/5 transition-colors pr-10"
             >
-              <MessageSquare className="size-4" />
-              <div className="flex-1 overflow-hidden">
-                <div className="truncate text-sm font-medium">
-                  {conversation.title}
-                </div>
-                <div className="truncate text-xs text-[#4c4c4c]">
-                  {formatDate(conversation.updated_at)}
+              <MessageSquare className="size-4 flex-shrink-0" />
+              <div className="flex-1 overflow-hidden min-w-0">
+                <div className="text-sm font-medium whitespace-nowrap overflow-hidden">
+                  {truncateTitle(conversation.title)}
                 </div>
               </div>
             </SidebarMenuButton>
 
             <motion.button
               onClick={(e) => handleDeleteConversation(e, conversation.id)}
-              disabled={deletingId === conversation.id}
-              className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-100 disabled:opacity-50"
+              disabled={deleteMutation.isPending}
+              className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded hover:bg-black/5 disabled:opacity-50"
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
             >
-              {deletingId === conversation.id ? (
-                <Loader2 className="size-4 animate-spin text-red-600" />
+              {deleteMutation.isPending && deleteMutation.variables === conversation.id ? (
+                <Loader2 className="size-4 animate-spin text-[#4c4c4c]" />
               ) : (
-                <Trash2 className="size-4 text-red-600" />
+                <Ellipsis className="size-4 text-[#4c4c4c]" />
               )}
             </motion.button>
           </motion.div>

@@ -11,6 +11,7 @@ import {
 import { ArrowUp } from 'lucide-react';
 
 import { useChatStore } from '@/app/chat/store';
+import { useCreateConversation } from '@/hooks/use-conversations';
 
 type SSEPayload = {
   delta?: string;
@@ -67,8 +68,9 @@ export function MessageInput() {
     setStreaming,
     conversationId,
     setConversationId,
-    addConversation,
   } = useChatStore();
+
+  const createConversationMutation = useCreateConversation();
 
   useEffect(() => {
     textareaRef.current?.focus();
@@ -99,19 +101,15 @@ export function MessageInput() {
         if (!currentConversationId) {
           try {
             const title =
-              value.length > 50 ? value.substring(0, 50) + '...' : value;
-            const createResponse = await fetch('/api/conversations', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ title }),
+              value.length > 50 ? value.substring(0, 50).trim() + '...' : value;
+
+            // Usar TanStack Query mutation
+            const conversation = await createConversationMutation.mutateAsync({
+              title,
             });
 
-            if (createResponse.ok) {
-              const { conversation } = await createResponse.json();
-              currentConversationId = conversation.id;
-              setConversationId(conversation.id);
-              addConversation(conversation);
-            }
+            currentConversationId = conversation.id;
+            setConversationId(conversation.id);
           } catch (error) {
             console.error('Error creating conversation:', error);
           }
@@ -232,7 +230,7 @@ export function MessageInput() {
       updateMessage,
       conversationId,
       setConversationId,
-      addConversation,
+      createConversationMutation,
     ],
   );
 
