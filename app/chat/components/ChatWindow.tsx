@@ -1,7 +1,6 @@
 'use client';
 
-import { AnimatePresence, motion } from 'framer-motion';
-import { useEffect, useLayoutEffect, useRef, useState, useTransition } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 
 import { useChatStore } from '@/app/chat/store';
 
@@ -13,30 +12,14 @@ export function ChatWindow() {
   const containerRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const previousMessageCount = useRef(messages.length);
-  const [activeConversationSwitch, setActiveConversationSwitch] = useState<string | null>(null);
-  const [, startSwitchTransition] = useTransition();
-  const isInitialRender = useRef(true);
-
-  useEffect(() => {
-    if (isInitialRender.current) {
-      isInitialRender.current = false;
-      return;
-    }
-
-    startSwitchTransition(() => setActiveConversationSwitch(conversationId));
-    const frame = requestAnimationFrame(() =>
-      startSwitchTransition(() => setActiveConversationSwitch(null))
-    );
-    return () => cancelAnimationFrame(frame);
-  }, [conversationId]);
-
-  const isConversationSwitch = activeConversationSwitch === conversationId;
+  const previousConversationId = useRef(conversationId);
 
   // useLayoutEffect para scroll (evita flicker visual)
   useLayoutEffect(() => {
     const scrollContainer = containerRef.current?.parentElement?.parentElement;
     if (!scrollContainer) return;
 
+    const isConversationSwitch = previousConversationId.current !== conversationId;
     const shouldScrollToTop =
       isConversationSwitch ||
       messages.length < previousMessageCount.current;
@@ -47,45 +30,26 @@ export function ChatWindow() {
       // Solo scroll down si hay mensajes nuevos
       endRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
+
     previousMessageCount.current = messages.length;
-  }, [messages.length, isConversationSwitch]);
+    previousConversationId.current = conversationId;
+  }, [messages.length, conversationId]);
 
   return (
     <div
       ref={containerRef}
       className="space-y-4"
     >
-      <AnimatePresence mode="sync">
-        {messages.map((message, index) => (
-          <motion.div
-            key={message.id}
-            initial={isConversationSwitch ? false : isStreaming ? false : { opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={isConversationSwitch ? { opacity: 1 } : { opacity: 0, scale: 0.95 }}
-            transition={isConversationSwitch || isStreaming ? { duration: 0 } : {
-              type: "spring",
-              stiffness: 500,
-              damping: 30,
-              delay: index * 0.05,
-            }}
-          >
-            <MessageBubble message={message} />
-          </motion.div>
-        ))}
-      </AnimatePresence>
-      <AnimatePresence>
-        {isStreaming && (
-          <motion.div
-            className="px-2"
-            initial={{ opacity: 0, y: 10, scale: 0.8 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            transition={{ type: "spring", stiffness: 300, damping: 25 }}
-          >
-            <TypingIndicator />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {messages.map((message) => (
+        <div key={message.id}>
+          <MessageBubble message={message} />
+        </div>
+      ))}
+      {isStreaming && (
+        <div className="px-2">
+          <TypingIndicator />
+        </div>
+      )}
       <div ref={endRef} />
     </div>
   );
