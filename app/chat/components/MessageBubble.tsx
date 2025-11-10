@@ -63,7 +63,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
       <div
-        className={`message-bubble inline-flex max-w-full rounded-4xl border px-4 py-2 text-[15px] leading-relaxed ${
+        className={`inline-flex max-w-full rounded-4xl border px-4 py-2 text-[15px] leading-relaxed ${
           isUser
             ? 'border-transparent bg-[#00552b] text-white font-medium'
             : 'border-transparent bg-transparent text-black'
@@ -115,23 +115,6 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           </div>
         </div>
       </div>
-
-      <style jsx>{`
-        .message-bubble {
-          animation: fadeIn 0.25s ease;
-        }
-
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(4px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
     </div>
   );
 }
