@@ -3,8 +3,8 @@ import "./globals.css";
 import { QueryProvider } from "@/providers/query-client-provider";
 
 export const metadata: Metadata = {
-  title: "next-ai-base",
-  description: "Minimal AI chat starter with Next.js 15 and supporting SDKs.",
+  title: "PQ Continnuum",
+  description: "Assistant AI",
 };
 
 export default function RootLayout({
