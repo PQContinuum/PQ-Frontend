@@ -27,6 +27,12 @@ import {
   SidebarRail,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from '@/components/ui/select';
 
 import { ChatWindow } from './components/ChatWindow';
 import { MessageInput } from './components/MessageInput';
@@ -38,7 +44,19 @@ import { useRouter } from 'next/navigation';
 export default function ChatPage() {
   const { messages, replaceMessages, setConversationId } = useChatStore();
   const [isCreatingNew, setIsCreatingNew] = React.useState(false);
+  const [userEmail, setUserEmail] = React.useState<string | null>(null);
   const router = useRouter();
+
+  React.useEffect(() => {
+    const getUserData = async () => {
+      const supabase = createSupabaseBrowserClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.email) {
+        setUserEmail(user.email);
+      }
+    };
+    getUserData();
+  }, []);
 
   const handleNewConversation = () => {
     setIsCreatingNew(true);
@@ -70,6 +88,22 @@ export default function ChatPage() {
     await supabase.auth.signOut();
     router.push('/auth');
     router.refresh();
+  };
+
+  const handleSelectAction = (value: string) => {
+    switch (value) {
+      case 'upgrade':
+        // TODO: Implementar lógica para upgrade plan
+        console.log('Upgrade plan');
+        break;
+      case 'logout':
+        handleLogout();
+        break;
+      case 'settings':
+        // TODO: Implementar lógica para settings
+        console.log('Settings');
+        break;
+    }
   };
 
   return (
@@ -184,26 +218,45 @@ export default function ChatPage() {
         <SidebarFooter className="bg-[#f6f6f6]">
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton tooltip="Configuración">
-                <Settings className="size-4" />
-                <span>Configuración</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <motion.div
-                whileHover={{ scale: 1.02, x: 4 }}
-                whileTap={{ scale: 0.98 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-              >
-                <SidebarMenuButton
-                  onClick={handleLogout}
-                  tooltip="Cerrar sesión"
-                  className="hover:bg-red-50 hover:text-red-600"
-                >
-                  <LogOut className="size-4" />
-                  <span>Cerrar sesión</span>
-                </SidebarMenuButton>
-              </motion.div>
+              <Select onValueChange={handleSelectAction}>
+                <SelectTrigger className="w-full border-0 bg-transparent hover:bg-white/50 transition-colors [&>svg]:group-data-[collapsible=icon]:hidden">
+                  <div className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
+                    <div className="text-2xl">👤</div>
+                    <div className="flex flex-col items-start flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
+                      <span className="text-sm font-medium truncate w-full text-left">
+                        {userEmail
+                          ? userEmail.length > 20
+                            ? `${userEmail.slice(0, 20)}...`
+                            : userEmail
+                          : 'Usuario'}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        Gratis
+                      </span>
+                    </div>
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="upgrade">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="size-4" />
+                      <span>Mejorar Plan</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="settings">
+                    <div className="flex items-center gap-2">
+                      <Settings className="size-4" />
+                      <span>Configuración</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="logout">
+                    <div className="flex items-center gap-2">
+                      <LogOut className="size-4" />
+                      <span>Cerrar sesión</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarFooter>
@@ -222,8 +275,7 @@ export default function ChatPage() {
             </div>
             <div className="group rounded-full border-2 border-yellow-600 bg-yellow-50 px-4 py-1.5 text-sm text-[#111111] cursor-pointer transition-all hover:shadow-lg hover:scale-105">
               <span className="flex items-center gap-2 text-yellow-600 font-semibold">
-                <Sparkles className="size-4 text-yellow-600 transition-transform duration-700 ease-in-out group-hover:rotate-[720deg]" />
-                PQ ßeta v0.0.1
+                Asistente PQ 0.0.1
               </span>
             </div>
           </div>
