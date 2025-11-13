@@ -38,6 +38,7 @@ import {
 import { ChatWindow } from './components/ChatWindow';
 import { MessageInput } from './components/MessageInput';
 import { ConversationHistory } from './components/ConversationHistory';
+import { SettingsDialog } from './components/SettingsDialog';
 import { useChatStore } from './store';
 import { createSupabaseBrowserClient } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
@@ -46,6 +47,9 @@ export default function ChatPage() {
   const { messages, replaceMessages, setConversationId } = useChatStore();
   const [isCreatingNew, setIsCreatingNew] = React.useState(false);
   const [userEmail, setUserEmail] = React.useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = React.useState(false);
+  const [userPlan, setUserPlan] = React.useState('Gratis');
+  const [selectValue, setSelectValue] = React.useState<string>('');
   const router = useRouter();
 
   React.useEffect(() => {
@@ -55,6 +59,7 @@ export default function ChatPage() {
       if (user?.email) {
         setUserEmail(user.email);
       }
+      // TODO: Obtener el plan del usuario desde la base de datos
     };
     getUserData();
   }, []);
@@ -100,10 +105,11 @@ export default function ChatPage() {
         handleLogout();
         break;
       case 'settings':
-        // TODO: Implementar lógica para settings
-        console.log('Settings');
+        setSettingsOpen(true);
         break;
     }
+    // Reset select value after action
+    setTimeout(() => setSelectValue(''), 100);
   };
 
   return (
@@ -218,7 +224,7 @@ export default function ChatPage() {
         <SidebarFooter className="bg-[#f6f6f6]">
           <SidebarMenu>
             <SidebarMenuItem>
-              <Select onValueChange={handleSelectAction}>
+              <Select value={selectValue} onValueChange={handleSelectAction}>
                 <SelectTrigger className="w-full border-0 bg-transparent hover:bg-white/50 transition-colors [&>svg]:group-data-[collapsible=icon]:hidden">
                   <div className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
                     <div className="text-2xl">👤</div>
@@ -299,6 +305,14 @@ export default function ChatPage() {
           </div>
         </div>
       </SidebarInset>
+
+      {/* Settings Dialog */}
+      <SettingsDialog
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        userEmail={userEmail}
+        userPlan={userPlan}
+      />
     </SidebarProvider>
   );
 }
