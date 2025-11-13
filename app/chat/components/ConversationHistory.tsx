@@ -1,10 +1,15 @@
 'use client';
 
 import React from 'react';
-import { motion } from 'framer-motion';
-import { MessageSquare, Ellipsis, Loader2 } from 'lucide-react';
+import { MessageSquare, Ellipsis, Loader2, Pencil, Trash2 } from 'lucide-react';
 import { useChatStore } from '../store';
 import { SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   useConversations,
   useDeleteConversation,
@@ -25,6 +30,8 @@ export function ConversationHistory() {
   const { data: conversations = [], isLoading, isError } = useConversations();
   const deleteMutation = useDeleteConversation();
   const prefetchConversation = usePrefetchConversation();
+  const [renamingId, setRenamingId] = React.useState<string | null>(null);
+  const [newTitle, setNewTitle] = React.useState('');
 
   const handleSelectConversation = async (id: string) => {
     // 1. Cambiar conversación activa inmediatamente (optimistic)
@@ -98,6 +105,39 @@ export function ConversationHistory() {
     }
   };
 
+  const handleStartRename = (id: string, currentTitle: string) => {
+    setRenamingId(id);
+    setNewTitle(currentTitle);
+  };
+
+  const handleRenameConversation = async (id: string) => {
+    if (!newTitle.trim()) {
+      setRenamingId(null);
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/conversations/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: newTitle.trim() }),
+      });
+
+      if (!response.ok) throw new Error('Failed to rename conversation');
+
+      // Invalidar cache para refrescar
+      queryClient.invalidateQueries({ queryKey: conversationKeys.all });
+      setRenamingId(null);
+    } catch (error) {
+      console.error('Error renaming conversation:', error);
+    }
+  };
+
+  const handleCancelRename = () => {
+    setRenamingId(null);
+    setNewTitle('');
+  };
+
   const truncateTitle = (title: string, maxLength: number = 35): string => {
     if (title.length <= maxLength) return title.trim() + '...';
     return title.substring(0, maxLength).trim() + '...';
@@ -137,40 +177,81 @@ export function ConversationHistory() {
     <>
       {conversations.map((conversation) => (
         <SidebarMenuItem key={conversation.id}>
-          <motion.div
-            whileHover={{ scale: 1.02, x: 4 }}
-            whileTap={{ scale: 0.98 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+          <div
             className="relative group"
             onMouseEnter={() => handleMouseEnter(conversation.id)}
           >
-            <SidebarMenuButton
-              onClick={() => handleSelectConversation(conversation.id)}
-              isActive={conversationId === conversation.id}
-              className="data-[active=true]:bg-[#00552b]/10 data-[active=true]:text-[#00552b] hover:bg-[#00552b]/5 transition-colors pr-10"
-            >
-              <MessageSquare className="size-4 flex-shrink-0" />
-              <div className="flex-1 overflow-hidden min-w-0">
-                <div className="text-sm font-medium whitespace-nowrap overflow-hidden">
-                  {truncateTitle(conversation.title)}
-                </div>
+            {renamingId === conversation.id ? (
+              <div className="flex items-center gap-2 px-2 py-2">
+                <MessageSquare className="size-4 flex-shrink-0 text-[#4c4c4c]" />
+                <input
+                  type="text"
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleRenameConversation(conversation.id);
+                    } else if (e.key === 'Escape') {
+                      handleCancelRename();
+                    }
+                  }}
+                  onBlur={() => handleRenameConversation(conversation.id)}
+                  autoFocus
+                  className="flex-1 text-sm font-medium bg-white border border-[#00552b] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#00552b]/20"
+                />
               </div>
-            </SidebarMenuButton>
+            ) : (
+              <>
+                <SidebarMenuButton
+                  onClick={() => handleSelectConversation(conversation.id)}
+                  isActive={conversationId === conversation.id}
+                  className="data-[active=true]:bg-[#00552b]/10 data-[active=true]:text-[#00552b] hover:bg-[#00552b]/5 transition-colors pr-10"
+                >
+                  <MessageSquare className="size-4 flex-shrink-0" />
+                  <div className="flex-1 overflow-hidden min-w-0">
+                    <div className="text-sm font-medium whitespace-nowrap overflow-hidden">
+                      {truncateTitle(conversation.title)}
+                    </div>
+                  </div>
+                </SidebarMenuButton>
 
-            <motion.button
-              onClick={(e) => handleDeleteConversation(e, conversation.id)}
-              disabled={deleteMutation.isPending}
-              className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded hover:bg-black/5 disabled:opacity-50"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-            >
-              {deleteMutation.isPending && deleteMutation.variables === conversation.id ? (
-                <Loader2 className="size-4 animate-spin text-[#4c4c4c]" />
-              ) : (
-                <Ellipsis className="size-4 text-[#4c4c4c]" />
-              )}
-            </motion.button>
-          </motion.div>
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        onClick={(e) => e.stopPropagation()}
+                        className="p-1.5 rounded hover:bg-black/5 transition-colors"
+                      >
+                        {deleteMutation.isPending && deleteMutation.variables === conversation.id ? (
+                          <Loader2 className="size-4 animate-spin text-[#4c4c4c]" />
+                        ) : (
+                          <Ellipsis className="size-4 text-[#4c4c4c]" />
+                        )}
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" side="bottom" sideOffset={4} className="w-48">
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleStartRename(conversation.id, conversation.title);
+                        }}
+                      >
+                        <Pencil className="size-4" />
+                        <span>Renombrar</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        variant="destructive"
+                        onClick={(e) => handleDeleteConversation(e, conversation.id)}
+                      >
+                        <Trash2 className="size-4" />
+                        <span>Eliminar</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </>
+            )}
+          </div>
         </SidebarMenuItem>
       ))}
     </>

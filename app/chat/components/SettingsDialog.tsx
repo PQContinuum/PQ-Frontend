@@ -29,9 +29,9 @@ export function SettingsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="!max-w-6xl w-full h-[85vh] max-h-[750px] p-0 gap-0 overflow-hidden">
-        <div className="flex flex-col md:flex-row h-full">
-          <div className="w-full md:w-64 bg-[#f6f6f6] border-b md:border-b-0 md:border-r border-black/5 p-6 flex-shrink-0">
+      <DialogContent className="!max-w-6xl w-full h-[85vh] max-h-[750px] md:h-[85vh] p-0 gap-0 overflow-hidden">
+        <div className="flex flex-col md:flex-row h-full overflow-hidden">
+          <div className="w-full md:w-64 bg-[#f6f6f6] border-b md:border-b-0 md:border-r border-black/5 p-4 md:p-6 flex-shrink-0 overflow-y-auto md:overflow-y-visible">
             <DialogHeader className="mb-6">
               <DialogTitle className="text-xl font-bold text-[#111111]">
                 Configuración
@@ -65,8 +65,8 @@ export function SettingsDialog({
             </nav>
           </div>
 
-          <div className="flex-1 overflow-y-auto">
-            <div className="p-6 md:p-8">
+          <div className="flex-1 overflow-y-auto overscroll-contain">
+            <div className="p-4 md:p-6 lg:p-8">
               {activeTab === 'account' && (
                 <motion.div
                   key="account"
