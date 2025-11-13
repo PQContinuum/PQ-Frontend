@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import Image from 'next/image';
+import Link from 'next/link';
 import React from 'react';
 import {
   History,
@@ -93,8 +94,7 @@ export default function ChatPage() {
   const handleSelectAction = (value: string) => {
     switch (value) {
       case 'upgrade':
-        // TODO: Implementar lógica para upgrade plan
-        console.log('Upgrade plan');
+        router.push('/payment');
         break;
       case 'logout':
         handleLogout();
@@ -238,10 +238,12 @@ export default function ChatPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="upgrade">
+                    <Link href={'/payment'}>
                     <div className="flex items-center gap-2">
                       <Sparkles className="size-4" />
                       <span>Mejorar Plan</span>
                     </div>
+                    </Link>
                   </SelectItem>
                   <SelectItem value="settings">
                     <div className="flex items-center gap-2">
