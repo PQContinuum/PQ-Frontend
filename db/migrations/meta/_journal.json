@@ -15,6 +15,13 @@
       "when": 1762728419000,
       "tag": "0001_next_masked_marvel",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1763334523161,
+      "tag": "0002_strange_namor",
+      "breakpoints": true
     }
   ]
 }

@@ -62,7 +62,15 @@ export default function AuthPage() {
 
         if (error) throw error;
 
-        router.push('/chat');
+        // Verificar subscription del usuario
+        const response = await fetch('/api/check-subscription');
+        const data = await response.json();
+
+        if (data.needsPayment) {
+          router.push('/payment');
+        } else {
+          router.push('/chat');
+        }
         router.refresh();
       }
     } catch (error: unknown) {

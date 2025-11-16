@@ -42,13 +42,14 @@ import { SettingsDialog } from './components/SettingsDialog';
 import { useChatStore } from './store';
 import { createSupabaseBrowserClient } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
+import { useUserPlan } from '@/hooks/use-user-plan';
 
 export default function ChatPage() {
   const { messages, replaceMessages, setConversationId } = useChatStore();
   const [isCreatingNew, setIsCreatingNew] = React.useState(false);
   const [userEmail, setUserEmail] = React.useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = React.useState(false);
-  const [userPlan] = React.useState('Gratis');
+  const { data: userPlan } = useUserPlan();
   const [selectValue, setSelectValue] = React.useState<string>('');
   const router = useRouter();
 
@@ -236,8 +237,14 @@ export default function ChatPage() {
                             : userEmail
                           : 'Usuario'}
                       </span>
-                      <span className="text-xs text-muted-foreground">
-                        Gratis
+                      <span className={`text-xs ${
+                        userPlan?.planName === 'Free'
+                          ? 'text-muted-foreground'
+                          : userPlan?.planName === 'Professional'
+                          ? 'text-[#00552b] font-semibold'
+                          : 'text-blue-600 font-semibold'
+                      }`}>
+                        Plan {userPlan?.planName || 'Free'}
                       </span>
                     </div>
                   </div>
@@ -311,7 +318,7 @@ export default function ChatPage() {
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
         userEmail={userEmail}
-        userPlan={userPlan}
+        userPlan={userPlan?.planName || 'Free'}
       />
     </SidebarProvider>
   );

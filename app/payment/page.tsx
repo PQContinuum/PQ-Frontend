@@ -12,14 +12,15 @@ import {
 } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
-import { ArrowRight, Check, Sparkles, Zap, Building2, Rocket, Loader2 } from 'lucide-react';
+import { ArrowRight, Check, Sparkles, Zap, Building2, Rocket, Loader2, Crown } from 'lucide-react';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { loadStripe } from '@stripe/stripe-js';
 import {
   EmbeddedCheckoutProvider,
   EmbeddedCheckout,
 } from '@stripe/react-stripe-js';
+import { useUserPlan } from '@/hooks/use-user-plan';
 
 // Cargar Stripe
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -129,7 +130,7 @@ export default function PaymentPage() {
   const [frequency, setFrequency] = useState<string>('monthly');
   const [clientSecret, setClientSecret] = useState<string>('');
   const [loading, setLoading] = useState<string | null>(null);
-  const router = useRouter();
+  const { data: userPlan } = useUserPlan();
 
   const handleCheckout = async (planId: string, planName: string) => {
     const plan = plans.find((p) => p.id === planId);
@@ -137,19 +138,9 @@ export default function PaymentPage() {
 
     const priceId = plan.stripePriceId[frequency as keyof typeof plan.stripePriceId];
 
-    // Si no hay priceId (planes gratis o enterprise), manejar diferente
+    // Si no hay priceId (planes gratis o enterprise), manejar con Link
     if (!priceId) {
-      if (planId === 'free') {
-        router.push('/chat');
-        return;
-      }
-      if (planId === 'enterprise') {
-        // Redirigir a contacto o abrir modal
-        const mailtoLink =
-          'mailto:sales@tudominio.com?subject=Consulta Plan Enterprise';
-        router.push(mailtoLink);
-        return;
-      }
+      // El botón de enterprise usa mailto y free usa Link, no necesita este handler
       return;
     }
 
@@ -219,12 +210,12 @@ export default function PaymentPage() {
 
       <div className="relative flex flex-col gap-16 px-8 py-24 text-center">
         {/* Back button */}
-        <button
-          onClick={() => router.back()}
+        <Link
+          href="/"
           className="absolute top-8 left-8 text-sm text-neutral-400 hover:text-white transition-colors"
         >
           ← Volver
-        </button>
+        </Link>
 
         <div className="flex flex-col items-center justify-center gap-8">
           {/* Header */}
@@ -255,19 +246,27 @@ export default function PaymentPage() {
           <div className="mt-8 grid w-full max-w-7xl gap-6 md:grid-cols-2 lg:grid-cols-4">
             {plans.map((plan) => {
               const Icon = plan.icon;
+              const isCurrentPlan = userPlan?.planName === plan.name;
+
               return (
                 <Card
                   className={cn(
                     'relative w-full text-left border-white/5 bg-white/[0.02] backdrop-blur-sm hover:bg-white/[0.04] transition-all duration-300',
-                    plan.popular && 'ring-2 ring-[#00552b] scale-105'
+                    plan.popular && !isCurrentPlan && 'ring-2 ring-[#00552b] scale-105',
+                    isCurrentPlan && 'ring-2 ring-green-500 scale-105 bg-green-500/5'
                   )}
                   key={plan.id}
                 >
-                  {plan.popular && (
+                  {isCurrentPlan ? (
+                    <Badge className="-translate-x-1/2 -translate-y-1/2 absolute top-0 left-1/2 rounded-full bg-green-500 hover:bg-green-500/90 shadow-lg shadow-green-500/30">
+                      <Crown className="w-3 h-3 mr-1" />
+                      Tu Plan Actual
+                    </Badge>
+                  ) : plan.popular ? (
                     <Badge className="-translate-x-1/2 -translate-y-1/2 absolute top-0 left-1/2 rounded-full bg-[#00552b] hover:bg-[#00552b]/90">
                       Más popular
                     </Badge>
-                  )}
+                  ) : null}
                   <CardHeader>
                     {/* Icon */}
                     <div className="w-12 h-12 rounded-2xl bg-[#00552b]/15 flex items-center justify-center mb-4 border border-[#00552b]/30">
@@ -289,7 +288,7 @@ export default function PaymentPage() {
                             ${plan.price[frequency as keyof typeof plan.price]}
                             <span className="text-lg text-neutral-400 font-normal">
                               {' '}
-                              USD/mes
+                              MXN/mes
                             </span>
                           </div>
                           <p className="text-xs text-neutral-500 mt-2">
@@ -323,29 +322,42 @@ export default function PaymentPage() {
                     ))}
                   </CardContent>
                   <CardFooter>
-                    <Button
-                      className={cn(
-                        'w-full',
-                        plan.popular
-                          ? 'bg-[#00552b] hover:bg-[#00552b]/90 text-white shadow-lg shadow-[#00552b]/30'
-                          : 'border-white/20 bg-white text-black hover:bg-[#00552b] hover:text-white hover:border-[#00552b] transition-all'
-                      )}
-                      variant={plan.popular ? 'default' : 'outline'}
-                      onClick={() => handleCheckout(plan.id, plan.name)}
-                      disabled={loading !== null}
-                    >
-                      {loading === plan.id ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Cargando...
-                        </>
-                      ) : (
-                        <>
+                    {plan.id === 'free' ? (
+                      <Link href="/chat" className="w-full">
+                        <Button
+                          className="w-full border-white/20 bg-white text-black hover:bg-[#00552b] hover:text-white hover:border-[#00552b] transition-all"
+                          variant="outline"
+                        >
                           {plan.cta}
                           <ArrowRight className="ml-2 h-4 w-4" />
-                        </>
-                      )}
-                    </Button>
+                        </Button>
+                      </Link>
+                    ) : (
+                      <Button
+                        className={cn(
+                          'w-full',
+                          plan.popular
+                            ? 'bg-[#00552b] hover:bg-[#00552b]/90 text-white shadow-lg shadow-[#00552b]/30'
+                            : 'border-white/20 bg-white text-black hover:bg-[#00552b] hover:text-white hover:border-[#00552b] transition-all',
+                          'disabled:opacity-50 disabled:cursor-not-allowed'
+                        )}
+                        variant={plan.popular ? 'default' : 'outline'}
+                        onClick={() => handleCheckout(plan.id, plan.name)}
+                        disabled={loading !== null}
+                      >
+                        {loading === plan.id ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Cargando...
+                          </>
+                        ) : (
+                          <>
+                            {plan.cta}
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                          </>
+                        )}
+                      </Button>
+                    )}
                   </CardFooter>
                 </Card>
               );

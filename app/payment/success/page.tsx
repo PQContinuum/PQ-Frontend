@@ -48,6 +48,17 @@ function PaymentSuccessContent() {
     checkSession();
   }, [sessionId]);
 
+  // Redirigir automáticamente a /chat después de un pago exitoso
+  useEffect(() => {
+    if (status === 'success') {
+      const redirectTimer = setTimeout(() => {
+        router.push('/chat');
+      }, 3000); // 3 segundos
+
+      return () => clearTimeout(redirectTimer);
+    }
+  }, [status, router]);
+
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-8">
       {/* Background grid pattern */}
@@ -77,6 +88,10 @@ function PaymentSuccessContent() {
               <CardTitle className="text-white">¡Pago exitoso!</CardTitle>
               <CardDescription className="text-neutral-400">
                 Tu suscripción ha sido activada correctamente.
+                <br />
+                <span className="text-[#00552b] mt-2 inline-block">
+                  Redirigiendo al chat en 3 segundos...
+                </span>
               </CardDescription>
             </>
           )}
@@ -100,7 +115,7 @@ function PaymentSuccessContent() {
               Email: <span className="text-white">{sessionData.customer_email}</span>
             </p>
             <p className="text-sm text-neutral-400">
-              Estado: <span className="text-[#00552b]">{sessionData.payment_status}</span>
+              Estado: <span className="text-[#00552b]/50 font-semibold">{sessionData.payment_status}</span>
             </p>
           </CardContent>
         )}

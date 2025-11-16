@@ -1,5 +1,6 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { needsPayment, createFreeSubscription } from '@/lib/subscription';
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
@@ -8,9 +9,22 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createSupabaseServerClient();
-    await supabase.auth.exchangeCodeForSession(code);
+    const { data } = await supabase.auth.exchangeCodeForSession(code);
+
+    // Si es un nuevo usuario, crear subscription Free por defecto
+    if (data?.user) {
+      await createFreeSubscription(data.user.id);
+
+      // Verificar si necesita pagar
+      const needsPay = await needsPayment(data.user.id);
+
+      if (needsPay) {
+        // Usuario nuevo o Free → ir a payment
+        return NextResponse.redirect(`${origin}/payment`);
+      }
+    }
   }
 
-  // Redirigir al chat después de autenticar
+  // Usuario con subscription activa → ir a chat
   return NextResponse.redirect(`${origin}/chat`);
 }

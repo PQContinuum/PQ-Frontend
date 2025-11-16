@@ -1,9 +1,33 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { useState, useEffect } from "react";
 
 export function HeroSection() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [redirectPath, setRedirectPath] = useState<string | null>(null);
+
+  // Determinar la ruta al cargar el componente
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const supabase = createSupabaseBrowserClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        setRedirectPath(user ? "/chat" : "/auth");
+      } catch (error) {
+        console.error("Error checking auth:", error);
+        setRedirectPath("/auth");
+      }
+    };
+    checkAuth();
+  }, []);
+
+  const handleClick = () => {
+    setIsLoading(true);
+  };
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-black">
       {/* Background grid pattern */}
@@ -42,10 +66,36 @@ export function HeroSection() {
 
         {/* CTAs */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up animation-delay-400">
-          <Button size="lg" className="group px-8 bg-[#00552b] hover:bg-[#00552b]/90 text-white shadow-lg shadow-[#00552b]/20 hover:shadow-[#00552b]/30 transition-all">
-            Comenzar ahora
-            <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-          </Button>
+          {redirectPath ? (
+            <Link href={redirectPath} onClick={handleClick}>
+              <Button
+                size="lg"
+                className="group px-8 bg-[#00552b] hover:bg-[#00552b]/90 text-white shadow-lg shadow-[#00552b]/20 hover:shadow-[#00552b]/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Cargando...
+                  </>
+                ) : (
+                  <>
+                    Comenzar ahora
+                    <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                  </>
+                )}
+              </Button>
+            </Link>
+          ) : (
+            <Button
+              size="lg"
+              className="px-8 bg-[#00552b] hover:bg-[#00552b]/90 text-white shadow-lg shadow-[#00552b]/20 hover:shadow-[#00552b]/30 transition-all"
+              disabled
+            >
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Cargando...
+            </Button>
+          )}
           <Button size="lg" variant="outline" className="px-8 border-white/20 text-black hover:text-white hover:bg-white/5 hover:border-[#00552b]/50">
             Ver demo
           </Button>
