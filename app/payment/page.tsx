@@ -145,7 +145,9 @@ export default function PaymentPage() {
       }
       if (planId === 'enterprise') {
         // Redirigir a contacto o abrir modal
-        window.location.href = 'mailto:sales@tudominio.com?subject=Consulta Plan Enterprise';
+        const mailtoLink =
+          'mailto:sales@tudominio.com?subject=Consulta Plan Enterprise';
+        router.push(mailtoLink);
         return;
       }
       return;

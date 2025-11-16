@@ -1,24 +1,26 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 
-export default function PaymentSuccessPage() {
-  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
-  const [sessionData, setSessionData] = useState<any>(null);
+function PaymentSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const sessionId = searchParams.get('session_id');
+  const [status, setStatus] = useState<'loading' | 'success' | 'error'>(
+    sessionId ? 'loading' : 'error'
+  );
+  const [sessionData, setSessionData] = useState<{
+    status: string | null;
+    customer_email: string | null;
+    payment_status: string | null;
+  } | null>(null);
 
   useEffect(() => {
-    const sessionId = searchParams.get('session_id');
-
-    if (!sessionId) {
-      setStatus('error');
-      return;
-    }
+    if (!sessionId) return;
 
     const checkSession = async () => {
       try {
@@ -44,7 +46,7 @@ export default function PaymentSuccessPage() {
     };
 
     checkSession();
-  }, [searchParams]);
+  }, [sessionId]);
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-8">
@@ -142,5 +144,22 @@ export default function PaymentSuccessPage() {
         </CardFooter>
       </Card>
     </div>
+  );
+}
+
+export default function PaymentSuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-black flex items-center justify-center p-8 text-white">
+          <div className="flex items-center gap-3">
+            <Loader2 className="h-5 w-5 animate-spin text-[#00552b]" />
+            <span>Verificando pago...</span>
+          </div>
+        </div>
+      }
+    >
+      <PaymentSuccessContent />
+    </Suspense>
   );
 }
