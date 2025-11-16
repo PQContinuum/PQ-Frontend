@@ -3,8 +3,10 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { stripe } from "@/lib/stripe";
 import { db } from "@/db";
-import { subscriptions, payments } from "@/db/schema";
+import { subscriptions, payments, type Subscription } from "@/db/schema";
 import { eq } from "drizzle-orm";
+
+type SubscriptionStatus = Subscription["status"];
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
@@ -92,7 +94,7 @@ export async function POST(req: Request) {
                 stripeSubscriptionId: subscriptionId,
                 stripePriceId: priceId,
                 planName: planName || "Free",
-                status: stripeSubscription.status as any,
+                status: stripeSubscription.status as SubscriptionStatus,
                 currentPeriodStart: new Date(
                   stripeSubscription.current_period_start * 1000
                 ),
@@ -111,7 +113,7 @@ export async function POST(req: Request) {
               stripeSubscriptionId: subscriptionId,
               stripePriceId: priceId,
               planName: planName || "Free",
-              status: stripeSubscription.status as any,
+              status: stripeSubscription.status as SubscriptionStatus,
               currentPeriodStart: new Date(
                 stripeSubscription.current_period_start * 1000
               ),
@@ -162,7 +164,7 @@ export async function POST(req: Request) {
           await db
             .update(subscriptions)
             .set({
-              status: subscription.status as any,
+              status: subscription.status as SubscriptionStatus,
               currentPeriodStart: new Date(
                 subscription.current_period_start * 1000
               ),
