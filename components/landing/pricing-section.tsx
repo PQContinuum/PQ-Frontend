@@ -1,66 +1,144 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Check, Sparkles, Rocket } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
+import {
+  ArrowRight,
+  Check,
+  Sparkles,
+  Rocket,
+  Building2,
+  Zap,
+} from "lucide-react";
 
-const plans = [
+type BillingFrequency = "monthly" | "yearly";
+
+type Plan = {
+  id: string;
+  name: string;
+  icon: typeof Sparkles;
+  price: {
+    monthly: number | string | null;
+    yearly: number | string | null;
+  };
+  description: string;
+  features: string[];
+  cta: string;
+  popular?: boolean;
+};
+
+const plans: Plan[] = [
   {
-    name: "Free",
-    price: "$0",
-    period: "mes",
-    description: "Perfecto para explorar y empezar",
-    icon: null,
-    popular: false,
+    id: "free",
+    name: "Gratis",
+    icon: Zap,
+    price: {
+      monthly: "Gratis para siempre",
+      yearly: "Gratis para siempre",
+    },
+    description: "Perfecto para explorar y empezar con tu asistente IA.",
     features: [
       "Acceso al chat inteligente",
       "Límite de 20 mensajes/día",
       "Modelos estándar",
       "Historial de 7 días",
+      "Soporte por email",
     ],
     cta: "Comenzar gratis",
   },
   {
-    name: "Pro",
-    price: "$12",
-    period: "mes",
-    description: "Para quienes trabajan en serio",
-    icon: Sparkles,
-    popular: true,
+    id: "basic",
+    name: "Básico",
+    icon: Rocket,
+    price: {
+      monthly: 349,
+      yearly: 3840,
+    },
+    description: "Ideal para usuarios individuales que necesitan más.",
     features: [
-      "Todo lo del Free, más:",
+      "Todo lo del Gratis, más:",
+      "Límite de 100 mensajes/día",
+      "Modelos avanzados",
+      "Historial de 30 días",
+      "Exportación de chats",
+      "Prioridad en respuestas",
+    ],
+    cta: "Comenzar con Básico",
+  },
+  {
+    id: "professional",
+    name: "Profesional",
+    icon: Sparkles,
+    price: {
+      monthly: 1499,
+      yearly: 16490,
+    },
+    description: "Para quienes trabajan en serio y necesitan más potencia.",
+    features: [
+      "Todo lo del Básico, más:",
       "Mensajes ilimitados",
       "Modelo avanzado GPT-4",
       "Velocidad prioritaria",
       "Historial completo",
       "Modo conversación continua",
-      "Exportación de chats",
       "Integraciones básicas (API, Zapier)",
+      "Análisis y reportes",
     ],
-    cta: "Actualizar a Pro",
+    cta: "Actualizar a Profesional",
+    popular: true,
   },
   {
-    name: "Ultra",
-    price: "$29",
-    period: "mes",
-    description: "Power users y equipos profesionales",
-    icon: Rocket,
-    popular: false,
+    id: "enterprise",
+    name: "Enterprise",
+    icon: Building2,
+    price: {
+      monthly: 4199,
+      yearly: 46190,
+    },
+    description: "Soluciones personalizadas para equipos y empresas.",
     features: [
-      "Todo lo del Pro, más:",
-      "Modelos de última generación (GPT-4 Turbo, Claude)",
-      "Generación de archivos (PDF, DOCX, código)",
+      "Todo lo del Profesional, más:",
+      "Equipos ilimitados",
+      "Modelos de última generación personalizados",
       "Memoria personalizada avanzada",
       "Espacios compartidos para equipos",
       "API avanzada con rate limits extendidos",
-      "Soporte prioritario 24/7",
-      "Acceso anticipado a nuevas funciones",
+      "Soporte dedicado 24/7",
+      "SLA garantizado",
+      "Entrenamiento personalizado",
+      "Consultoría estratégica",
     ],
-    cta: "Obtener Ultra",
+    cta: "Contactar ventas",
   },
 ];
 
 export function PricingSection() {
+  const router = useRouter();
+  const [frequency, setFrequency] = useState<BillingFrequency>("monthly");
+
+  const handlePlanClick = (planId: string) => {
+    if (planId === "enterprise") {
+      window.open(
+        "mailto:sales@tudominio.com?subject=Consulta Plan Enterprise",
+        "_self"
+      );
+      return;
+    }
+    router.push("/payment");
+  };
+
   return (
     <section className="py-24 md:py-32 bg-black relative overflow-hidden">
       {/* Background gradient */}
@@ -71,100 +149,140 @@ export function PricingSection() {
         {/* Section header */}
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-5xl font-bold mb-4 text-white">
-            Elige tu plan
+            Precios simples y transparentes
           </h2>
           <p className="text-lg text-neutral-400 max-w-2xl mx-auto">
-            Sin permanencia. Cancela cuando quieras.
+            Gestiona tu negocio sin complicaciones. Nuestros planes escalan
+            contigo.
           </p>
         </div>
 
-        {/* Pricing cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto">
-          {plans.map((plan, index) => (
-            <Card
-              key={index}
-              className={`relative border ${
-                plan.popular
-                  ? "border-[#00552b]/50 bg-white/[0.03] shadow-2xl shadow-[#00552b]/10 scale-105"
-                  : "border-white/5 bg-white/[0.02]"
-              } backdrop-blur-sm hover:border-[#00552b]/40 transition-all duration-300`}
-            >
-              {/* Popular badge */}
-              {plan.popular && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-[#00552b] text-white text-sm font-semibold shadow-lg">
-                  Más popular
-                </div>
-              )}
-
-              <CardContent className="p-8 space-y-6">
-                {/* Icon and name */}
-                <div className="space-y-2">
-                  {plan.icon && (
-                    <div className="w-12 h-12 rounded-2xl bg-[#00552b]/15 flex items-center justify-center mb-4 border border-[#00552b]/30">
-                      <plan.icon className="w-6 h-6 text-[#00552b]" />
-                    </div>
-                  )}
-                  <h3 className="text-2xl font-bold text-white">
-                    {plan.name}
-                  </h3>
-                  <p className="text-sm text-neutral-400">
-                    {plan.description}
-                  </p>
-                </div>
-
-                {/* Price */}
-                <div className="flex items-baseline gap-1">
-                  <span className="text-5xl font-bold text-white">
-                    {plan.price}
-                  </span>
-                  <span className="text-neutral-400">/ {plan.period}</span>
-                </div>
-
-                {/* CTA */}
-                <Button
-                  size="lg"
-                  className={`w-full ${
-                    plan.popular
-                      ? "bg-[#00552b] hover:bg-[#00552b]/90 text-white shadow-lg shadow-[#00552b]/30"
-                      : "border-white/20 text-white hover:bg-white/5 hover:border-[#00552b]/40"
-                  }`}
-                  variant={plan.popular ? "default" : "outline"}
+        {/* Tabs for billing frequency */}
+        <div className="flex justify-center mb-10">
+          <Tabs
+            value={frequency}
+            onValueChange={(value) => setFrequency(value as BillingFrequency)}
+          >
+            <TabsList className="bg-white/5 border border-white/10">
+              <TabsTrigger
+                value="monthly"
+                className="data-[state=active]:bg-[#00552b] text-white data-[state=active]:font-semibold"
+              >
+                Mensual
+              </TabsTrigger>
+              <TabsTrigger
+                value="yearly"
+                className="data-[state=active]:bg-[#00552b] text-white data-[state=active]:font-semibold"
+              >
+                Anual
+                <Badge
+                  variant="secondary"
+                  className="ml-2 bg-[#00552b]/20 text-white border-0"
                 >
-                  {plan.cta}
-                </Button>
+                  Ahorra 17%
+                </Badge>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
 
-                {/* Divider */}
-                <div className="h-px bg-white/10" />
+        {/* Pricing cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
+          {plans.map((plan) => {
+            const Icon = plan.icon;
+            const price = plan.price[frequency];
 
-                {/* Features */}
-                <ul className="space-y-3">
-                  {plan.features.map((feature, featureIndex) => (
-                    <li
-                      key={featureIndex}
-                      className="flex items-start gap-3 text-sm"
+            return (
+              <Card
+                className={cn(
+                  "relative w-full text-left border-white/5 bg-white/[0.02] backdrop-blur-sm hover:bg-white/[0.04] transition-all duration-300",
+                  plan.popular && "ring-2 ring-[#00552b] scale-105"
+                )}
+                key={plan.id}
+              >
+                {plan.popular && (
+                  <Badge className="-translate-x-1/2 -translate-y-1/2 absolute top-0 left-1/2 rounded-full bg-[#00552b] hover:bg-[#00552b]/90">
+                    Más popular
+                  </Badge>
+                )}
+                <CardHeader>
+                  {/* Icon */}
+                  <div className="w-12 h-12 rounded-2xl bg-[#00552b]/15 flex items-center justify-center mb-4 border border-[#00552b]/30">
+                    <Icon className="w-6 h-6 text-[#00552b]" />
+                  </div>
+
+                  <CardTitle className="font-bold text-2xl text-white">
+                    {plan.name}
+                  </CardTitle>
+                  <CardDescription className="text-neutral-400">
+                    {plan.description}
+                  </CardDescription>
+
+                  <div className="mt-4 px-6">
+                    {typeof price === "number" ? (
+                      <div>
+                        <div className="font-semibold text-white text-3xl">
+                          ${price}
+                          <span className="text-lg text-neutral-400 font-normal">
+                            {" "}
+                            USD/mes
+                          </span>
+                        </div>
+                        <p className="text-xs text-neutral-500 mt-2">
+                          Facturado{" "}
+                          {frequency === "monthly" ? "mensualmente" : "anualmente"}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="font-semibold text-white text-xl">
+                        {price}
+                      </div>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent className="grid gap-3">
+                  {plan.features.map((feature, index) => (
+                    <div
+                      className="flex items-start gap-3 text-neutral-300 text-sm"
+                      key={index}
                     >
-                      <Check className="w-5 h-5 text-[#00552b] flex-shrink-0 mt-0.5" />
+                      <Check className="h-5 w-5 text-[#00552b] flex-shrink-0 mt-0.5" />
                       <span
                         className={
                           feature.includes("Todo lo del")
                             ? "text-neutral-500 font-medium"
-                            : "text-neutral-300"
+                            : ""
                         }
                       >
                         {feature}
                       </span>
-                    </li>
+                    </div>
                   ))}
-                </ul>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+                <CardFooter>
+                  <Button
+                    className={cn(
+                      "w-full",
+                      plan.popular
+                        ? "bg-[#00552b] hover:bg-[#00552b]/90 text-white shadow-lg shadow-[#00552b]/30"
+                        : "border-white/20 bg-white text-black hover:bg-[#00552b] hover:text-white hover:border-[#00552b] transition-all"
+                    )}
+                    variant={plan.popular ? "default" : "outline"}
+                    onClick={() => handlePlanClick(plan.id)}
+                  >
+                    {plan.cta}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </CardFooter>
+              </Card>
+            );
+          })}
         </div>
 
         {/* Additional info */}
         <p className="text-center text-sm text-neutral-500 mt-12 max-w-2xl mx-auto">
-          Todos los planes incluyen actualizaciones gratuitas, cifrado end-to-end y
-          acceso a nuestra comunidad. Los precios se muestran en USD.
+          Todos los planes incluyen actualizaciones gratuitas, cifrado end-to-end
+          y la opción de cancelar en cualquier momento. Sin permanencia.
         </p>
       </div>
     </section>
