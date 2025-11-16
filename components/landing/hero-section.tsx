@@ -6,16 +6,10 @@ import { ArrowRight, Sparkles } from "lucide-react";
 export function HeroSection() {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-black">
-      {/* Background gradient effect - Verde sutil */}
-      <div className="absolute inset-0 bg-gradient-radial from-[#00552b]/10 via-transparent to-transparent" />
-
-      {/* Subtle grid pattern */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:4rem_4rem]" />
-
-      {/* Floating particles - Verde */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-[#00552b]/15 rounded-full blur-[100px] animate-float" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#00552b]/10 rounded-full blur-[120px] animate-float-delayed" />
+      {/* Background grid pattern */}
+      <div className="absolute inset-0 h-full w-full bg-black bg-[linear-gradient(to_right,rgba(0,85,43,0.3)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,85,43,0.3)_1px,transparent_1px)] bg-[size:6rem_4rem]">
+        {/* Radial gradient overlay */}
+        <div className="absolute bottom-0 left-0 right-0 top-0 bg-[radial-gradient(circle_500px_at_50%_200px,rgba(0,85,43,0.4),transparent)]"></div>
       </div>
 
       {/* Content */}
