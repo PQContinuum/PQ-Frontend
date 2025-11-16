@@ -48,7 +48,7 @@ export default function ChatPage() {
   const [isCreatingNew, setIsCreatingNew] = React.useState(false);
   const [userEmail, setUserEmail] = React.useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = React.useState(false);
-  const [userPlan, _setUserPlan] = React.useState('Gratis');
+  const [userPlan] = React.useState('Gratis');
   const [selectValue, setSelectValue] = React.useState<string>('');
   const router = useRouter();
 
