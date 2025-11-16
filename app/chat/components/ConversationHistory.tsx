@@ -3,7 +3,7 @@
 import React from 'react';
 import { MessageSquare, Ellipsis, Loader2, Pencil, Trash2 } from 'lucide-react';
 import { useChatStore } from '../store';
-import { SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
+import { SidebarMenuItem, SidebarMenuButton, useSidebar } from '@/components/ui/sidebar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,6 +35,7 @@ export function ConversationHistory() {
     replaceMessages,
   } = useChatStore();
 
+  const { state } = useSidebar();
   const queryClient = useQueryClient();
   const { data: conversations = [], isLoading, isError } = useConversations();
   const deleteMutation = useDeleteConversation();
@@ -45,20 +46,16 @@ export function ConversationHistory() {
   const [conversationToDelete, setConversationToDelete] = React.useState<string | null>(null);
 
   const handleSelectConversation = async (id: string) => {
-    // 1. Cambiar conversación activa inmediatamente (optimistic)
     setConversationId(id);
 
-    // 2. Intentar obtener datos del cache primero (instantáneo)
     const cachedConversation = queryClient.getQueryData<ConversationWithMessages>(
       conversationKeys.detail(id)
     );
 
     if (cachedConversation) {
-      // Si hay cache, actualizar mensajes inmediatamente
       replaceMessages(cachedConversation.messages);
     }
 
-    // 3. Fetch en background para actualizar/validar datos
     try {
       const conversation = await queryClient.fetchQuery<ConversationWithMessages>({
         queryKey: conversationKeys.detail(id),
@@ -68,21 +65,18 @@ export function ConversationHistory() {
           const data = await response.json();
           return data.conversation as ConversationWithMessages;
         },
-        staleTime: 1000 * 60 * 10, // 10 minutos
+        staleTime: 1000 * 60 * 10,
       });
 
-      // Actualizar con datos frescos (solo si cambió)
       replaceMessages(conversation.messages);
     } catch (error) {
       console.error('Error loading conversation:', error);
-      // Si falla y no hay cache, revertir
       if (!cachedConversation) {
         setConversationId(null);
       }
     }
   };
 
-  // Prefetch cuando pasa el mouse (hover)
   const handleMouseEnter = (id: string) => {
     prefetchConversation(id);
   };
@@ -180,13 +174,13 @@ export function ConversationHistory() {
   }
 
   if (conversations.length === 0) {
-    return (
+    return state === 'expanded' ? (
       <SidebarMenuItem>
         <div className="px-4 py-8 text-center text-sm text-[#4c4c4c]">
           No hay conversaciones recientes
         </div>
       </SidebarMenuItem>
-    );
+    ) : null;
   }
 
   return (
