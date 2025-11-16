@@ -96,9 +96,6 @@ export function HeroSection() {
               Cargando...
             </Button>
           )}
-          <Button size="lg" variant="outline" className="px-8 border-white/20 text-black hover:text-white hover:bg-white/5 hover:border-[#00552b]/50">
-            Ver demo
-          </Button>
         </div>
 
         {/* Trust indicator */}

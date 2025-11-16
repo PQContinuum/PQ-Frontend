@@ -38,9 +38,18 @@ export async function POST(req: Request) {
   }
 
   let event: Stripe.Event;
+  const stripeClient = stripe;
+
+  if (!stripeClient) {
+    console.error("Stripe client not configured");
+    return NextResponse.json(
+      { error: "Stripe client not configured" },
+      { status: 500 }
+    );
+  }
 
   try {
-    event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+    event = stripeClient.webhooks.constructEvent(body, signature, webhookSecret);
   } catch (err) {
     console.error("Webhook signature verification failed:", err);
     return NextResponse.json(
@@ -71,7 +80,7 @@ export async function POST(req: Request) {
               : session.subscription.id;
 
           // Obtener la subscription completa de Stripe
-          const stripeSubscription = await stripe.subscriptions.retrieve(
+          const stripeSubscription = await stripeClient.subscriptions.retrieve(
             subscriptionId
           );
 

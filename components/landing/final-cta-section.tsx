@@ -71,10 +71,10 @@ export function FinalCTASection() {
                       Cargando...
                     </>
                   ) : (
-                    <>
+                    <Link href={"/chat"}>
                       Probar ahora — es gratis
                       <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-                    </>
+                    </Link>
                   )}
                 </Button>
               </Link>
