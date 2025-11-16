@@ -50,7 +50,7 @@ export function SocialProofSection() {
 
                 {/* Quote */}
                 <blockquote className="text-white text-lg leading-relaxed">
-                  "{testimonial.quote}"
+                  &ldquo;{testimonial.quote}&rdquo;
                 </blockquote>
 
                 {/* Author */}

@@ -76,7 +76,7 @@ export default function PaymentPage() {
     return calculateAnnualPrice(monthlyPrice);
   };
 
-  const getPriceLabel = (monthlyPrice: number) => {
+  const _getPriceLabel = (monthlyPrice: number) => {
     if (billingCycle === 'monthly') {
       return `$${monthlyPrice.toLocaleString('es-MX')} MXN/mes`;
     }
