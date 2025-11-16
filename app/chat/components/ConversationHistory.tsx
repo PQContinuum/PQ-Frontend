@@ -11,6 +11,15 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import {
   useConversations,
   useDeleteConversation,
   usePrefetchConversation,
@@ -32,6 +41,8 @@ export function ConversationHistory() {
   const prefetchConversation = usePrefetchConversation();
   const [renamingId, setRenamingId] = React.useState<string | null>(null);
   const [newTitle, setNewTitle] = React.useState('');
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+  const [conversationToDelete, setConversationToDelete] = React.useState<string | null>(null);
 
   const handleSelectConversation = async (id: string) => {
     // 1. Cambiar conversación activa inmediatamente (optimistic)
@@ -76,20 +87,22 @@ export function ConversationHistory() {
     prefetchConversation(id);
   };
 
-  const handleDeleteConversation = async (
+  const handleDeleteConversation = (
     e: React.MouseEvent,
     id: string
   ) => {
     e.stopPropagation();
+    setConversationToDelete(id);
+    setDeleteDialogOpen(true);
+  };
 
-    if (!confirm('¿Estás seguro de que quieres eliminar esta conversación?')) {
-      return;
-    }
+  const confirmDelete = async () => {
+    if (!conversationToDelete) return;
 
     try {
-      await deleteMutation.mutateAsync(id);
+      await deleteMutation.mutateAsync(conversationToDelete);
 
-      if (conversationId === id) {
+      if (conversationId === conversationToDelete) {
         setConversationId(null);
         replaceMessages([
           {
@@ -102,6 +115,9 @@ export function ConversationHistory() {
       }
     } catch (error) {
       console.error('Error deleting conversation:', error);
+    } finally {
+      setDeleteDialogOpen(false);
+      setConversationToDelete(null);
     }
   };
 
@@ -175,6 +191,39 @@ export function ConversationHistory() {
 
   return (
     <>
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Conversation</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this conversation? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? (
+                <>
+                  <Loader2 className="size-4 animate-spin mr-2" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {conversations.map((conversation) => (
         <SidebarMenuItem key={conversation.id}>
           <div
