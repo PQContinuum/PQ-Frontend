@@ -33,8 +33,13 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Si el usuario no está autenticado y está intentando acceder a /chat
-  if (!user && request.nextUrl.pathname.startsWith('/chat')) {
+  const protectedRoutes = ['/chat', '/payment'];
+  const isProtectedRoute = protectedRoutes.some(route =>
+    request.nextUrl.pathname.startsWith(route)
+  );
+
+  // Si el usuario no está autenticado y está intentando acceder a rutas protegidas
+  if (!user && isProtectedRoute) {
     const redirectUrl = new URL('/auth', request.url);
     return NextResponse.redirect(redirectUrl);
   }

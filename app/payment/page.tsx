@@ -12,9 +12,17 @@ import {
 } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
-import { ArrowRight, Check, Sparkles, Zap, Building2, Rocket } from 'lucide-react';
+import { ArrowRight, Check, Sparkles, Zap, Building2, Rocket, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { loadStripe } from '@stripe/stripe-js';
+import {
+  EmbeddedCheckoutProvider,
+  EmbeddedCheckout,
+} from '@stripe/react-stripe-js';
+
+// Cargar Stripe
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 const plans = [
   {
@@ -24,6 +32,10 @@ const plans = [
     price: {
       monthly: 'Gratis para siempre',
       yearly: 'Gratis para siempre',
+    },
+    stripePriceId: {
+      monthly: null,
+      yearly: null,
     },
     description: 'Perfecto para explorar y empezar con tu asistente IA.',
     features: [
@@ -40,8 +52,12 @@ const plans = [
     name: 'Básico',
     icon: Rocket,
     price: {
-      monthly: 12,
-      yearly: 10,
+      monthly: 349,
+      yearly: 3840,
+    },
+    stripePriceId: {
+      monthly: 'price_1SUE86RvHgVvyOnzMC39XU4e', // Reemplazar con tu Price ID de Stripe
+      yearly: 'price_1SUEFHRvHgVvyOnz57Z9527l',   // Reemplazar con tu Price ID de Stripe
     },
     description: 'Ideal para usuarios individuales que necesitan más.',
     features: [
@@ -59,8 +75,12 @@ const plans = [
     name: 'Profesional',
     icon: Sparkles,
     price: {
-      monthly: 29,
-      yearly: 24,
+      monthly: 1499,
+      yearly: 16490,
+    },
+    stripePriceId: {
+      monthly: 'price_1SUE9URvHgVvyOnzk8Bi433c',   // Reemplazar con tu Price ID de Stripe
+      yearly: 'price_1SUEH0RvHgVvyOnzawrqMP5i',     // Reemplazar con tu Price ID de Stripe
     },
     description: 'Para quienes trabajan en serio y necesitan más potencia.',
     features: [
@@ -81,8 +101,12 @@ const plans = [
     name: 'Enterprise',
     icon: Building2,
     price: {
-      monthly: 'Contactar para precio',
-      yearly: 'Contactar para precio',
+      monthly: 4199,
+      yearly: 46190,
+    },
+    stripePriceId: {
+      monthly: 'price_1SUEArRvHgVvyOnz6XX65K22',
+      yearly: 'price_1SUEHtRvHgVvyOnzdiAelIy8',
     },
     description: 'Soluciones personalizadas para equipos y empresas.',
     features: [
@@ -103,12 +127,90 @@ const plans = [
 
 export default function PaymentPage() {
   const [frequency, setFrequency] = useState<string>('monthly');
+  const [clientSecret, setClientSecret] = useState<string>('');
+  const [loading, setLoading] = useState<string | null>(null);
   const router = useRouter();
 
-  const formatPrice = (price: number | string, freq: string) => {
-    if (typeof price === 'string') return price;
-    return `$${price} USD/mes, facturado ${freq === 'monthly' ? 'mensualmente' : 'anualmente'}.`;
+  const handleCheckout = async (planId: string, planName: string) => {
+    const plan = plans.find((p) => p.id === planId);
+    if (!plan) return;
+
+    const priceId = plan.stripePriceId[frequency as keyof typeof plan.stripePriceId];
+
+    // Si no hay priceId (planes gratis o enterprise), manejar diferente
+    if (!priceId) {
+      if (planId === 'free') {
+        router.push('/chat');
+        return;
+      }
+      if (planId === 'enterprise') {
+        // Redirigir a contacto o abrir modal
+        window.location.href = 'mailto:sales@tudominio.com?subject=Consulta Plan Enterprise';
+        return;
+      }
+      return;
+    }
+
+    setLoading(planId);
+
+    try {
+      const response = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          priceId,
+          planName,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.error) {
+        console.error('Error creating checkout session:', data.error);
+        setLoading(null);
+        return;
+      }
+
+      setClientSecret(data.clientSecret);
+    } catch (error) {
+      console.error('Error:', error);
+      setLoading(null);
+    }
   };
+
+  // Si hay clientSecret, mostrar el checkout embebido
+  if (clientSecret) {
+    return (
+      <div className="min-h-screen bg-black">
+        <div className="absolute inset-0 h-full w-full bg-black bg-[linear-gradient(to_right,rgba(0,85,43,0.1)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,85,43,0.1)_1px,transparent_1px)] bg-[size:6rem_4rem]">
+          <div className="absolute bottom-0 left-0 right-0 top-0 bg-[radial-gradient(circle_800px_at_50%_300px,rgba(0,85,43,0.1),transparent)]"></div>
+        </div>
+
+        <div className="relative flex flex-col gap-8 px-8 py-24">
+          <button
+            onClick={() => {
+              setClientSecret('');
+              setLoading(null);
+            }}
+            className="text-sm text-neutral-400 hover:text-white transition-colors self-start"
+          >
+            ← Volver a planes
+          </button>
+
+          <div className="max-w-3xl mx-auto w-full">
+            <EmbeddedCheckoutProvider
+              stripe={stripePromise}
+              options={{ clientSecret }}
+            >
+              <EmbeddedCheckout />
+            </EmbeddedCheckoutProvider>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black">
@@ -231,9 +333,20 @@ export default function PaymentPage() {
                           : 'border-white/20 bg-white text-black hover:bg-[#00552b] hover:text-white hover:border-[#00552b] transition-all'
                       )}
                       variant={plan.popular ? 'default' : 'outline'}
+                      onClick={() => handleCheckout(plan.id, plan.name)}
+                      disabled={loading !== null}
                     >
-                      {plan.cta}
-                      <ArrowRight className="ml-2 h-4 w-4" />
+                      {loading === plan.id ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Cargando...
+                        </>
+                      ) : (
+                        <>
+                          {plan.cta}
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </>
+                      )}
                     </Button>
                   </CardFooter>
                 </Card>
