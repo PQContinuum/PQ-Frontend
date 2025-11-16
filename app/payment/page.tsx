@@ -121,7 +121,7 @@ const plans = [
       'Entrenamiento personalizado',
       'Consultoría estratégica',
     ],
-    cta: 'Contactar ventas',
+    cta: 'Comenzar con empresarial',
   },
 ];
 
@@ -182,26 +182,22 @@ export default function PaymentPage() {
     }
   };
 
-  // Si hay clientSecret, mostrar el checkout embebido
   if (clientSecret) {
     return (
-      <div className="min-h-screen bg-black">
-        <div className="absolute inset-0 h-full w-full bg-black bg-[linear-gradient(to_right,rgba(0,85,43,0.1)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,85,43,0.1)_1px,transparent_1px)] bg-[size:6rem_4rem]">
-          <div className="absolute bottom-0 left-0 right-0 top-0 bg-[radial-gradient(circle_800px_at_50%_300px,rgba(0,85,43,0.1),transparent)]"></div>
-        </div>
+      <div className="min-h-screen bg-white">
 
-        <div className="relative flex flex-col gap-8 px-8 py-24">
+        <div className="relative flex flex-col gap-8 px-8 pt-8">
           <button
             onClick={() => {
               setClientSecret('');
               setLoading(null);
             }}
-            className="text-sm text-neutral-400 hover:text-white transition-colors self-start"
+            className="text-sm text-neutral-700 hover:text-black hover:text-semibold transition-colors self-start"
           >
             ← Volver a planes
           </button>
 
-          <div className="max-w-3xl mx-auto w-full">
+          <div className="mx-auto w-full">
             <EmbeddedCheckoutProvider
               stripe={stripePromise}
               options={{ clientSecret }}
