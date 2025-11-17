@@ -1,12 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
 
 type UserPlan = {
-  userId: string;
-  email: string;
-  planName: "Free" | "Basic" | "Professional" | "Enterprise";
+  userId: string | null;
+  email: string | null;
+  planName:
+    | "Free"
+    | "Basic"
+    | "Professional"
+    | "Enterprise"
+    | "Básico"
+    | "Profesional"
+    | "Empresarial";
   status: string;
   currentPeriodEnd?: Date;
-  subscription?: any;
+  subscription?: unknown;
 };
 
 export function useUserPlan() {
@@ -14,6 +21,18 @@ export function useUserPlan() {
     queryKey: ["user-plan"],
     queryFn: async () => {
       const response = await fetch("/api/user-plan");
+
+      if (response.status === 401) {
+        return {
+          userId: null,
+          email: null,
+          planName: "Free",
+          status: "unauthenticated",
+          currentPeriodEnd: undefined,
+          subscription: undefined,
+        };
+      }
+
       if (!response.ok) {
         throw new Error("Failed to fetch user plan");
       }

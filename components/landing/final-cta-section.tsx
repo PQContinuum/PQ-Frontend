@@ -59,25 +59,27 @@ export function FinalCTASection() {
           {/* CTA Button */}
           <div className="pt-4">
             {redirectPath ? (
-              <Link href={redirectPath} onClick={handleClick}>
-                <Button
-                  size="lg"
-                  className="group px-10 py-6 text-lg bg-[#00552b] hover:bg-[#00552b]/90 text-white shadow-2xl shadow-[#00552b]/30 hover:shadow-[#00552b]/40 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                  disabled={isLoading}
-                >
+              <Button
+                asChild
+                size="lg"
+                className="group px-10 py-6 text-lg bg-[#00552b] hover:bg-[#00552b]/90 text-white shadow-2xl shadow-[#00552b]/30 hover:shadow-[#00552b]/40 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                disabled={isLoading}
+                onClick={handleClick}
+              >
+                <Link href={redirectPath}>
                   {isLoading ? (
                     <>
                       <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                       Cargando...
                     </>
                   ) : (
-                    <Link href={"/chat"}>
+                    <>
                       Probar ahora — es gratis
                       <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-                    </Link>
+                    </>
                   )}
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             ) : (
               <Button
                 size="lg"

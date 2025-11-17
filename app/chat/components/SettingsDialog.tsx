@@ -18,6 +18,50 @@ interface SettingsDialogProps {
   userPlan: string;
 }
 
+// Helper para obtener colores según el plan
+const getPlanColors = (plan: string) => {
+  const planLower = plan.toLowerCase();
+
+  if (planLower.includes('free') || planLower === 'gratis') {
+    return {
+      bg: 'from-[#7EEFB2] to-[#6AD9A0]',
+      text: 'text-[#7EEFB2]',
+      badge: 'bg-[#7EEFB2]/20',
+    };
+  }
+
+  if (planLower.includes('basic') || planLower.includes('básico')) {
+    return {
+      bg: 'from-[#3CCB75] to-[#2AB861]',
+      text: 'text-[#3CCB75]',
+      badge: 'bg-[#3CCB75]/20',
+    };
+  }
+
+  if (planLower.includes('professional') || planLower.includes('pro')) {
+    return {
+      bg: 'from-[#DAA520] to-[#C89514]',
+      text: 'text-[#DAA520]',
+      badge: 'bg-[#DAA520]/20',
+    };
+  }
+
+  if (planLower.includes('enterprise') || planLower.includes('empresarial')) {
+    return {
+      bg: 'from-[#0A4D68] to-[#083D54]',
+      text: 'text-[#0A4D68]',
+      badge: 'bg-[#0A4D68]/20',
+    };
+  }
+
+  // Default (Free)
+  return {
+    bg: 'from-[#7EEFB2] to-[#6AD9A0]',
+    text: 'text-[#7EEFB2]',
+    badge: 'bg-[#7EEFB2]/20',
+  };
+};
+
 export function SettingsDialog({
   open,
   onOpenChange,
@@ -26,6 +70,7 @@ export function SettingsDialog({
 }: SettingsDialogProps) {
   const [activeTab, setActiveTab] = React.useState<'account' | 'plans'>('account');
   const router = useRouter();
+  const planColors = getPlanColors(userPlan);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -164,18 +209,18 @@ export function SettingsDialog({
                   </div>
 
                   {/* Current Plan Card */}
-                  <div className="bg-gradient-to-br from-[#00552b] to-[#00aa56] rounded-xl p-6 text-white shadow-lg">
+                  <div className={`bg-gradient-to-br ${planColors.bg} rounded-xl p-6 text-white shadow-lg`}>
                     <div className="flex items-start justify-between mb-4">
                       <div>
-                        <p className="text-sm opacity-80 mb-1">Plan Actual</p>
+                        <p className="text-sm opacity-90 mb-1 font-medium">Plan Actual</p>
                         <h4 className="text-3xl font-bold">{userPlan}</h4>
                       </div>
                       <div className="bg-white/20 backdrop-blur-sm rounded-lg p-2.5">
                         <Sparkles className="size-6" />
                       </div>
                     </div>
-                    <p className="text-sm opacity-90">
-                      {userPlan === 'Gratis'
+                    <p className="text-sm opacity-95 font-medium">
+                      {userPlan === 'Gratis' || userPlan === 'Free'
                         ? 'Acceso básico a PQ Continuum'
                         : `Plan ${userPlan} - Funciones premium incluidas`}
                     </p>

@@ -181,7 +181,7 @@ export function PricingSection() {
                   variant="secondary"
                   className="ml-2 bg-[#00552b]/20 text-white border-0"
                 >
-                  Ahorra 17%
+                  Ahorra 8%
                 </Badge>
               </TabsTrigger>
             </TabsList>
@@ -205,7 +205,7 @@ export function PricingSection() {
                 key={plan.id}
               >
                 {isCurrentPlan ? (
-                  <Badge className="-translate-x-1/2 -translate-y-1/2 absolute top-0 left-1/2 rounded-full bg-green-500 hover:bg-green-500/90 shadow-lg shadow-green-500/30">
+                  <Badge className="-translate-x-1/2 -translate-y-1/2 absolute top-0 left-1/2 rounded-full bg-green-500 shadow-lg shadow-green-500/30">
                     <Crown className="w-3 h-3 mr-1" />
                     Tu Plan Actual
                   </Badge>

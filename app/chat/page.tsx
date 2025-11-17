@@ -10,6 +10,7 @@ import {
   Settings,
   Sparkles,
   LogOut,
+  Loader2,
 } from 'lucide-react';
 
 import {
@@ -34,6 +35,15 @@ import {
   SelectItem,
   SelectTrigger,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 import { ChatWindow } from './components/ChatWindow';
 import { MessageInput } from './components/MessageInput';
@@ -49,6 +59,8 @@ export default function ChatPage() {
   const [isCreatingNew, setIsCreatingNew] = React.useState(false);
   const [userEmail, setUserEmail] = React.useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = React.useState(false);
+  const [logoutDialogOpen, setLogoutDialogOpen] = React.useState(false);
+  const [isLoggingOut, setIsLoggingOut] = React.useState(false);
   const { data: userPlan } = useUserPlan();
   const [selectValue, setSelectValue] = React.useState<string>('');
   const router = useRouter();
@@ -91,10 +103,16 @@ export default function ChatPage() {
   };
 
   const handleLogout = async () => {
-    const supabase = createSupabaseBrowserClient();
-    await supabase.auth.signOut();
-    router.push('/auth');
-    router.refresh();
+    setIsLoggingOut(true);
+    try {
+      const supabase = createSupabaseBrowserClient();
+      await supabase.auth.signOut();
+      router.push('/auth');
+      router.refresh();
+    } catch (error) {
+      console.error('Error logging out:', error);
+      setIsLoggingOut(false);
+    }
   };
 
   const handleSelectAction = (value: string) => {
@@ -103,7 +121,7 @@ export default function ChatPage() {
         router.push('/payment');
         break;
       case 'logout':
-        handleLogout();
+        setLogoutDialogOpen(true);
         break;
       case 'settings':
         setSettingsOpen(true);
@@ -237,12 +255,16 @@ export default function ChatPage() {
                             : userEmail
                           : 'Usuario'}
                       </span>
-                      <span className={`text-xs ${
-                        userPlan?.planName === 'Free'
-                          ? 'text-muted-foreground'
-                          : userPlan?.planName === 'Professional'
-                          ? 'text-[#00552b] font-semibold'
-                          : 'text-blue-600 font-semibold'
+                      <span className={`text-xs font-semibold ${
+                        userPlan?.planName === 'Free' || !userPlan?.planName
+                          ? 'text-[#7EEFB2]'
+                          : userPlan?.planName === 'Básico' || userPlan?.planName === 'Basic'
+                          ? 'text-[#3CCB75]'
+                          : userPlan?.planName === 'Profesional' || userPlan?.planName === 'Professional'
+                          ? 'text-[#DAA520]'
+                          : userPlan?.planName === 'Enterprise' || userPlan?.planName === 'Empresarial'
+                          ? 'text-[#0A4D68]'
+                          : 'text-[#7EEFB2]'
                       }`}>
                         Plan {userPlan?.planName || 'Free'}
                       </span>
@@ -288,9 +310,37 @@ export default function ChatPage() {
                 {getConversationTitle()}
               </p>
             </div>
-            <div className="group rounded-full border-2 border-yellow-600 bg-yellow-50 px-4 py-1.5 text-sm text-[#111111] cursor-pointer transition-all hover:shadow-lg hover:scale-105">
-              <span className="flex items-center gap-2 text-yellow-600 font-semibold">
-                Asistente PQ 0.0.1
+            <div className={`group rounded-full border-2 px-4 py-1.5 text-sm cursor-pointer transition-all hover:shadow-lg hover:scale-105 ${
+              userPlan?.planName === 'Free' || !userPlan?.planName
+                ? 'border-[#7EEFB2] bg-[#7EEFB2]/10'
+                : userPlan?.planName === 'Básico' || userPlan?.planName === 'Basic'
+                ? 'border-[#3CCB75] bg-[#3CCB75]/10'
+                : userPlan?.planName === 'Profesional' || userPlan?.planName === 'Professional'
+                ? 'border-[#DAA520] bg-[#DAA520]/10'
+                : userPlan?.planName === 'Enterprise' || userPlan?.planName === 'Empresarial'
+                ? 'border-[#0A4D68] bg-[#0A4D68]/10'
+                : 'border-[#7EEFB2] bg-[#7EEFB2]/10'
+            }`}>
+              <span className={`flex items-center gap-2 font-semibold ${
+                userPlan?.planName === 'Free' || !userPlan?.planName
+                  ? 'text-[#7EEFB2]'
+                  : userPlan?.planName === 'Básico' || userPlan?.planName === 'Basic'
+                  ? 'text-[#3CCB75]'
+                  : userPlan?.planName === 'Profesional' || userPlan?.planName === 'Professional'
+                  ? 'text-[#DAA520]'
+                  : userPlan?.planName === 'Enterprise' || userPlan?.planName === 'Empresarial'
+                  ? 'text-[#0A4D68]'
+                  : 'text-[#7EEFB2]'
+              }`}>
+                {userPlan?.planName === 'Free' || !userPlan?.planName
+                  ? '180 tokens ahorrados'
+                  : userPlan?.planName === 'Básico' || userPlan?.planName === 'Basic'
+                  ? '850 tokens ahorrados'
+                  : userPlan?.planName === 'Profesional' || userPlan?.planName === 'Professional'
+                  ? '5k tokens ahorrados'
+                  : userPlan?.planName === 'Enterprise' || userPlan?.planName === 'Empresarial'
+                  ? '180k tokens ahorrados'
+                  : '180k tokens restantes'}
               </span>
             </div>
           </div>
@@ -320,6 +370,47 @@ export default function ChatPage() {
         userEmail={userEmail}
         userPlan={userPlan?.planName || 'Free'}
       />
+
+      {/* Logout Confirmation Dialog */}
+      <Dialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-[#111111]">
+              Cerrar sesión
+            </DialogTitle>
+            <DialogDescription className="text-[#4c4c4c] pt-2">
+              ¿Estás seguro de que deseas cerrar sesión? Perderás el acceso a tus conversaciones hasta que vuelvas a iniciar sesión.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 space-x-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setLogoutDialogOpen(false)}
+              disabled={isLoggingOut}
+              className="border-black/10 hover:bg-black/5"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {isLoggingOut ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Cerrando sesión...
+                </>
+              ) : (
+                <>
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Cerrar sesión
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </SidebarProvider>
   );
 }
