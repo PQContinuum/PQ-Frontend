@@ -6,10 +6,19 @@ import {
   useCallback,
   useRef,
   useState,
+  memo,
 } from 'react';
 import { ArrowUp } from 'lucide-react';
 
-import { useChatStore } from '@/app/chat/store';
+import {
+  useMessages,
+  useAddMessage,
+  useUpdateMessage,
+  useIsStreaming,
+  useSetStreaming,
+  useConversationId,
+  useSetConversationId,
+} from '@/app/chat/store';
 import { useCreateConversation } from '@/hooks/use-conversations';
 
 type SSEPayload = {
@@ -55,19 +64,17 @@ const parseSSEChunk = (chunk: string): SSEvent | null => {
   }
 };
 
-export function MessageInput() {
+export const MessageInput = memo(function MessageInput() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [input, setInput] = useState('');
 
-  const {
-    messages,
-    addMessage,
-    updateMessage,
-    isStreaming,
-    setStreaming,
-    conversationId,
-    setConversationId,
-  } = useChatStore();
+  const messages = useMessages();
+  const addMessage = useAddMessage();
+  const updateMessage = useUpdateMessage();
+  const isStreaming = useIsStreaming();
+  const setStreaming = useSetStreaming();
+  const conversationId = useConversationId();
+  const setConversationId = useSetConversationId();
 
   const createConversationMutation = useCreateConversation();
 
@@ -261,4 +268,4 @@ export function MessageInput() {
       </button>
     </form>
   );
-}
+});

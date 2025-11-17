@@ -1,14 +1,16 @@
 'use client';
 
-import { useLayoutEffect, useRef } from 'react';
+import { useLayoutEffect, useRef, memo } from 'react';
 
-import { useChatStore } from '@/app/chat/store';
+import { useMessages, useIsStreaming, useConversationId } from '@/app/chat/store';
 
 import { MessageBubble } from './MessageBubble';
 import { TypingIndicator } from './TypingIndicator';
 
-export function ChatWindow() {
-  const { messages, isStreaming, conversationId } = useChatStore();
+export const ChatWindow = memo(function ChatWindow() {
+  const messages = useMessages();
+  const isStreaming = useIsStreaming();
+  const conversationId = useConversationId();
   const containerRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const previousMessageCount = useRef(messages.length);
@@ -53,4 +55,4 @@ export function ChatWindow() {
       <div ref={endRef} />
     </div>
   );
-}
+});

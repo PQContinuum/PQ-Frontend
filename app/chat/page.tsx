@@ -49,13 +49,15 @@ import { ChatWindow } from './components/ChatWindow';
 import { MessageInput } from './components/MessageInput';
 import { ConversationHistory } from './components/ConversationHistory';
 import { SettingsDialog } from './components/SettingsDialog';
-import { useChatStore } from './store';
+import { useMessages, useReplaceMessages, useSetConversationId } from './store';
 import { createSupabaseBrowserClient } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { useUserPlan } from '@/hooks/use-user-plan';
 
 export default function ChatPage() {
-  const { messages, replaceMessages, setConversationId } = useChatStore();
+  const messages = useMessages();
+  const replaceMessages = useReplaceMessages();
+  const setConversationId = useSetConversationId();
   const [isCreatingNew, setIsCreatingNew] = React.useState(false);
   const [userEmail, setUserEmail] = React.useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = React.useState(false);
@@ -64,6 +66,9 @@ export default function ChatPage() {
   const { data: userPlan } = useUserPlan();
   const [selectValue, setSelectValue] = React.useState<string>('');
   const router = useRouter();
+
+  // Verificar si hay mensajes de usuario (no solo el mensaje de bienvenida)
+  const hasUserMessages = messages.some((msg) => msg.role === 'user');
 
   React.useEffect(() => {
     const getUserData = async () => {
@@ -77,32 +82,25 @@ export default function ChatPage() {
     getUserData();
   }, []);
 
-  const handleNewConversation = () => {
+  const handleNewConversation = React.useCallback(() => {
     setIsCreatingNew(true);
     setTimeout(() => {
-      replaceMessages([
-        {
-          id: 'welcome',
-          role: 'assistant',
-          content:
-            'Hola, soy tu asistente IA. Estoy listo para ayudarte con cualquier idea. ¿Sobre qué quieres conversar hoy?',
-        },
-      ]);
+      replaceMessages([]);
       setConversationId(null);
       setIsCreatingNew(false);
     }, 300);
-  };
+  }, [replaceMessages, setConversationId]);
 
-  const getConversationTitle = () => {
+  const getConversationTitle = React.useCallback(() => {
     const firstUserMessage = messages.find((msg) => msg.role === 'user');
     if (!firstUserMessage) {
       return 'Nueva conversación';
     }
     const title = firstUserMessage.content.slice(0, 25);
     return title.length < firstUserMessage.content.length ? `${title}...` : title;
-  };
+  }, [messages]);
 
-  const handleLogout = async () => {
+  const handleLogout = React.useCallback(async () => {
     setIsLoggingOut(true);
     try {
       const supabase = createSupabaseBrowserClient();
@@ -113,9 +111,9 @@ export default function ChatPage() {
       console.error('Error logging out:', error);
       setIsLoggingOut(false);
     }
-  };
+  }, [router]);
 
-  const handleSelectAction = (value: string) => {
+  const handleSelectAction = React.useCallback((value: string) => {
     switch (value) {
       case 'upgrade':
         router.push('/payment');
@@ -129,7 +127,7 @@ export default function ChatPage() {
     }
     // Reset select value after action
     setTimeout(() => setSelectValue(''), 100);
-  };
+  }, [router]);
 
   return (
     <SidebarProvider>
@@ -302,65 +300,120 @@ export default function ChatPage() {
       </Sidebar>
 
       <SidebarInset className="flex flex-col">
-        <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b border-black/5 bg-white px-4 [backface-visibility:hidden] [transform:translateZ(0)]">
-          <SidebarTrigger className="-ml-1" />
-          <div className="flex flex-1 items-center justify-between">
-            <div>
-              <p className="text-md font-semibold tracking-wide text-[#4c4c4c] truncate max-w-md">
-                {getConversationTitle()}
-              </p>
-            </div>
-            <div className={`group rounded-full border-2 px-4 py-1.5 text-sm cursor-pointer transition-all hover:shadow-lg hover:scale-105 ${
-              userPlan?.planName === 'Free' || !userPlan?.planName
-                ? 'border-[#7EEFB2] bg-[#7EEFB2]/10'
-                : userPlan?.planName === 'Básico' || userPlan?.planName === 'Basic'
-                ? 'border-[#3CCB75] bg-[#3CCB75]/10'
-                : userPlan?.planName === 'Profesional' || userPlan?.planName === 'Professional'
-                ? 'border-[#DAA520] bg-[#DAA520]/10'
-                : userPlan?.planName === 'Enterprise' || userPlan?.planName === 'Empresarial'
-                ? 'border-[#0A4D68] bg-[#0A4D68]/10'
-                : 'border-[#7EEFB2] bg-[#7EEFB2]/10'
-            }`}>
-              <span className={`flex items-center gap-2 font-semibold ${
-                userPlan?.planName === 'Free' || !userPlan?.planName
-                  ? 'text-[#7EEFB2]'
-                  : userPlan?.planName === 'Básico' || userPlan?.planName === 'Basic'
-                  ? 'text-[#3CCB75]'
-                  : userPlan?.planName === 'Profesional' || userPlan?.planName === 'Professional'
-                  ? 'text-[#DAA520]'
-                  : userPlan?.planName === 'Enterprise' || userPlan?.planName === 'Empresarial'
-                  ? 'text-[#0A4D68]'
-                  : 'text-[#7EEFB2]'
-              }`}>
-                {userPlan?.planName === 'Free' || !userPlan?.planName
-                  ? '180 tokens ahorrados'
-                  : userPlan?.planName === 'Básico' || userPlan?.planName === 'Basic'
-                  ? '850 tokens ahorrados'
-                  : userPlan?.planName === 'Profesional' || userPlan?.planName === 'Professional'
-                  ? '5k tokens ahorrados'
-                  : userPlan?.planName === 'Enterprise' || userPlan?.planName === 'Empresarial'
-                  ? '180k tokens ahorrados'
-                  : '180k tokens restantes'}
-              </span>
-            </div>
-          </div>
-        </header>
-
-        <div className="flex-1 overflow-y-auto">
-          <motion.div
-            className="mx-auto w-full max-w-4xl px-4 py-4"
-            animate={isCreatingNew ? { opacity: [1, 0.3, 1] } : { opacity: 1 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
+        {/* Mostrar header solo cuando hay mensajes de usuario */}
+        {hasUserMessages && (
+          <motion.header
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b border-black/5 bg-white px-4 [backface-visibility:hidden] [transform:translateZ(0)]"
           >
-            <ChatWindow />
-          </motion.div>
-        </div>
+            <SidebarTrigger className="-ml-1" />
+            <div className="flex flex-1 items-center justify-between">
+              <div>
+                <p className="text-md font-semibold tracking-wide text-[#4c4c4c] truncate max-w-md">
+                  {getConversationTitle()}
+                </p>
+              </div>
+              <div className={`group rounded-full border-2 px-4 py-1.5 text-sm cursor-pointer transition-all hover:shadow-lg hover:scale-105 ${
+                userPlan?.planName === 'Free' || !userPlan?.planName
+                  ? 'border-[#7EEFB2] bg-[#7EEFB2]/10'
+                  : userPlan?.planName === 'Básico' || userPlan?.planName === 'Basic'
+                  ? 'border-[#3CCB75] bg-[#3CCB75]/10'
+                  : userPlan?.planName === 'Profesional' || userPlan?.planName === 'Professional'
+                  ? 'border-[#DAA520] bg-[#DAA520]/10'
+                  : userPlan?.planName === 'Enterprise' || userPlan?.planName === 'Empresarial'
+                  ? 'border-[#0A4D68] bg-[#0A4D68]/10'
+                  : 'border-[#7EEFB2] bg-[#7EEFB2]/10'
+              }`}>
+                <span className={`flex items-center gap-2 font-semibold ${
+                  userPlan?.planName === 'Free' || !userPlan?.planName
+                    ? 'text-[#7EEFB2]'
+                    : userPlan?.planName === 'Básico' || userPlan?.planName === 'Basic'
+                    ? 'text-[#3CCB75]'
+                    : userPlan?.planName === 'Profesional' || userPlan?.planName === 'Professional'
+                    ? 'text-[#DAA520]'
+                    : userPlan?.planName === 'Enterprise' || userPlan?.planName === 'Empresarial'
+                    ? 'text-[#0A4D68]'
+                    : 'text-[#7EEFB2]'
+                }`}>
+                  {userPlan?.planName === 'Free' || !userPlan?.planName
+                    ? '180 tokens ahorrados'
+                    : userPlan?.planName === 'Básico' || userPlan?.planName === 'Basic'
+                    ? '850 tokens ahorrados'
+                    : userPlan?.planName === 'Profesional' || userPlan?.planName === 'Professional'
+                    ? '5k tokens ahorrados'
+                    : userPlan?.planName === 'Enterprise' || userPlan?.planName === 'Empresarial'
+                    ? '180k tokens ahorrados'
+                    : '180k tokens restantes'}
+                </span>
+              </div>
+            </div>
+          </motion.header>
+        )}
 
-        <div className="sticky bottom-0 z-10 shrink-0 border-t border-black/5 bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.05)] [backface-visibility:hidden] [transform:translateZ(0)]">
-          <div className="mx-auto w-full max-w-4xl px-4 py-4">
-            <MessageInput />
+        {/* Layout centrado cuando no hay mensajes de usuario */}
+        {!hasUserMessages ? (
+          <div className="flex-1 flex flex-col items-center justify-center px-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.4 }}
+              className="w-full max-w-3xl space-y-8"
+            >
+              {/* Título de bienvenida */}
+              <motion.div
+                className="text-center space-y-2"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.1, duration: 0.3 }}
+              >
+                <h1 className="text-2xl md:text-3xl font-bold text-[#111111]">
+                  Hola! 👋 ¿Cómo te puedo ayudar hoy?
+                </h1>
+              </motion.div>
+
+              {/* MessageInput centrado */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.3 }}
+              >
+                <MessageInput />
+              </motion.div>
+            </motion.div>
           </div>
-        </div>
+        ) : (
+          /* Layout normal cuando hay mensajes */
+          <>
+            <motion.div
+              className="flex-1 overflow-y-auto"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3 }}
+            >
+              <motion.div
+                className="mx-auto w-full max-w-4xl px-4 py-4"
+                animate={isCreatingNew ? { opacity: [1, 0.3, 1] } : { opacity: 1 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+              >
+                <ChatWindow />
+              </motion.div>
+            </motion.div>
+
+            <motion.div
+              initial={{ y: 100, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+              className="sticky bottom-0 z-10 shrink-0 border-t border-black/5 bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.05)] [backface-visibility:hidden] [transform:translateZ(0)]"
+            >
+              <div className="mx-auto w-full max-w-4xl px-4 py-4">
+                <MessageInput />
+              </div>
+            </motion.div>
+          </>
+        )}
       </SidebarInset>
 
       {/* Settings Dialog */}

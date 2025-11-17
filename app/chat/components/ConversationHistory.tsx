@@ -1,15 +1,10 @@
 'use client';
 
-import React from 'react';
-import { MessageSquare, Ellipsis, Loader2, Pencil, Trash2 } from 'lucide-react';
-import { useChatStore } from '../store';
-import { SidebarMenuItem, SidebarMenuButton, useSidebar } from '@/components/ui/sidebar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import React, { useCallback, memo } from 'react';
+import { Loader2 } from 'lucide-react';
+import { useConversationId, useSetConversationId, useReplaceMessages } from '../store';
+import { SidebarMenuItem, useSidebar } from '@/components/ui/sidebar';
+import { ConversationItem } from './ConversationItem';
 import {
   Dialog,
   DialogContent,
@@ -28,12 +23,10 @@ import {
 import type { ConversationWithMessages } from '@/hooks/use-conversations';
 import { useQueryClient } from '@tanstack/react-query';
 
-export function ConversationHistory() {
-  const {
-    conversationId,
-    setConversationId,
-    replaceMessages,
-  } = useChatStore();
+export const ConversationHistory = memo(function ConversationHistory() {
+  const conversationId = useConversationId();
+  const setConversationId = useSetConversationId();
+  const replaceMessages = useReplaceMessages();
 
   const { state } = useSidebar();
   const queryClient = useQueryClient();
@@ -45,19 +38,21 @@ export function ConversationHistory() {
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [conversationToDelete, setConversationToDelete] = React.useState<string | null>(null);
 
-  const handleSelectConversation = async (id: string) => {
+  const handleSelectConversation = useCallback(async (id: string) => {
+    // Cambio inmediato para UX instantánea
     setConversationId(id);
 
+    // Intentar usar cache primero (instantáneo)
     const cachedConversation = queryClient.getQueryData<ConversationWithMessages>(
       conversationKeys.detail(id)
     );
 
     if (cachedConversation) {
+      // Usar cache inmediatamente
       replaceMessages(cachedConversation.messages);
-    }
 
-    try {
-      const conversation = await queryClient.fetchQuery<ConversationWithMessages>({
+      // Revalidar en background sin bloquear UI
+      queryClient.fetchQuery<ConversationWithMessages>({
         queryKey: conversationKeys.detail(id),
         queryFn: async () => {
           const response = await fetch(`/api/conversations/${id}`);
@@ -66,31 +61,50 @@ export function ConversationHistory() {
           return data.conversation as ConversationWithMessages;
         },
         staleTime: 1000 * 60 * 10,
+      }).then((freshConversation) => {
+        // Actualizar solo si hay cambios
+        if (JSON.stringify(freshConversation.messages) !== JSON.stringify(cachedConversation.messages)) {
+          replaceMessages(freshConversation.messages);
+        }
+      }).catch((error) => {
+        console.error('Background revalidation error:', error);
       });
+    } else {
+      // Sin cache, fetch normal
+      try {
+        const conversation = await queryClient.fetchQuery<ConversationWithMessages>({
+          queryKey: conversationKeys.detail(id),
+          queryFn: async () => {
+            const response = await fetch(`/api/conversations/${id}`);
+            if (!response.ok) throw new Error('Failed to load conversation');
+            const data = await response.json();
+            return data.conversation as ConversationWithMessages;
+          },
+          staleTime: 1000 * 60 * 10,
+        });
 
-      replaceMessages(conversation.messages);
-    } catch (error) {
-      console.error('Error loading conversation:', error);
-      if (!cachedConversation) {
+        replaceMessages(conversation.messages);
+      } catch (error) {
+        console.error('Error loading conversation:', error);
         setConversationId(null);
       }
     }
-  };
+  }, [setConversationId, replaceMessages, queryClient]);
 
-  const handleMouseEnter = (id: string) => {
+  const handleMouseEnter = useCallback((id: string) => {
     prefetchConversation(id);
-  };
+  }, [prefetchConversation]);
 
-  const handleDeleteConversation = (
+  const handleDeleteConversation = useCallback((
     e: React.MouseEvent,
     id: string
   ) => {
     e.stopPropagation();
     setConversationToDelete(id);
     setDeleteDialogOpen(true);
-  };
+  }, []);
 
-  const confirmDelete = async () => {
+  const confirmDelete = useCallback(async () => {
     if (!conversationToDelete) return;
 
     try {
@@ -98,14 +112,7 @@ export function ConversationHistory() {
 
       if (conversationId === conversationToDelete) {
         setConversationId(null);
-        replaceMessages([
-          {
-            id: 'welcome',
-            role: 'assistant',
-            content:
-              'Hola, soy tu asistente IA. Estoy listo para ayudarte con cualquier idea. ¿Sobre qué quieres conversar hoy?',
-          },
-        ]);
+        replaceMessages([]);
       }
     } catch (error) {
       console.error('Error deleting conversation:', error);
@@ -113,14 +120,14 @@ export function ConversationHistory() {
       setDeleteDialogOpen(false);
       setConversationToDelete(null);
     }
-  };
+  }, [conversationToDelete, conversationId, deleteMutation, setConversationId, replaceMessages]);
 
-  const handleStartRename = (id: string, currentTitle: string) => {
+  const handleStartRename = useCallback((id: string, currentTitle: string) => {
     setRenamingId(id);
     setNewTitle(currentTitle);
-  };
+  }, []);
 
-  const handleRenameConversation = async (id: string) => {
+  const handleRenameConversation = useCallback(async (id: string) => {
     if (!newTitle.trim()) {
       setRenamingId(null);
       return;
@@ -141,17 +148,12 @@ export function ConversationHistory() {
     } catch (error) {
       console.error('Error renaming conversation:', error);
     }
-  };
+  }, [newTitle, queryClient]);
 
-  const handleCancelRename = () => {
+  const handleCancelRename = useCallback(() => {
     setRenamingId(null);
     setNewTitle('');
-  };
-
-  const truncateTitle = (title: string, maxLength: number = 35): string => {
-    if (title.length <= maxLength) return title.trim() + '...';
-    return title.substring(0, maxLength).trim() + '...';
-  };
+  }, []);
 
   if (isLoading) {
     return (
@@ -219,84 +221,22 @@ export function ConversationHistory() {
       </Dialog>
 
       {conversations.map((conversation) => (
-        <SidebarMenuItem key={conversation.id}>
-          <div
-            className="relative group"
-            onMouseEnter={() => handleMouseEnter(conversation.id)}
-          >
-            {renamingId === conversation.id ? (
-              <div className="flex items-center gap-2 px-2 py-2">
-                <MessageSquare className="size-4 flex-shrink-0 text-[#4c4c4c]" />
-                <input
-                  type="text"
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handleRenameConversation(conversation.id);
-                    } else if (e.key === 'Escape') {
-                      handleCancelRename();
-                    }
-                  }}
-                  onBlur={() => handleRenameConversation(conversation.id)}
-                  autoFocus
-                  className="flex-1 text-sm font-medium bg-white border border-[#00552b] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#00552b]/20"
-                />
-              </div>
-            ) : (
-              <>
-                <SidebarMenuButton
-                  onClick={() => handleSelectConversation(conversation.id)}
-                  isActive={conversationId === conversation.id}
-                  className="data-[active=true]:bg-[#00552b]/10 data-[active=true]:text-[#00552b] hover:bg-[#00552b]/5 transition-colors pr-10"
-                >
-                  <MessageSquare className="size-4 flex-shrink-0" />
-                  <div className="flex-1 overflow-hidden min-w-0">
-                    <div className="text-sm font-medium whitespace-nowrap overflow-hidden">
-                      {truncateTitle(conversation.title)}
-                    </div>
-                  </div>
-                </SidebarMenuButton>
-
-                <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button
-                        onClick={(e) => e.stopPropagation()}
-                        className="p-1.5 rounded hover:bg-black/5 transition-colors"
-                      >
-                        {deleteMutation.isPending && deleteMutation.variables === conversation.id ? (
-                          <Loader2 className="size-4 animate-spin text-[#4c4c4c]" />
-                        ) : (
-                          <Ellipsis className="size-4 text-[#4c4c4c]" />
-                        )}
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" side="bottom" sideOffset={4} className="w-48">
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleStartRename(conversation.id, conversation.title);
-                        }}
-                      >
-                        <Pencil className="size-4" />
-                        <span>Renombrar</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        variant="destructive"
-                        onClick={(e) => handleDeleteConversation(e, conversation.id)}
-                      >
-                        <Trash2 className="size-4" />
-                        <span>Eliminar</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </>
-            )}
-          </div>
-        </SidebarMenuItem>
+        <ConversationItem
+          key={conversation.id}
+          conversation={conversation}
+          isActive={conversationId === conversation.id}
+          isRenaming={renamingId === conversation.id}
+          isDeleting={deleteMutation.isPending && deleteMutation.variables === conversation.id}
+          newTitle={newTitle}
+          onSelect={handleSelectConversation}
+          onMouseEnter={handleMouseEnter}
+          onDelete={handleDeleteConversation}
+          onStartRename={handleStartRename}
+          onRename={handleRenameConversation}
+          onCancelRename={handleCancelRename}
+          onTitleChange={setNewTitle}
+        />
       ))}
     </>
   );
-}
+});

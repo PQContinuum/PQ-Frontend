@@ -88,20 +88,11 @@ const createTypingCycleController = () => {
 
 const typingCycleController = createTypingCycleController();
 
-const createInitialMessages = (): ChatMessage[] => [
-  {
-    id: 'welcome',
-    role: 'assistant',
-    content:
-      'Hola, soy tu asisntente IA personal. Puedo ayudarte a escribir, idear y explicar cualquier tema. ¿Sobre qué quieres hablar hoy?',
-  },
-];
-
 const createChatStore = create<ChatStore>()(
   devtools(
     (set) => ({
       // Initial state
-      messages: createInitialMessages(),
+      messages: [],
       isStreaming: false,
       typingStateIndex: 0,
       conversationId: null,
@@ -163,7 +154,7 @@ const createChatStore = create<ChatStore>()(
         typingCycleController.stop(set);
         set(
           {
-            messages: createInitialMessages(),
+            messages: [],
             isStreaming: false,
             typingStateIndex: 0,
             conversationId: null,
@@ -178,3 +169,13 @@ const createChatStore = create<ChatStore>()(
 );
 
 export const useChatStore = createChatStore;
+
+// Selectores optimizados para evitar re-renders innecesarios
+export const useMessages = () => useChatStore((state) => state.messages);
+export const useIsStreaming = () => useChatStore((state) => state.isStreaming);
+export const useConversationId = () => useChatStore((state) => state.conversationId);
+export const useAddMessage = () => useChatStore((state) => state.addMessage);
+export const useUpdateMessage = () => useChatStore((state) => state.updateMessage);
+export const useReplaceMessages = () => useChatStore((state) => state.replaceMessages);
+export const useSetStreaming = () => useChatStore((state) => state.setStreaming);
+export const useSetConversationId = () => useChatStore((state) => state.setConversationId);
