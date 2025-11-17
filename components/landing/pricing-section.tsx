@@ -92,11 +92,11 @@ const plans: Plan[] = [
     features: [
       "Todo lo del Básico, más:",
       "Mensajes ilimitados",
-      "Modelo avanzado GPT-4",
+      "Modelo avanzado de IA avanzado",
       "Velocidad prioritaria",
       "Historial completo",
       "Modo conversación continua",
-      "Integraciones básicas (API, Zapier)",
+      "Integraciones básicas (API)",
       "Análisis y reportes",
     ],
     cta: "Actualizar a Profesional",
