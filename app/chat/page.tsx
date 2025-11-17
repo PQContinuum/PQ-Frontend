@@ -370,7 +370,7 @@ export default function ChatPage() {
                 transition={{ delay: 0.1, duration: 0.3 }}
               >
                 <h1 className="text-2xl md:text-3xl font-bold text-[#111111]">
-                  Hola! 👋 ¿Cómo te puedo ayudar hoy?
+                  Hola! 👋 ¿Cómo te puedo <span className='text-[#00552b]'>ayudar</span> hoy?
                 </h1>
               </motion.div>
 
