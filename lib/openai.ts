@@ -41,7 +41,7 @@ const toInputMessages = (history: ChatMessage[], fallback: string): string | Inp
         return fallback;
     }
 
-    return history.reduce<InputMessage[]>((acc, entry) => {
+    const messages = history.reduce<InputMessage[]>((acc, entry) => {
         const text = entry.content?.trim();
         if (!text) return acc;
         acc.push({
@@ -50,6 +50,8 @@ const toInputMessages = (history: ChatMessage[], fallback: string): string | Inp
         });
         return acc;
     }, []);
+
+    return messages;
 };
 
 export async function streamAssistantReply(message: string, history: ChatMessage[] = []) {
