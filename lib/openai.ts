@@ -61,8 +61,20 @@ export async function streamAssistantReply(message: string) {
                 controller.error(error instanceof Error ? error : new Error(message));
             };
 
-            responseStream.on("event", (event) => {
-                enqueue(event.type, event);
+            responseStream.on("response.output_text.delta", (event) => {
+                enqueue("response.output_text.delta", { delta: event.delta });
+            });
+
+            responseStream.on("response.completed", () => {
+                enqueue("response.completed", {});
+                closeStream();
+            });
+
+            responseStream.on("response.failed", (event) => {
+                const message =
+                    (event.response as { error?: { message?: string } })?.error?.message ??
+                    "OpenAI response failed";
+                errorStream(message);
             });
 
             responseStream.on("end", () => {
