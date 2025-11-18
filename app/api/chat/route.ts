@@ -4,8 +4,8 @@ import { streamAssistantReply } from "@/lib/openai";
 
 export async function POST(req: NextRequest) {
     try {
-        const { message } = await req.json();
-        const stream = await streamAssistantReply(message);
+        const { message, messages = [] } = await req.json();
+        const stream = await streamAssistantReply(message, messages);
 
         return new Response(stream, {
             headers: {

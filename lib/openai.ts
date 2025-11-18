@@ -14,6 +14,11 @@ const encoder = new TextEncoder();
 const formatSSE = (event: string, data: unknown) =>
     `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 
+type ChatMessage = {
+    role: "user" | "assistant";
+    content: string;
+};
+
 const toError = (value: unknown) => {
     if (value instanceof Error) return value;
     if (value && typeof value === "object" && "message" in value) {
@@ -26,15 +31,38 @@ const toError = (value: unknown) => {
     return new Error(typeof value === "string" ? value : "OpenAI stream error");
 };
 
-export async function streamAssistantReply(message: string) {
+type InputMessage = {
+    role: "user" | "assistant";
+    content: { type: "input_text"; text: string }[];
+};
+
+const toInputMessages = (history: ChatMessage[], fallback: string): string | InputMessage[] => {
+    if (!history.length) {
+        return fallback;
+    }
+
+    return history.reduce<InputMessage[]>((acc, entry) => {
+        const text = entry.content?.trim();
+        if (!text) return acc;
+        acc.push({
+            role: entry.role,
+            content: [{ type: "input_text", text }],
+        });
+        return acc;
+    }, []);
+};
+
+export async function streamAssistantReply(message: string, history: ChatMessage[] = []) {
     const sanitizedMessage = message?.trim();
-    if (!sanitizedMessage) {
+    if (!sanitizedMessage && !history.length) {
         throw new Error("Message is required");
     }
 
+    const input = toInputMessages(history, sanitizedMessage);
+
     const responseStream = client.responses.stream({
         model,
-        input: sanitizedMessage,
+        input,
         instructions: pqChatInstructions,
     });
 

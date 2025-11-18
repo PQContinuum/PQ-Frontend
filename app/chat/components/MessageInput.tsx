@@ -9,15 +9,13 @@ import {
   memo,
 } from 'react';
 import { ArrowUp } from 'lucide-react';
+import { useShallow } from 'zustand/react/shallow';
 
 import {
   useMessages,
-  useAddMessage,
-  useUpdateMessage,
+  useChatStore,
   useIsStreaming,
-  useSetStreaming,
   useConversationId,
-  useSetConversationId,
 } from '@/app/chat/store';
 import { useCreateConversation } from '@/hooks/use-conversations';
 
@@ -69,12 +67,16 @@ export const MessageInput = memo(function MessageInput() {
   const [input, setInput] = useState('');
 
   const messages = useMessages();
-  const addMessage = useAddMessage();
-  const updateMessage = useUpdateMessage();
+  const { addMessage, updateMessage, setStreaming, setConversationId } = useChatStore(
+    useShallow((state) => ({
+      addMessage: state.addMessage,
+      updateMessage: state.updateMessage,
+      setStreaming: state.setStreaming,
+      setConversationId: state.setConversationId,
+    }))
+  );
   const isStreaming = useIsStreaming();
-  const setStreaming = useSetStreaming();
   const conversationId = useConversationId();
-  const setConversationId = useSetConversationId();
 
   const createConversationMutation = useCreateConversation();
 
@@ -84,12 +86,12 @@ export const MessageInput = memo(function MessageInput() {
       const value = input.trim();
       if (!value || isStreaming) return;
 
-      const userMessageId = createId();
-      const assistantMessageId = createId();
-      const payloadMessages = [
-        ...messages,
-        { role: 'user', content: value } as const,
-      ];
+        const userMessageId = createId();
+        const assistantMessageId = createId();
+        const payloadMessages = [
+          ...messages.filter((msg) => msg.content.trim().length > 0),
+          { role: 'user', content: value } as const,
+        ];
 
       addMessage({ id: userMessageId, role: 'user', content: value });
       addMessage({ id: assistantMessageId, role: 'assistant', content: '' });
