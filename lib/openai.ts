@@ -1,8 +1,9 @@
 import OpenAI from "openai";
+import type { ResponseInput } from "openai/resources/responses/responses";
 import { pqChatInstructions } from "@/lib/pq-instructions";
 
 const apiKey = process.env.OPENAI_API_KEY;
-const model = process.env.OPENAI_MODEL ?? "gpt-5";
+const model = process.env.OPENAI_MODEL ?? "gpt-4-turbo";
 
 if (!apiKey) {
     throw new Error("OPENAI_API_KEY is required");
@@ -19,6 +20,8 @@ type ChatMessage = {
     content: string;
 };
 
+type ContentBlock = { type: "input_text"; text: string };
+
 const toError = (value: unknown) => {
     if (value instanceof Error) return value;
     if (value && typeof value === "object" && "message" in value) {
@@ -31,22 +34,24 @@ const toError = (value: unknown) => {
     return new Error(typeof value === "string" ? value : "OpenAI stream error");
 };
 
-type InputMessage = {
-    role: "user" | "assistant";
-    content: { type: "input_text"; text: string }[];
-};
-
-const toInputMessages = (history: ChatMessage[], fallback: string): string | InputMessage[] => {
+const toInputMessages = (history: ChatMessage[], fallback: string): string | ResponseInput => {
     if (!history.length) {
         return fallback;
     }
 
-    const messages = history.reduce<InputMessage[]>((acc, entry) => {
+    const messages = history.reduce<ResponseInput>((acc, entry) => {
         const text = entry.content?.trim();
         if (!text) return acc;
+        if (entry.role !== "user") return acc; // Responses API input only accepts user/system/developer
         acc.push({
             role: entry.role,
-            content: [{ type: "input_text", text }],
+            content: [
+                {
+                    type: "input_text",
+                    text,
+                },
+            ],
+            type: "message",
         });
         return acc;
     }, []);
