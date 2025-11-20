@@ -16,7 +16,6 @@ export const ChatWindow = memo(function ChatWindow() {
   const previousMessageCount = useRef(messages.length);
   const previousConversationId = useRef(conversationId);
 
-  // useLayoutEffect para scroll (evita flicker visual)
   useLayoutEffect(() => {
     const scrollContainer = containerRef.current?.parentElement?.parentElement;
     if (!scrollContainer) return;

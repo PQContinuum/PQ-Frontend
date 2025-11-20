@@ -300,7 +300,6 @@ export default function ChatPage() {
       </Sidebar>
 
       <SidebarInset className="flex flex-col">
-        {/* Mostrar header solo cuando hay mensajes de usuario */}
         {hasUserMessages && (
           <motion.header
             initial={{ opacity: 0, y: -20 }}
@@ -352,7 +351,6 @@ export default function ChatPage() {
           </motion.header>
         )}
 
-        {/* Layout centrado cuando no hay mensajes de usuario */}
         {!hasUserMessages ? (
           <div className="flex-1 flex flex-col items-center justify-center px-4">
             <motion.div
@@ -362,7 +360,6 @@ export default function ChatPage() {
               transition={{ duration: 0.4 }}
               className="w-full max-w-3xl space-y-8"
             >
-              {/* Título de bienvenida */}
               <motion.div
                 className="text-center space-y-2"
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -370,11 +367,10 @@ export default function ChatPage() {
                 transition={{ delay: 0.1, duration: 0.3 }}
               >
                 <h1 className="text-2xl md:text-3xl font-bold text-[#111111]">
-                  Hola! 👋 ¿Cómo te puedo <span className='text-[#00552b]'>ayudar</span> hoy?
+                  Hola! 👋 Soy <span className='text-[#00552b]'>Continnuum AI </span><br/> ¿Cómo te puedo ayudar hoy?
                 </h1>
               </motion.div>
 
-              {/* MessageInput centrado */}
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -385,7 +381,6 @@ export default function ChatPage() {
             </motion.div>
           </div>
         ) : (
-          /* Layout normal cuando hay mensajes */
           <>
             <motion.div
               className="flex-1 overflow-y-auto"
@@ -416,7 +411,6 @@ export default function ChatPage() {
         )}
       </SidebarInset>
 
-      {/* Settings Dialog */}
       <SettingsDialog
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
@@ -424,7 +418,6 @@ export default function ChatPage() {
         userPlan={userPlan?.planName || 'Free'}
       />
 
-      {/* Logout Confirmation Dialog */}
       <Dialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
