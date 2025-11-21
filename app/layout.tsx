@@ -3,7 +3,7 @@ import "./globals.css";
 import { QueryProvider } from "@/providers/query-client-provider";
 
 export const metadata: Metadata = {
-  title: "PQ Continnuum",
+  title: "Continnuum AI",
   description: "Assistant AI",
 };
 

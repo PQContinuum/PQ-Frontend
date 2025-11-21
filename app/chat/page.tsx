@@ -138,6 +138,7 @@ export default function ChatPage() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
+            <Link href={"/"}>
             <motion.div
               className="flex aspect-square size-12 items-center justify-center rounded-lg"
               whileHover={{ rotate: [0, -10, 10, -10, 0] }}
@@ -157,8 +158,9 @@ export default function ChatPage() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 }}
             >
-              PQ Continuum
+              Continnuum AI
             </motion.span>
+            </Link>
           </motion.div>
 
           <SidebarMenu>
