@@ -1,6 +1,7 @@
 import { db } from "@/db";
 import { subscriptions } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import type { PlanName } from "./memory/plan-limits";
 
 /**
  * Obtener la subscription activa de un usuario
@@ -67,6 +68,22 @@ export async function needsPayment(userId: string): Promise<boolean> {
   }
 
   return false;
+}
+
+/**
+ * Obtener el nombre del plan del usuario
+ * @param userId - ID del usuario de Supabase Auth
+ * @returns El nombre del plan o "Free" si no tiene subscription
+ */
+export async function getUserPlanName(userId: string): Promise<PlanName> {
+  const subscription = await getUserSubscription(userId);
+
+  // Si no tiene subscription o no tiene plan válido, retornar Free
+  if (!subscription || !subscription.planName) {
+    return "Free";
+  }
+
+  return subscription.planName as PlanName;
 }
 
 /**

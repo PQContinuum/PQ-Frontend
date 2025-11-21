@@ -18,6 +18,8 @@ import {
   useConversationId,
 } from '@/app/chat/store';
 import { useCreateConversation } from '@/hooks/use-conversations';
+import { useQueryClient } from '@tanstack/react-query';
+import { conversationKeys } from '@/hooks/use-conversations';
 
 type SSEPayload = {
   delta?: string;
@@ -65,8 +67,18 @@ const parseSSEChunk = (chunk: string): SSEvent | null => {
 export const MessageInput = memo(function MessageInput() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [input, setInput] = useState('');
+  const queryClient = useQueryClient();
 
   const messages = useMessages();
+
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const textarea = e.target;
+    setInput(textarea.value);
+
+    textarea.style.height = 'auto';
+    const newHeight = Math.min(textarea.scrollHeight, 200); 
+    textarea.style.height = `${newHeight}px`;
+  }, []);
   const { addMessage, updateMessage, setStreaming, setConversationId } = useChatStore(
     useShallow((state) => ({
       addMessage: state.addMessage,
@@ -119,10 +131,10 @@ export const MessageInput = memo(function MessageInput() {
           }
         }
 
-        // Guardar mensaje del usuario en Supabase
+        // ✅ FIX: Guardar mensaje del usuario en Supabase Y esperar confirmación
         if (currentConversationId) {
           try {
-            await fetch(`/api/conversations/${currentConversationId}/messages`, {
+            const response = await fetch(`/api/conversations/${currentConversationId}/messages`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -131,6 +143,17 @@ export const MessageInput = memo(function MessageInput() {
                 content: value,
               }),
             });
+
+            if (response.ok) {
+              // ✅ Invalidar cache para que TanStack Query recargue datos frescos
+              queryClient.invalidateQueries({
+                queryKey: conversationKeys.detail(currentConversationId),
+              });
+              // También invalidar la lista de conversaciones (para actualizar timestamp)
+              queryClient.invalidateQueries({
+                queryKey: conversationKeys.lists(),
+              });
+            }
           } catch (error) {
             console.error('Error saving user message:', error);
           }
@@ -199,10 +222,10 @@ export const MessageInput = memo(function MessageInput() {
         buffer += decoder.decode();
         processBuffer();
 
-        // Guardar mensaje del asistente en Supabase
+        // ✅ FIX: Guardar mensaje del asistente en Supabase Y confirmar
         if (currentConversationId && assistantContent) {
           try {
-            await fetch(`/api/conversations/${currentConversationId}/messages`, {
+            const response = await fetch(`/api/conversations/${currentConversationId}/messages`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -211,6 +234,24 @@ export const MessageInput = memo(function MessageInput() {
                 content: assistantContent,
               }),
             });
+
+            if (response.ok) {
+              // ✅ Invalidar cache para forzar recarga en próxima vista
+              queryClient.invalidateQueries({
+                queryKey: conversationKeys.detail(currentConversationId),
+              });
+              // También invalidar la lista de conversaciones
+              queryClient.invalidateQueries({
+                queryKey: conversationKeys.lists(),
+              });
+
+              // ✅ Extraer hechos en background (no esperar)
+              fetch(`/api/conversations/${currentConversationId}/extract-facts`, {
+                method: 'POST',
+              }).catch(err => {
+                console.debug('Background fact extraction:', err.message);
+              });
+            }
           } catch (error) {
             console.error('Error saving assistant message:', error);
           }
@@ -235,6 +276,7 @@ export const MessageInput = memo(function MessageInput() {
       conversationId,
       setConversationId,
       createConversationMutation,
+      queryClient,
     ],
   );
 
@@ -248,18 +290,18 @@ export const MessageInput = memo(function MessageInput() {
   return (
     <form
       onSubmit={submitMessage}
-      className="flex flex-row items-center justify-between gap-3 rounded-[2rem] border border-black/5 bg-white px-4 py-2 shadow-[0_20px_50px_rgba(0,0,0,0.08)]"
+      className="flex flex-row items-center justify-between gap-3 rounded-[2rem] border border-black/5 bg-white px-4 py-3 shadow-[0_20px_50px_rgba(0,0,0,0.08)]"
     >
       <textarea
         ref={textareaRef}
         autoFocus
         value={input}
-        onChange={(event) => setInput(event.target.value)}
+        onChange={handleInputChange}
         onKeyDown={handleKeyDown}
         rows={1}
         placeholder="Empieza con una idea..."
         disabled={isStreaming}
-        className="w-full resize-none bg-transparent text-base text-[#111111] outline-none placeholder:text-[#111111]/40 disabled:opacity-60"
+        className="w-full min-h-[20px] max-h-[200px] resize-none overflow-y-auto bg-transparent text-base leading-5 text-[#111111] outline-none placeholder:text-[#111111]/40 disabled:opacity-60 scrollbar-thin"
       />
       <button
         type="submit"

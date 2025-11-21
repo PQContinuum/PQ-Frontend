@@ -26,6 +26,16 @@ export const paymentStatusEnum = pgEnum("payment_status", [
   "canceled"
 ]);
 
+// Enum para la categoría del contexto del usuario
+export const contextCategoryEnum = pgEnum("context_category", [
+  "personal",      // Nombre, empresa, rol, ubicación
+  "technical",     // Stack técnico, herramientas, lenguajes
+  "preferences",   // Preferencias de interacción, estilo de respuesta
+  "project",       // Proyectos actuales, objetivos
+  "decisions",     // Decisiones técnicas, soluciones elegidas
+  "summary"        // Resúmenes de contexto antiguo comprimido
+]);
+
 // Tabla de conversaciones
 // user_id referencia a auth.users de Supabase (sin foreign key porque está en otro schema)
 export const conversations = pgTable("conversations", {
@@ -90,6 +100,33 @@ export const payments = pgTable("payments", {
     .defaultNow(),
 });
 
+// Tabla de contexto del usuario (memoria compartida entre conversaciones)
+// Almacena hechos importantes extraídos de todas las conversaciones del usuario
+export const userContext = pgTable("user_context", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull(), // Referencia a auth.users (sin FK)
+
+  // Información del hecho
+  key: text("key").notNull(), // Identificador único: "name", "project_type", "tech_stack_nextjs"
+  value: text("value").notNull(), // Valor del hecho: "Rafael", "e-commerce", "Next.js 14"
+  category: contextCategoryEnum("category").notNull(), // Categoría para organizar
+
+  // Metadata
+  sourceConversationId: uuid("source_conversation_id"), // De qué conversación se extrajo
+  confidence: integer("confidence").notNull().default(100), // Confianza del hecho (0-100)
+  lastMentioned: timestamp("last_mentioned", { withTimezone: true })
+    .notNull()
+    .defaultNow(), // Última vez que fue relevante
+
+  // Timestamps
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 // Relaciones
 export const conversationsRelations = relations(conversations, ({ many }) => ({
   messages: many(messages),
@@ -113,6 +150,13 @@ export const paymentsRelations = relations(payments, ({ one }) => ({
   }),
 }));
 
+export const userContextRelations = relations(userContext, ({ one }) => ({
+  sourceConversation: one(conversations, {
+    fields: [userContext.sourceConversationId],
+    references: [conversations.id],
+  }),
+}));
+
 // Tipos TypeScript inferidos del esquema
 export type Conversation = typeof conversations.$inferSelect;
 export type NewConversation = typeof conversations.$inferInsert;
@@ -122,3 +166,5 @@ export type Subscription = typeof subscriptions.$inferSelect;
 export type NewSubscription = typeof subscriptions.$inferInsert;
 export type Payment = typeof payments.$inferSelect;
 export type NewPayment = typeof payments.$inferInsert;
+export type UserContext = typeof userContext.$inferSelect;
+export type NewUserContext = typeof userContext.$inferInsert;

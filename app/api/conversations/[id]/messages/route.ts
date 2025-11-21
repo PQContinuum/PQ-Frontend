@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createMessage, updateMessage } from "@/db/queries/messages";
-import { getConversationById } from "@/db/queries/conversations";
+import { getConversationById, updateConversation } from "@/db/queries/conversations";
 
 // POST /api/conversations/[id]/messages - Crear un mensaje
 export async function POST(
@@ -47,6 +47,11 @@ export async function POST(
       conversationId,
       role,
       content,
+    });
+
+    // ✅ FIX: Actualizar timestamp de la conversación para ordenamiento correcto
+    await updateConversation(conversationId, user.id, {
+      title: conversation.title, // Mantener el título actual
     });
 
     return NextResponse.json({ message }, { status: 201 });

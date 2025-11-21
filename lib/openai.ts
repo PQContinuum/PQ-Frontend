@@ -59,7 +59,11 @@ const toInputMessages = (history: ChatMessage[], fallback: string): string | Res
     return messages;
 };
 
-export async function streamAssistantReply(message: string, history: ChatMessage[] = []) {
+export async function streamAssistantReply(
+    message: string,
+    history: ChatMessage[] = [],
+    userContext?: string  // ← NUEVO: Contexto del usuario (opcional)
+) {
     const sanitizedMessage = message?.trim();
     if (!sanitizedMessage && !history.length) {
         throw new Error("Message is required");
@@ -67,10 +71,15 @@ export async function streamAssistantReply(message: string, history: ChatMessage
 
     const input = toInputMessages(history, sanitizedMessage);
 
+    // Combinar instrucciones base con contexto del usuario (si existe)
+    const finalInstructions = userContext
+        ? `${pqChatInstructions}\n\n${userContext}`
+        : pqChatInstructions;
+
     const responseStream = client.responses.stream({
         model,
         input,
-        instructions: pqChatInstructions,
+        instructions: finalInstructions,  // ← Usar instrucciones combinadas
     });
 
     return new ReadableStream<Uint8Array>({

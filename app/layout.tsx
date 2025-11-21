@@ -2,7 +2,13 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { QueryProvider } from "@/providers/query-client-provider";
 
+// Configurar base URL según el ambiente
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||
+                process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` :
+                'http://localhost:3000';
+
 export const metadata: Metadata = {
+  metadataBase: new URL(baseUrl), // ✅ Esto elimina el warning
   title: "Continnuum AI",
   description: "Asistente AI para un pensamiento natural.",
 
@@ -13,7 +19,7 @@ export const metadata: Metadata = {
     siteName: "Continnuum AI",
     images: [
       {
-        url: "/images/preview1.png", // Cambiar por URL absoluta cuando esté lista
+        url: "/images/preview1.png", // Ahora se resolverá con metadataBase
         width: 1200,
         height: 630,
         alt: "Continnuum AI Preview",
@@ -28,7 +34,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Continnuum AI",
     description: "Asistente AI para un pensamiento natural.",
-    images: ["//images/preview1.png"], // Cambiar por URL absoluta cuando esté lista
+    images: ["/images/preview1.png"], // ✅ Arreglado (tenía // en lugar de /)
   },
 
   // Otras metadata útiles
