@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     siteName: "Continnuum AI",
     images: [
       {
-        url: "/og-image.png", // Cambiar por URL absoluta cuando esté lista
+        url: "/images/preview1.png", // Cambiar por URL absoluta cuando esté lista
         width: 1200,
         height: 630,
         alt: "Continnuum AI Preview",
@@ -28,13 +28,13 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Continnuum AI",
     description: "Asistente AI para un pensamiento natural.",
-    images: ["/twitter-image.png"], // Cambiar por URL absoluta cuando esté lista
+    images: ["//images/preview1.png"], // Cambiar por URL absoluta cuando esté lista
   },
 
   // Otras metadata útiles
   icons: {
     icon: "/favicon.ico",
-    apple: "/apple-touch-icon.png",
+    apple: "/images/preview1.png",
   },
 };
 
