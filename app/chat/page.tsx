@@ -368,8 +368,8 @@ export default function ChatPage() {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.1, duration: 0.3 }}
               >
-                <h1 className="text-2xl md:text-3xl font-bold text-[#111111]">
-                  Hola! 👋 Soy <span className='text-[#00552b]'>Continnuum AI </span><br/> ¿Cómo te puedo ayudar hoy?
+                <h1 className="text-2xl md:text-3xl font-bold text-[#111111] leading-relaxed">
+                  Hola! 👋 Soy <span className='text-[#00552b] underline'>Continnuum AI </span><br/> ¿Cómo te puedo ayudar hoy?
                 </h1>
               </motion.div>
 
