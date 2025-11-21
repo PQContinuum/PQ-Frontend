@@ -214,7 +214,7 @@ export function generateFactKey(category: string, value: string): string {
  * Determina si un hecho es válido
  */
 export function isValidFact(fact: ExtractedFact): boolean {
-  return (
+  return Boolean(
     fact.key &&
     fact.value &&
     fact.category &&
