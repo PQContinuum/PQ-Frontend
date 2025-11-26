@@ -130,7 +130,7 @@ export default function AuthPage() {
               transition={{ duration: 0.5 }}
             >
               <Image
-                src="/logo.png"
+                src="/images/logo.svg"
                 alt="PQ Logo"
                 width={60}
                 height={60}
