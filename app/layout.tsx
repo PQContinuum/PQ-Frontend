@@ -9,20 +9,20 @@ const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl), // ✅ Esto elimina el warning
-  title: "Continnuum AI",
+  title: "Continuum AI",
   description: "Asistente AI para un pensamiento natural.",
 
   // Open Graph (Facebook, LinkedIn, WhatsApp, etc)
   openGraph: {
-    title: "Continnuum AI",
+    title: "Continuum AI",
     description: "Asistente AI para un pensamiento natural.",
-    siteName: "Continnuum AI",
+    siteName: "Continuum AI",
     images: [
       {
         url: "/images/preview1.png", // Ahora se resolverá con metadataBase
         width: 1200,
         height: 630,
-        alt: "Continnuum AI Preview",
+        alt: "Continuum AI Preview",
       },
     ],
     locale: "es_ES",
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
   // Twitter Cards
   twitter: {
     card: "summary_large_image",
-    title: "Continnuum AI",
+    title: "Continuum AI",
     description: "Asistente AI para un pensamiento natural.",
     images: ["/images/preview1.png"], // ✅ Arreglado (tenía // en lugar de /)
   },

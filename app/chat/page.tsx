@@ -133,35 +133,23 @@ export default function ChatPage() {
     <SidebarProvider>
       <Sidebar collapsible="icon" className="border-r border-black/5">
         <SidebarHeader className="space-y-2 bg-[#f6f6f6]">
-          <motion.div
+          <Link
+            href={"/"}
             className="flex items-center gap-2 px-2 py-2 group-data-[collapsible=icon]:justify-center cursor-pointer"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
           >
-            <Link href={"/"}>
-            <motion.div
-              className="flex aspect-square size-12 items-center justify-center rounded-lg"
-              whileHover={{ rotate: [0, -10, 10, -10, 0] }}
-              transition={{ duration: 0.5, ease: "easeInOut" }}
-            >
+            <div className="flex aspect-square size-12 items-center justify-center rounded-lg">
               <Image
-                src="/logo.png"
+                src="/images/logo.svg"
                 alt="PQ Logo"
-                width={48}
-                height={48}
-                className="size-12"
+                width={36}
+                height={36}
+                className="size-10"
               />
-            </motion.div>
-            <motion.span
-              className="text-xl font-bold text-[#111111] group-data-[collapsible=icon]:hidden"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              Continnuum AI
-            </motion.span>
-            </Link>
-          </motion.div>
+            </div>
+            <span className="text-xl font-bold text-[#111111] group-data-[collapsible=icon]:hidden">
+              Continuum AI
+            </span>
+          </Link>
 
           <SidebarMenu>
             <SidebarMenuItem>
@@ -369,7 +357,7 @@ export default function ChatPage() {
                 transition={{ delay: 0.1, duration: 0.3 }}
               >
                 <h1 className="text-2xl md:text-3xl font-bold text-[#111111] leading-relaxed">
-                  Hola! 👋 Soy <span className='text-[#00552b] underline'>Continnuum AI </span><br/> ¿Cómo te puedo ayudar hoy?
+                  Hola! 👋 Soy <span className='text-[#00552b] underline'>Continuum AI </span><br/> ¿Cómo te puedo ayudar hoy?
                 </h1>
               </motion.div>
 

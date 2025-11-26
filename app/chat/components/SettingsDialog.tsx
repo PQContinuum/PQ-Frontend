@@ -174,7 +174,7 @@ export function SettingsDialog({
                           Mejora tu experiencia
                         </h4>
                         <p className="text-xs text-[#4c4c4c] mb-3 leading-relaxed">
-                          Desbloquea todas las funciones premium de Continnuum AI
+                          Desbloquea todas las funciones premium de Continuum AI
                         </p>
                         <button
                           onClick={() => {
@@ -221,7 +221,7 @@ export function SettingsDialog({
                     </div>
                     <p className="text-sm opacity-95 font-medium">
                       {userPlan === 'Gratis' || userPlan === 'Free'
-                        ? 'Acceso básico a Continnuum AI'
+                        ? 'Acceso básico a Continuum AI'
                         : `Plan ${userPlan} - Funciones premium incluidas`}
                     </p>
                   </div>
@@ -288,7 +288,7 @@ export function SettingsDialog({
                         ¿Listo para crecer?
                       </h4>
                       <p className="text-sm text-[#4c4c4c] mb-4 max-w-sm mx-auto">
-                        Mejora tu plan y desbloquea el potencial completo de Continnuum AI
+                        Mejora tu plan y desbloquea el potencial completo de Continuum AI
                       </p>
                       <button
                         onClick={() => {

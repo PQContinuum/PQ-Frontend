@@ -142,7 +142,7 @@ export default function AuthPage() {
             </h1>
             <p className="mt-2 text-sm text-[#4c4c4c]">
               {isSignUp
-                ? 'Regístrate para empezar a usar Continnuum AI'
+                ? 'Regístrate para empezar a usar Continuum AI'
                 : 'Inicia sesión en tu cuenta'}
             </p>
           </div>
