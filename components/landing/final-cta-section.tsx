@@ -95,7 +95,7 @@ export function FinalCTASection() {
           {/* Trust indicators */}
           <div className="pt-8 max-w-3xl mx-auto">
             <p className="text-sm text-neutral-400 italic">
-              "Continuum AI no busca reemplazarte. Busca amplificar tu forma de crear, decidir y construir."
+              &ldquo;Continuum AI no busca reemplazarte. Busca amplificar tu forma de crear, decidir y construir.&rdquo;
             </p>
           </div>
         </div>
