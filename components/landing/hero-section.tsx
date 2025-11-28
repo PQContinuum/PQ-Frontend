@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles, Loader2 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { useState, useEffect } from "react";
 
@@ -38,6 +39,16 @@ export function HeroSection() {
 
       {/* Content */}
       <div className="relative z-10 container mx-auto px-6 text-center">
+        {/* Logo */}
+        <div className="mb-8 flex justify-center animate-fade-in">
+          <Image
+            src="/images/logo.svg"
+            alt="Continuum AI Logo"
+            width={100}
+            height={100}
+          />
+        </div>
+
         {/* Badge */}
         <div className="inline-flex items-center gap-2 px-4 py-2 mb-8 rounded-full border border-white/10 bg-white/5 backdrop-blur-sm animate-fade-in">
           <Sparkles className="w-4 h-4 text-[#00552b]" />
