@@ -32,6 +32,8 @@ type ChatStore = {
   isStreaming: boolean;
   typingStateIndex: number;
   conversationId: string | null;
+  geoCulturalMode: boolean;
+  userLocation: { lat: number; lng: number } | null;
 
   // Actions
   addMessage: (message: ChatMessage) => void;
@@ -39,6 +41,8 @@ type ChatStore = {
   replaceMessages: (messages: ChatMessage[]) => void;
   setStreaming: (value: boolean) => void;
   setConversationId: (id: string | null) => void;
+  setGeoCulturalMode: (value: boolean) => void;
+  setUserLocation: (location: { lat: number; lng: number } | null) => void;
   reset: () => void;
 };
 
@@ -96,6 +100,8 @@ const createChatStore = create<ChatStore>()(
       isStreaming: false,
       typingStateIndex: 0,
       conversationId: null,
+      geoCulturalMode: false,
+      userLocation: null,
 
       // Actions
       addMessage: (message) =>
@@ -150,6 +156,12 @@ const createChatStore = create<ChatStore>()(
       setConversationId: (id) =>
         set({ conversationId: id }, false, 'setConversationId'),
 
+      setGeoCulturalMode: (value) =>
+        set({ geoCulturalMode: value }, false, 'setGeoCulturalMode'),
+
+      setUserLocation: (location) =>
+        set({ userLocation: location }, false, 'setUserLocation'),
+
       reset: () => {
         typingCycleController.stop(set);
         set(
@@ -158,6 +170,8 @@ const createChatStore = create<ChatStore>()(
             isStreaming: false,
             typingStateIndex: 0,
             conversationId: null,
+            geoCulturalMode: false,
+            userLocation: null,
           },
           false,
           'reset'
@@ -174,8 +188,12 @@ export const useChatStore = createChatStore;
 export const useMessages = () => useChatStore((state) => state.messages);
 export const useIsStreaming = () => useChatStore((state) => state.isStreaming);
 export const useConversationId = () => useChatStore((state) => state.conversationId);
+export const useGeoCulturalMode = () => useChatStore((state) => state.geoCulturalMode);
+export const useUserLocation = () => useChatStore((state) => state.userLocation);
 export const useAddMessage = () => useChatStore((state) => state.addMessage);
 export const useUpdateMessage = () => useChatStore((state) => state.updateMessage);
 export const useReplaceMessages = () => useChatStore((state) => state.replaceMessages);
 export const useSetStreaming = () => useChatStore((state) => state.setStreaming);
 export const useSetConversationId = () => useChatStore((state) => state.setConversationId);
+export const useSetGeoCulturalMode = () => useChatStore((state) => state.setGeoCulturalMode);
+export const useSetUserLocation = () => useChatStore((state) => state.setUserLocation);

@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, type ComponentPropsWithoutRef } from 'react';
+import { useState, type ComponentPropsWithoutRef, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
 import remarkGfm from 'remark-gfm';
 
 import type { ChatMessage } from '@/app/chat/store';
+import { GeoCulturalResponse } from './GeoCulturalResponse';
 
 import 'highlight.js/styles/github.css';
 
@@ -59,6 +60,30 @@ const CodeBlock = ({
 
 export function MessageBubble({ message }: MessageBubbleProps) {
   const isUser = message.role === 'user';
+
+  const geoCulturalData = useMemo(() => {
+    if (isUser || !message.content) return null;
+
+    try {
+      const parsed = JSON.parse(message.content);
+      if (parsed.reply && parsed.map && parsed.places) {
+        return parsed;
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  }, [message.content, isUser]);
+
+  if (geoCulturalData) {
+    return (
+      <div className="flex justify-start w-full">
+        <div className="inline-flex max-w-full w-full rounded-4xl border border-transparent bg-transparent text-black px-4 py-2">
+          <GeoCulturalResponse data={geoCulturalData} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>

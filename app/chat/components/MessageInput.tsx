@@ -7,8 +7,9 @@ import {
   useRef,
   useState,
   memo,
+  useEffect,
 } from 'react';
-import { ArrowUp } from 'lucide-react';
+import { ArrowUp, MapPin } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 
 import {
@@ -16,6 +17,8 @@ import {
   useChatStore,
   useIsStreaming,
   useConversationId,
+  useGeoCulturalMode,
+  useUserLocation,
 } from '@/app/chat/store';
 import { useCreateConversation } from '@/hooks/use-conversations';
 import { useQueryClient } from '@tanstack/react-query';
@@ -70,6 +73,8 @@ export const MessageInput = memo(function MessageInput() {
   const queryClient = useQueryClient();
 
   const messages = useMessages();
+  const geoCulturalMode = useGeoCulturalMode();
+  const userLocation = useUserLocation();
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const textarea = e.target;
@@ -79,18 +84,37 @@ export const MessageInput = memo(function MessageInput() {
     const newHeight = Math.min(textarea.scrollHeight, 200); 
     textarea.style.height = `${newHeight}px`;
   }, []);
-  const { addMessage, updateMessage, setStreaming, setConversationId } = useChatStore(
+  const { addMessage, updateMessage, setStreaming, setConversationId, setGeoCulturalMode, setUserLocation } = useChatStore(
     useShallow((state) => ({
       addMessage: state.addMessage,
       updateMessage: state.updateMessage,
       setStreaming: state.setStreaming,
       setConversationId: state.setConversationId,
+      setGeoCulturalMode: state.setGeoCulturalMode,
+      setUserLocation: state.setUserLocation,
     }))
   );
   const isStreaming = useIsStreaming();
   const conversationId = useConversationId();
 
   const createConversationMutation = useCreateConversation();
+
+  useEffect(() => {
+    if (geoCulturalMode && !userLocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+          setGeoCulturalMode(false);
+        }
+      );
+    }
+  }, [geoCulturalMode, userLocation, setUserLocation, setGeoCulturalMode]);
 
   const submitMessage = useCallback(
     async (event?: FormEvent<HTMLFormElement>) => {
@@ -165,6 +189,7 @@ export const MessageInput = memo(function MessageInput() {
           body: JSON.stringify({
             message: value,
             messages: payloadMessages,
+            geoCulturalContext: geoCulturalMode ? userLocation : null,
           }),
         });
 
@@ -277,6 +302,8 @@ export const MessageInput = memo(function MessageInput() {
       setConversationId,
       createConversationMutation,
       queryClient,
+      geoCulturalMode,
+      userLocation,
     ],
   );
 
@@ -288,28 +315,50 @@ export const MessageInput = memo(function MessageInput() {
   };
 
   return (
-    <form
-      onSubmit={submitMessage}
-      className="flex flex-row items-center justify-between gap-3 rounded-[2rem] border border-black/5 bg-white px-4 py-3 shadow-[0_20px_50px_rgba(0,0,0,0.08)]"
-    >
-      <textarea
-        ref={textareaRef}
-        autoFocus
-        value={input}
-        onChange={handleInputChange}
-        onKeyDown={handleKeyDown}
-        rows={1}
-        placeholder="Empieza con una idea..."
-        disabled={isStreaming}
-        className="w-full min-h-[20px] max-h-[200px] resize-none overflow-y-auto bg-transparent text-base leading-5 text-[#111111] outline-none placeholder:text-[#111111]/40 disabled:opacity-60 scrollbar-thin"
-      />
-      <button
-        type="submit"
-        disabled={!input.trim() || isStreaming}
-        className="flex shrink-0 items-center justify-center rounded-full bg-[#00552b] p-2 text-white transition hover:bg-[#00552b]/80 disabled:cursor-not-allowed disabled:bg-[#00552b]/40"
+    <div className="space-y-3">
+      {geoCulturalMode && (
+        <div className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-[#00552b]/10 to-[#00aa56]/10 rounded-2xl border border-[#00552b]/20">
+          <MapPin className="size-4 text-[#00552b]" />
+          <span className="text-sm font-medium text-[#00552b]">
+            {userLocation ? 'GeoCultural Mode activo' : 'Obteniendo ubicación...'}
+          </span>
+        </div>
+      )}
+      <form
+        onSubmit={submitMessage}
+        className="flex flex-row items-center justify-between gap-3 rounded-[2rem] border border-black/5 bg-white px-4 py-3 shadow-[0_20px_50px_rgba(0,0,0,0.08)]"
       >
-        <ArrowUp className="size-5" />
-      </button>
-    </form>
+        <button
+          type="button"
+          onClick={() => setGeoCulturalMode(!geoCulturalMode)}
+          disabled={isStreaming}
+          className={`flex shrink-0 items-center justify-center rounded-full p-2 transition ${
+            geoCulturalMode
+              ? 'bg-[#00552b] text-white'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          } disabled:opacity-40 disabled:cursor-not-allowed`}
+        >
+          <MapPin className="size-5" />
+        </button>
+        <textarea
+          ref={textareaRef}
+          autoFocus
+          value={input}
+          onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
+          rows={1}
+          placeholder={geoCulturalMode ? "Pregunta sobre lugares culturales..." : "Empieza con una idea..."}
+          disabled={isStreaming}
+          className="w-full min-h-[20px] max-h-[200px] resize-none overflow-y-auto bg-transparent text-base leading-5 text-[#111111] outline-none placeholder:text-[#111111]/40 disabled:opacity-60 scrollbar-thin"
+        />
+        <button
+          type="submit"
+          disabled={!input.trim() || isStreaming}
+          className="flex shrink-0 items-center justify-center rounded-full bg-[#00552b] p-2 text-white transition hover:bg-[#00552b]/80 disabled:cursor-not-allowed disabled:bg-[#00552b]/40"
+        >
+          <ArrowUp className="size-5" />
+        </button>
+      </form>
+    </div>
   );
 });
