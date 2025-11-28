@@ -1,26 +1,26 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Zap, Palette, Lock } from "lucide-react";
+import { Zap, Eye, Link2 } from "lucide-react";
 
 const benefits = [
   {
+    icon: Eye,
+    title: "Ve patrones donde otros solo ven frases",
+    description:
+      "Los modelos tradicionales funcionan como calculadoras lingüísticas: entran tokens, salen tokens. Continuum AI trabaja como una mente en flujo continuo.",
+  },
+  {
+    icon: Link2,
+    title: "Comprende conexiones que otras IA pasan por alto",
+    description:
+      "Mantiene coherencia de contexto, incluso cuando tus ideas llegan desordenadas. No es otro asistente más.",
+  },
+  {
     icon: Zap,
-    title: "Precisión sin ruido",
+    title: "Una nueva forma de pensar con IA",
     description:
-      "Respuestas directas y útiles. Sin relleno, sin errores innecesarios.",
-  },
-  {
-    icon: Palette,
-    title: "Diseño que respira",
-    description:
-      "Interfaz oscura, limpia y enfocada en lo esencial. Porque importa cómo te sientes al usarlo.",
-  },
-  {
-    icon: Lock,
-    title: "Privacidad total",
-    description:
-      "Tus conversaciones son tuyas. Cifrado end-to-end y cero almacenamiento sin tu consentimiento.",
+      "Es la diferencia entre un modelo que completa texto y un sistema que comprende intención, contexto y dirección.",
   },
 ];
 
@@ -34,10 +34,10 @@ export function BenefitsSection() {
         {/* Section header */}
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-5xl font-bold mb-4 text-white">
-            Por qué es diferente
+            Por qué existe Continuum AI
           </h2>
           <p className="text-lg text-neutral-400 max-w-2xl mx-auto">
-            No es solo otro chat. Es la experiencia que estabas esperando.
+            Las IA actuales predicen palabras. Continuum AI comprende el sentido.
           </p>
         </div>
 

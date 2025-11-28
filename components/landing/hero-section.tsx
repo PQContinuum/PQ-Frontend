@@ -42,26 +42,26 @@ export function HeroSection() {
         <div className="inline-flex items-center gap-2 px-4 py-2 mb-8 rounded-full border border-white/10 bg-white/5 backdrop-blur-sm animate-fade-in">
           <Sparkles className="w-4 h-4 text-[#00552b]" />
           <span className="text-sm text-neutral-400">
-            Inteligencia que se siente humana
+            Inteligencia artificial en flujo continuo
           </span>
         </div>
 
         {/* Title */}
         <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 animate-fade-in-up">
           <span className="text-white">
-            Tu asistente inteligente.
+            Una IA que no solo responde.
           </span>
           <br />
           <span className="bg-gradient-to-r from-[#00552b] via-green-600 to-[#00552b] bg-clip-text text-transparent">
-            Más claro, más rápido, más humano.
+            Te entiende.
           </span>
         </h1>
 
         {/* Subtitle */}
         <p className="text-lg md:text-xl text-neutral-400 max-w-2xl mx-auto mb-10 animate-fade-in-up animation-delay-200">
-          Un AI chat diseñado para trabajar contigo — no contra ti.
+          La mayoría de las IA completan texto. Continuum AI interpreta ideas completas.
           <br className="hidden md:block" />
-          Preciso, elegante y siempre disponible.
+          No procesa palabras sueltas: organiza significado.
         </p>
 
         {/* CTAs */}
@@ -80,7 +80,7 @@ export function HeroSection() {
                   </>
                 ) : (
                   <>
-                    Comenzar ahora
+                    Empieza a pensar en continuo
                     <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                   </>
                 )}

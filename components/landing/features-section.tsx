@@ -1,38 +1,38 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Pencil, Code2, Search, Workflow, Lightbulb, Languages } from "lucide-react";
+import { Zap, Target, TrendingDown, Gauge, Brain, CheckCircle } from "lucide-react";
 
 const features = [
   {
-    icon: Pencil,
-    title: "Escritura profesional",
-    description: "Emails, resúmenes, textos pulidos. Con tu voz, sin esfuerzo.",
+    icon: Zap,
+    title: "Hasta 40% más eficiencia",
+    description: "Más claridad. Menos consumo. Continuum AI reorganiza tu mensaje antes de responder.",
   },
   {
-    icon: Code2,
-    title: "Código asistido",
-    description: "Genera, depura y explica código. Para developers que valoran su tiempo.",
+    icon: Target,
+    title: "Elimina ruido",
+    description: "Aclara lo que quieres decir antes de actuar. Respuestas más útiles y profundas.",
   },
   {
-    icon: Search,
-    title: "Investigación inteligente",
-    description: "Respuestas precisas con lenguaje natural. Sin perderte en búsquedas infinitas.",
+    icon: TrendingDown,
+    title: "Reduce contradicciones",
+    description: "Menos tokens consumidos. Menor costo operativo sin sacrificar calidad.",
   },
   {
-    icon: Workflow,
-    title: "Automatización fluida",
-    description: "Crea flujos, documentos y tareas recurrentes. Automatiza lo que importa.",
+    icon: Gauge,
+    title: "Mayor precisión en menos tiempo",
+    description: "Tú solo escribes como siempre. Continuum AI se encarga de optimizar el flujo.",
   },
   {
-    icon: Lightbulb,
-    title: "Creatividad con propósito",
-    description: "Guiones, conceptos, ideas. Explora sin límites, ejecuta con claridad.",
+    icon: Brain,
+    title: "Una experiencia que se adapta a ti",
+    description: "No hablas con una máquina. Hablas con una versión más ordenada de ti.",
   },
   {
-    icon: Languages,
-    title: "Traducción nativa",
-    description: "Contexto, tono y precisión. Como si fuera escrito en el idioma destino.",
+    icon: CheckCircle,
+    title: "Ajuste automático",
+    description: "Analiza tu forma de expresarte y ajusta tono, ritmo, profundidad y enfoque.",
   },
 ];
 
@@ -47,10 +47,10 @@ export function FeaturesSection() {
         {/* Section header */}
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-5xl font-bold mb-4 text-white">
-            Lo que puedes hacer
+            Velocidad y eficiencia que se siente
           </h2>
           <p className="text-lg text-neutral-400 max-w-2xl mx-auto">
-            Herramientas poderosas diseñadas para tu flujo de trabajo
+            Con Continuum AI cada mensaje fluye, cada contexto se mantiene y cada decisión se vuelve más sencilla
           </p>
         </div>
 
