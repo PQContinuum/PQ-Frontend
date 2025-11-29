@@ -58,13 +58,32 @@ export async function POST(req: NextRequest) {
 
             const userCoords: Coords = { lat: geoCulturalContext.lat, lng: geoCulturalContext.lng };
 
+            // Reverse Geocode user's coordinates to get an area name
+            let areaName = 'your current area'; // Default fallback name
+            try {
+                const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${userCoords.lat},${userCoords.lng}&key=${googleApiKey}`;
+                const geocodeResponse = await fetch(geocodeUrl);
+                const geocodeData = await geocodeResponse.json();
+                if (geocodeData.results && geocodeData.results[0]) {
+                    // Find a suitable name from the address components
+                    const addressComponents = geocodeData.results[0].address_components;
+                    const locality = addressComponents.find(c => c.types.includes('locality'))?.long_name;
+                    const sublocality = addressComponents.find(c => c.types.includes('sublocality_level_1'))?.long_name;
+                    const neighborhood = addressComponents.find(c => c.types.includes('neighborhood'))?.long_name;
+                    areaName = sublocality || neighborhood || locality || areaName;
+                }
+            } catch(e) {
+                console.error("Reverse geocoding failed:", e);
+                // Non-critical error, proceed with the default area name
+            }
+
             const geoCulturalInstructions = `
 ROLE: You are a creative travel writer and an expert cultural concierge. Your task is to find culturally significant places near a user and respond in a warm, inspiring tone.
-USER LOCATION: Latitude: ${userCoords.lat}, Longitude: ${userCoords.lng}
+USER LOCATION: The user is in the **${areaName}** area. (Lat: ${userCoords.lat}, Lng: ${userCoords.lng})
 CRITICAL: Output ONLY raw JSON, no markdown.
 The JSON object must have this EXACT structure:
 {
-  "reply": "A warm, inspiring, and creative 2-3 sentence message for the user, mentioning their general area and making them excited to explore.",
+  "reply": "A warm, inspiring, and creative 2-3 sentence message for the user, starting with a mention of their specific area (${areaName}).",
   "places": [
     {
       "name": "Exact official name of the place",
@@ -82,7 +101,7 @@ REQUIREMENTS:
 START YOUR RESPONSE WITH { AND END WITH }`;
 
             userContext = userContext + geoCulturalInstructions;
-
+            
             const aiResponseString = await getAssistantReply(message, messages, userContext);
 
             let aiData: GeoCulturalResponseFromAI;
