@@ -11,6 +11,8 @@ type Place = {
     lat: number;
     lng: number;
     detailedDescription?: string;
+    historicalContext?: string;
+    culturalSignificance?: string;
 };
 
 // Define interface for Google Geocoding API AddressComponent
@@ -801,9 +803,52 @@ export async function POST(req: NextRequest) {
 
 
 
-            
 
+                                                            // 5. Generate historical and cultural context
+                                                            let areaHistoricalContext = '';
+                                                            const placesWithContext = await Promise.all(
+                                                                placesWithCalculations.map(async (place) => {
+                                                                    try {
+                                                                        const contextPrompt = `Genera un contexto histórico y cultural breve sobre "${place.name}" en ${areaName}.
 
+                                                                        IMPORTANTE: Responde SOLO con un JSON válido sin markdown, con esta estructura exacta:
+                                                                        {
+                                                                          "historicalContext": "2-3 oraciones sobre la historia del lugar",
+                                                                          "culturalSignificance": "2-3 oraciones sobre su importancia cultural"
+                                                                        }
+
+                                                                        Si no conoces el lugar específico, proporciona contexto general sobre ese tipo de lugar en ${areaName}.`;
+
+                                                                        const contextResponse = await getAssistantReply(contextPrompt, [], '');
+                                                                        const contextData = JSON.parse(contextResponse);
+
+                                                                        return {
+                                                                            ...place,
+                                                                            historicalContext: contextData.historicalContext,
+                                                                            culturalSignificance: contextData.culturalSignificance,
+                                                                        };
+                                                                    } catch (error) {
+                                                                        console.error(`Failed to get context for ${place.name}:`, error);
+                                                                        return place;
+                                                                    }
+                                                                })
+                                                            );
+
+                                                            // Generate area historical context
+                                                            try {
+                                                                const areaContextPrompt = `Genera un contexto histórico y cultural breve sobre ${areaName}.
+
+                                                                Incluye:
+                                                                - Historia relevante del área
+                                                                - Importancia cultural
+                                                                - Características únicas
+
+                                                                Límite: 4-5 oraciones. Sé informativo pero conciso.`;
+
+                                                                areaHistoricalContext = await getAssistantReply(areaContextPrompt, [], '');
+                                                            } catch (error) {
+                                                                console.error('Failed to get area context:', error);
+                                                            }
 
                                                             const finalResponse = {
 
@@ -821,7 +866,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                                                places: placesWithCalculations,
+                                                                places: placesWithContext,
 
 
 
@@ -841,7 +886,9 @@ export async function POST(req: NextRequest) {
 
 
 
-            
+
+                                                                areaHistoricalContext: areaHistoricalContext,
+
 
 
 

@@ -22,6 +22,8 @@ type Place = {
   lat: number;
   lng: number;
   rating?: number;
+  historicalContext?: string;
+  culturalSignificance?: string;
 };
 
 type Coords = {
@@ -34,6 +36,7 @@ type GeoCulturalData = {
   places: Place[];
   userCoords: Coords;
   userAreaName?: string;
+  areaHistoricalContext?: string;
 };
 
 type GeoCulturalResponseProps = {
@@ -150,13 +153,29 @@ export function GeoCulturalResponse({ data }: GeoCulturalResponseProps) {
                   position={selectedPlace}
                   onCloseClick={() => setSelectedPlace(null)}
                 >
-                  <div className="max-w-[280px] p-1">
+                  <div className="max-w-[320px] p-1">
                     <h3 className="font-bold text-base text-[#111] mb-2">{selectedPlace.name}</h3>
 
                     {selectedPlace.rating && selectedPlace.rating > 0 && (
                       <div className="flex items-center gap-1.5 mb-2">
                         <Star className="size-4 text-yellow-500 fill-yellow-500" />
                         <span className="text-sm font-semibold text-gray-800">{selectedPlace.rating.toFixed(1)}</span>
+                      </div>
+                    )}
+
+                    {/* Historical Context in InfoWindow */}
+                    {selectedPlace.historicalContext && (
+                      <div className="bg-amber-50 rounded-md p-2 mb-2 border border-amber-100">
+                        <p className="text-xs font-semibold text-amber-900 mb-1">📜 Historia</p>
+                        <p className="text-xs text-gray-700 leading-relaxed">{selectedPlace.historicalContext}</p>
+                      </div>
+                    )}
+
+                    {/* Cultural Significance in InfoWindow */}
+                    {selectedPlace.culturalSignificance && (
+                      <div className="bg-purple-50 rounded-md p-2 mb-2 border border-purple-100">
+                        <p className="text-xs font-semibold text-purple-900 mb-1">✨ Importancia Cultural</p>
+                        <p className="text-xs text-gray-700 leading-relaxed">{selectedPlace.culturalSignificance}</p>
                       </div>
                     )}
 
@@ -191,6 +210,31 @@ export function GeoCulturalResponse({ data }: GeoCulturalResponseProps) {
                 <p className="text-xs text-blue-600 font-medium mb-0.5">Tu ubicación</p>
                 <p className="text-sm font-bold text-blue-900">{data.userAreaName}</p>
               </div>
+            </motion.div>
+          )}
+
+          {/* Area Historical Context Card */}
+          {data.areaHistoricalContext && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.35 }}
+              className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl border border-amber-200 p-5"
+            >
+              <div className="flex items-start gap-3 mb-3">
+                <div className="bg-amber-500 p-2 rounded-lg shrink-0">
+                  <Building className="size-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-amber-900 text-base mb-1">
+                    Contexto Histórico y Cultural
+                  </h3>
+                  <p className="text-xs text-amber-700 font-medium">{data.userAreaName}</p>
+                </div>
+              </div>
+              <p className="text-sm text-gray-800 leading-relaxed">
+                {data.areaHistoricalContext}
+              </p>
             </motion.div>
           )}
 
@@ -235,6 +279,32 @@ export function GeoCulturalResponse({ data }: GeoCulturalResponseProps) {
                   <p className="text-sm text-gray-600 leading-relaxed">
                     {place.description}
                   </p>
+
+                  {/* Historical Context */}
+                  {place.historicalContext && (
+                    <div className="bg-amber-50 rounded-lg p-3 border border-amber-100">
+                      <h5 className="text-xs font-bold text-amber-900 mb-1.5 flex items-center gap-1.5">
+                        <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                        Historia
+                      </h5>
+                      <p className="text-xs text-gray-700 leading-relaxed">{place.historicalContext}</p>
+                    </div>
+                  )}
+
+                  {/* Cultural Significance */}
+                  {place.culturalSignificance && (
+                    <div className="bg-purple-50 rounded-lg p-3 border border-purple-100">
+                      <h5 className="text-xs font-bold text-purple-900 mb-1.5 flex items-center gap-1.5">
+                        <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+                        </svg>
+                        Importancia Cultural
+                      </h5>
+                      <p className="text-xs text-gray-700 leading-relaxed">{place.culturalSignificance}</p>
+                    </div>
+                  )}
 
                   {/* Distance, time, and action */}
                   <div className="flex items-center justify-between pt-3 border-t border-gray-100">
