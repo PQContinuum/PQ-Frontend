@@ -10,6 +10,8 @@ type Place = {
     description: string;
     lat: number;
     lng: number;
+    detailedDescription?: string;
+    photos?: string[];
 };
 
 type GeoCulturalResponseFromAI = {
@@ -334,7 +336,9 @@ export async function POST(req: NextRequest) {
 
 
 
-                        - ALWAYS return a valid JSON object with "reply", "categories", and "numberOfPlaces".
+                        - **includeDescriptions**: Set to true if the user explicitly asks for descriptions, details, or information about the places (e.g., "descríbeme", "cuéntame sobre", "información de", "qué hay", "detalles de"). Otherwise, set to false.
+
+                        - ALWAYS return a valid JSON object with "reply", "categories", "numberOfPlaces", and "includeDescriptions".
 
 
 
@@ -390,7 +394,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                    let aiIdeas: { reply: string; categories: string[]; numberOfPlaces?: number };
+                                    let aiIdeas: { reply: string; categories: string[]; numberOfPlaces?: number; includeDescriptions?: boolean };
 
 
 
@@ -674,7 +678,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                    const placesWithCalculations = topPlaces.map(place => {
+                                    const placesWithCalculations = await Promise.all(topPlaces.map(async (place) => {
 
 
 
@@ -699,6 +703,33 @@ export async function POST(req: NextRequest) {
 
 
                                         const travel_time = estimateTravelTime(distance);
+
+                                        let detailedDescription: string | undefined;
+                                        let photos: string[] | undefined;
+
+                                        // Fetch detailed information if requested
+                                        if (aiIdeas.includeDescriptions && place.place_id) {
+                                            try {
+                                                const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=editorial_summary,photos&key=${googleApiKey}`;
+                                                const detailsResponse = await fetch(detailsUrl);
+                                                const detailsData = await detailsResponse.json();
+
+                                                if (detailsData.result) {
+                                                    detailedDescription = detailsData.result.editorial_summary?.overview;
+
+                                                    // Get photo URLs (max 3)
+                                                    if (detailsData.result.photos && detailsData.result.photos.length > 0) {
+                                                        photos = detailsData.result.photos
+                                                            .slice(0, 3)
+                                                            .map((photo: any) =>
+                                                                `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${photo.photo_reference}&key=${googleApiKey}`
+                                                            );
+                                                    }
+                                                }
+                                            } catch (error) {
+                                                console.error(`Failed to fetch details for ${place.name}:`, error);
+                                            }
+                                        }
 
 
 
@@ -764,6 +795,10 @@ export async function POST(req: NextRequest) {
 
                                             travel_time,
 
+                                            ...(detailedDescription && { detailedDescription }),
+
+                                            ...(photos && { photos }),
+
 
 
             
@@ -778,13 +813,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                    });
-
-
-
-            
-
-
+                                    }));
 
                         const finalResponse = {
 
@@ -799,6 +828,9 @@ export async function POST(req: NextRequest) {
 
 
                             userCoords: userCoords,
+
+
+                            userAreaName: areaName,
 
 
 

@@ -21,7 +21,9 @@ type Place = {
   travel_time: string;
   lat: number;
   lng: number;
-  rating?: number; // Rating is now included
+  rating?: number;
+  detailedDescription?: string;
+  photos?: string[];
 };
 
 type Coords = {
@@ -33,6 +35,7 @@ type GeoCulturalData = {
   reply: string;
   places: Place[];
   userCoords: Coords;
+  userAreaName?: string;
 };
 
 type GeoCulturalResponseProps = {
@@ -116,9 +119,16 @@ export function GeoCulturalResponse({ data }: GeoCulturalResponseProps) {
               disableDefaultUI={true}
             >
               <MapControl selectedPlace={selectedPlace} userCoords={data.userCoords} />
-              {/* User's Location Marker */}
+              {/* User's Location Marker - Enhanced */}
               <AdvancedMarker position={data.userCoords}>
-                <LocateFixed className="text-blue-600 size-8 p-1 bg-white rounded-full shadow-md" />
+                <div className="relative">
+                  {/* Pulsing ring animation */}
+                  <div className="absolute inset-0 bg-blue-500 rounded-full animate-ping opacity-40" />
+                  {/* Main marker */}
+                  <div className="relative bg-gradient-to-br from-blue-500 to-blue-600 p-2 rounded-full shadow-lg border-2 border-white">
+                    <LocateFixed className="text-white size-5" />
+                  </div>
+                </div>
               </AdvancedMarker>
 
               {/* Recommended Places Markers */}
@@ -136,17 +146,72 @@ export function GeoCulturalResponse({ data }: GeoCulturalResponseProps) {
                 </AdvancedMarker>
               ))}
 
-              {/* InfoWindow for selected place */}
+              {/* Enhanced InfoWindow for selected place */}
               {selectedPlace && (
                 <InfoWindow
                   position={selectedPlace}
                   onCloseClick={() => setSelectedPlace(null)}
                 >
-                  <p className="font-bold text-sm text-[#111]">{selectedPlace.name}</p>
+                  <div className="max-w-[280px] p-1">
+                    {/* Photo if available */}
+                    {selectedPlace.photos && selectedPlace.photos.length > 0 && (
+                      <img
+                        src={selectedPlace.photos[0]}
+                        alt={selectedPlace.name}
+                        className="w-full h-32 object-cover rounded-lg mb-3"
+                      />
+                    )}
+
+                    {/* Place name */}
+                    <h3 className="font-bold text-base text-[#111] mb-2">{selectedPlace.name}</h3>
+
+                    {/* Rating */}
+                    {selectedPlace.rating && selectedPlace.rating > 0 && (
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <Star className="size-4 text-yellow-500 fill-yellow-500" />
+                        <span className="text-sm font-semibold text-gray-800">{selectedPlace.rating.toFixed(1)}</span>
+                      </div>
+                    )}
+
+                    {/* Detailed description if available */}
+                    {selectedPlace.detailedDescription && (
+                      <p className="text-sm text-gray-700 leading-relaxed mb-3">{selectedPlace.detailedDescription}</p>
+                    )}
+
+                    {/* Distance and travel time */}
+                    <div className="flex items-center gap-3 text-xs text-gray-600 pt-2 border-t border-gray-200">
+                      <div className="flex items-center gap-1">
+                        <Navigation className="size-3 text-[#00552b]" />
+                        <span>{selectedPlace.distance}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Clock className="size-3 text-[#00552b]" />
+                        <span>{selectedPlace.travel_time}</span>
+                      </div>
+                    </div>
+                  </div>
                 </InfoWindow>
               )}
             </Map>
           </motion.div>
+
+          {/* User Location Info Card */}
+          {data.userAreaName && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl border border-blue-200"
+            >
+              <div className="bg-blue-500 p-2 rounded-full">
+                <MapPin className="size-4 text-white" />
+              </div>
+              <div>
+                <p className="text-xs text-blue-600 font-medium mb-0.5">Tu ubicación</p>
+                <p className="text-sm font-bold text-blue-900">{data.userAreaName}</p>
+              </div>
+            </motion.div>
+          )}
 
           {/* List of Recommended Places */}
           <motion.div
@@ -166,29 +231,70 @@ export function GeoCulturalResponse({ data }: GeoCulturalResponseProps) {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5, delay: 0.5 + data.places.indexOf(place) * 0.1 }}
                 onClick={() => setSelectedPlace(place)}
-                className={`group relative overflow-hidden rounded-xl border bg-white p-4 transition-all hover:shadow-lg hover:border-green-300 cursor-pointer ${selectedPlace?.name === place.name ? 'border-green-500 shadow-md' : 'border-black/10'}`}
+                className={`group relative overflow-hidden rounded-xl border bg-white transition-all hover:shadow-xl hover:scale-[1.02] cursor-pointer ${
+                  selectedPlace?.name === place.name
+                    ? 'border-[#00552b] shadow-lg ring-2 ring-[#00552b]/20'
+                    : 'border-black/10 hover:border-[#00552b]/30'
+                }`}
               >
-                <div className="space-y-2">
-                  <h4 className="font-semibold text-[#111111] group-hover:text-[#00552b] transition-colors">
-                    {place.name}
-                  </h4>
-                  <p className="text-sm text-gray-600 leading-relaxed">
-                    {place.description}
-                  </p>
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-2 text-xs">
-                     {place.rating && (
-                       <div className="flex items-center gap-1.5 text-gray-700 font-bold">
-                         <Star className="size-4 text-yellow-500" />
-                         <span>{place.rating.toFixed(1)}</span>
-                       </div>
-                     )}
-                    <div className="flex items-center gap-1.5 text-gray-700">
-                      <Navigation className="size-3 text-[#00552b]" />
-                      <span className="font-medium">{place.distance}</span>
+                {/* Photo gallery if available */}
+                {place.photos && place.photos.length > 0 && (
+                  <div className="relative h-40 overflow-hidden">
+                    <img
+                      src={place.photos[0]}
+                      alt={place.name}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                    />
+                    {place.photos.length > 1 && (
+                      <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                        <span>+{place.photos.length - 1}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className={`space-y-3 ${place.photos ? 'p-4' : 'p-4'}`}>
+                  {/* Title and rating row */}
+                  <div className="flex items-start justify-between gap-2">
+                    <h4 className="font-bold text-[#111111] group-hover:text-[#00552b] transition-colors flex-1 text-base">
+                      {place.name}
+                    </h4>
+                    {place.rating && place.rating > 0 && (
+                      <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded-lg shrink-0">
+                        <Star className="size-4 text-yellow-500 fill-yellow-500" />
+                        <span className="text-sm font-bold text-gray-800">{place.rating.toFixed(1)}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Detailed description if available */}
+                  {place.detailedDescription && (
+                    <p className="text-sm text-gray-700 leading-relaxed line-clamp-3">
+                      {place.detailedDescription}
+                    </p>
+                  )}
+
+                  {/* Basic description (type info) */}
+                  {!place.detailedDescription && (
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      {place.description}
+                    </p>
+                  )}
+
+                  {/* Distance, time, and action */}
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                    <div className="flex items-center gap-3 text-xs">
+                      <div className="flex items-center gap-1.5 text-gray-600">
+                        <Navigation className="size-3.5 text-[#00552b]" />
+                        <span className="font-medium">{place.distance}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-gray-600">
+                        <Clock className="size-3.5 text-[#00552b]" />
+                        <span className="font-medium">{place.travel_time}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1.5 text-gray-700">
-                      <Clock className="size-3 text-[#00552b]" />
-                      <span className="font-medium">{place.travel_time}</span>
+                    <div className="text-xs font-semibold text-[#00552b] opacity-0 group-hover:opacity-100 transition-opacity">
+                      Ver en mapa →
                     </div>
                   </div>
                 </div>
