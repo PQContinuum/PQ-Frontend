@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { streamAssistantReply, getAssistantReply } from "@/lib/openai";
+import { streamAssistantReply } from "@/lib/openai";
 import { getUserContextForPrompt } from "@/lib/memory/user-context";
 import { getUserPlanName } from "@/lib/subscription";
+
+import type { ChatMessage } from "@/app/chat/store";
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -145,7 +147,7 @@ function buildGeoCulturalContext(areaName: string, userMessage: string): string 
 
 async function handleGeoCulturalMode(
     message: string,
-    messages: any[],
+    messages: ChatMessage[],
     geoCulturalContext: { lat: number; lng: number }
 ) {
     // Validate coordinates

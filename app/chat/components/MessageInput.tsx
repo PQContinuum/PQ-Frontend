@@ -25,6 +25,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { conversationKeys } from '@/hooks/use-conversations';
 import { useGeolocation } from '@/hooks/use-geolocation';
 import { LocationPermissionDialog } from './LocationPermissionDialog';
+import type { GeoCulturalAnalysisText } from '@/app/chat/components/MessageBubble';
 
 type SSEPayload = {
   delta?: string;
@@ -244,7 +245,7 @@ export const MessageInput = memo(function MessageInput() {
         }
 
         let assistantContent = '';
-        let geoCulturalContent: { reply: string; [key: string]: any } | null = null;
+        let geoCulturalContent: (GeoCulturalAnalysisText & Record<string, unknown>) | null = null;
 
         if (!response.body) throw new Error('Response body is missing.');
         const reader = response.body.getReader();
@@ -260,7 +261,7 @@ export const MessageInput = memo(function MessageInput() {
             if (event) {
               if (geoCulturalMode) {
                 if (event.event === 'geocultural.start') {
-                  geoCulturalContent = { ...(event.data as object), reply: '' };
+                  geoCulturalContent = { ...(event.data as object), reply: '' } as GeoCulturalAnalysisText & Record<string, unknown>;
                   assistantContent = JSON.stringify(geoCulturalContent);
                   updateMessage(assistantMessageId, () => assistantContent);
                 } else if (event.event === 'geocultural.delta') {
@@ -392,8 +393,7 @@ export const MessageInput = memo(function MessageInput() {
             type="button"
             onClick={handleLocationToggle}
             disabled={isStreaming}
-            className={`flex shrink-0 items-center justify-center rounded-full p-2 transition ${
-              geoCulturalMode
+            className={`flex shrink-0 items-center justify-center rounded-full p-2 transition ${geoCulturalMode
                 ? 'bg-[#00552b] text-white'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             } disabled:opacity-40 disabled:cursor-not-allowed`}

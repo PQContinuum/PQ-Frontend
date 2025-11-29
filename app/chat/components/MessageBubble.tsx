@@ -10,6 +10,12 @@ import { GeoCulturalResponse } from './GeoCulturalResponse';
 
 import 'highlight.js/styles/github.css';
 
+export type GeoCulturalAnalysisText = {
+  type: 'geocultural_analysis';
+  reply: string;
+  areaName?: string;
+};
+
 type MessageBubbleProps = {
   message: ChatMessage;
   isStreaming?: boolean;
