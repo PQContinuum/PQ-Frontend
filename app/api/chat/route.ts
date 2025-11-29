@@ -11,17 +11,7 @@ type Place = {
     lat: number;
     lng: number;
     detailedDescription?: string;
-    photos?: string[];
 };
-
-// Define interface for Google Places API Photo object
-interface PlacePhoto {
-    height: number;
-    html_attributions: string[];
-    photo_reference: string;
-    width: number;
-}
-
 
 // Define interface for Google Geocoding API AddressComponent
 
@@ -503,7 +493,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                                                            const searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${userCoords.lat},${userCoords.lng}&radius=${searchRadius}&type=${category}&fields=name,place_id,geometry,rating,types,photos,editorial_summary&key=${googleApiKey}`;
+                                                                            const searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${userCoords.lat},${userCoords.lng}&radius=${searchRadius}&type=${category}&fields=name,place_id,geometry,rating,types,editorial_summary&key=${googleApiKey}`;
 
 
 
@@ -695,7 +685,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                                                        const placesWithCalculations: Place[] = topPlaces.map(place => {
+                                                                                                                                                const placesWithCalculations: Place[] = topPlaces.map(place => {
 
 
 
@@ -703,7 +693,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                                                            const placeCoords = { lat: place.geometry.location.lat, lng: place.geometry.location.lng };
+                                                                                                                                                    const placeCoords = { lat: place.geometry.location.lat, lng: place.geometry.location.lng };
 
 
 
@@ -711,7 +701,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                                                            const distance = haversineDistance(userCoords, placeCoords);
+                                                                                                                                                    const distance = haversineDistance(userCoords, placeCoords);
 
 
 
@@ -719,7 +709,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                                                            const travel_time = estimateTravelTime(distance);
+                                                                                                                                                    const travel_time = estimateTravelTime(distance);
 
 
 
@@ -727,7 +717,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                                                            const photos = place.photos?.map((photo: PlacePhoto) => 
+                                                                                                                                                    
 
 
 
@@ -735,7 +725,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                                                                `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${photo.photo_reference}&key=${googleApiKey}`
+                                                                                                                                                    return {
 
 
 
@@ -743,7 +733,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                                                            ) || [];
+                                                                                                                                                        name: place.name,
 
 
 
@@ -751,7 +741,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                    
+                                                                                                                                                        description: `${place.types?.[0]?.replace(/_/g, ' ') || 'Place'} `,
 
 
 
@@ -759,7 +749,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                                                            return {
+                                                                                                                                                        lat: placeCoords.lat,
 
 
 
@@ -767,7 +757,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                                                                name: place.name,
+                                                                                                                                                        lng: placeCoords.lng,
 
 
 
@@ -775,7 +765,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                                                                description: `Rating: ${place.rating || 'N/A'} ★ • ${place.types?.[0]?.replace(/_/g, ' ') || 'Place'}`,
+                                                                                                                                                        rating: place.rating || 0,
 
 
 
@@ -783,7 +773,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                                                                detailedDescription: place.editorial_summary?.overview,
+                                                                                                                                                        distance: `${distance.toFixed(1)} km`,
 
 
 
@@ -791,7 +781,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                                                                lat: placeCoords.lat,
+                                                                                                                                                        travel_time,
 
 
 
@@ -799,7 +789,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                                                                lng: placeCoords.lng,
+                                                                                                                                                    };
 
 
 
@@ -807,47 +797,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                                                                rating: place.rating || 0,
-
-
-
-            
-
-
-
-                                                                                photos: photos,
-
-
-
-            
-
-
-
-                                                                                distance: `${distance.toFixed(1)} km`,
-
-
-
-            
-
-
-
-                                                                                travel_time,
-
-
-
-            
-
-
-
-                                                                            };
-
-
-
-            
-
-
-
-                                                                        });
+                                                                                                                                                });
 
 
 

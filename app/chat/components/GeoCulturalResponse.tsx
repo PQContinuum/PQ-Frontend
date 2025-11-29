@@ -22,8 +22,6 @@ type Place = {
   lat: number;
   lng: number;
   rating?: number;
-  detailedDescription?: string;
-  photos?: string[];
 };
 
 type Coords = {
@@ -153,20 +151,8 @@ export function GeoCulturalResponse({ data }: GeoCulturalResponseProps) {
                   onCloseClick={() => setSelectedPlace(null)}
                 >
                   <div className="max-w-[280px] p-1">
-                    {/* Photo if available */}
-                    {selectedPlace.photos && selectedPlace.photos.length > 0 && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={selectedPlace.photos[0]}
-                        alt={selectedPlace.name}
-                        className="w-full h-32 object-cover rounded-lg mb-3"
-                      />
-                    )}
-
-                    {/* Place name */}
                     <h3 className="font-bold text-base text-[#111] mb-2">{selectedPlace.name}</h3>
 
-                    {/* Rating */}
                     {selectedPlace.rating && selectedPlace.rating > 0 && (
                       <div className="flex items-center gap-1.5 mb-2">
                         <Star className="size-4 text-yellow-500 fill-yellow-500" />
@@ -174,12 +160,6 @@ export function GeoCulturalResponse({ data }: GeoCulturalResponseProps) {
                       </div>
                     )}
 
-                    {/* Detailed description if available */}
-                    {selectedPlace.detailedDescription && (
-                      <p className="text-sm text-gray-700 leading-relaxed mb-3">{selectedPlace.detailedDescription}</p>
-                    )}
-
-                    {/* Distance and travel time */}
                     <div className="flex items-center gap-3 text-xs text-gray-600 pt-2 border-t border-gray-200">
                       <div className="flex items-center gap-1">
                         <Navigation className="size-3 text-[#00552b]" />
@@ -239,24 +219,7 @@ export function GeoCulturalResponse({ data }: GeoCulturalResponseProps) {
                 }`}
               >
                 {/* Photo gallery if available */}
-                {place.photos && place.photos.length > 0 && (
-                  <div className="relative h-40 overflow-hidden">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={place.photos[0]}
-                      alt={place.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                    />
-                    {place.photos.length > 1 && (
-                      <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
-                        <span>+{place.photos.length - 1}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                <div className={`space-y-3 ${place.photos ? 'p-4' : 'p-4'}`}>
-                  {/* Title and rating row */}
+                <div className={`space-y-3 p-4`}>
                   <div className="flex items-start justify-between gap-2">
                     <h4 className="font-bold text-[#111111] group-hover:text-[#00552b] transition-colors flex-1 text-base">
                       {place.name}
@@ -269,19 +232,9 @@ export function GeoCulturalResponse({ data }: GeoCulturalResponseProps) {
                     )}
                   </div>
 
-                  {/* Detailed description if available */}
-                  {place.detailedDescription && (
-                    <p className="text-sm text-gray-700 leading-relaxed line-clamp-3">
-                      {place.detailedDescription}
-                    </p>
-                  )}
-
-                  {/* Basic description (type info) */}
-                  {!place.detailedDescription && (
-                    <p className="text-sm text-gray-600 leading-relaxed">
-                      {place.description}
-                    </p>
-                  )}
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    {place.description}
+                  </p>
 
                   {/* Distance, time, and action */}
                   <div className="flex items-center justify-between pt-3 border-t border-gray-100">
