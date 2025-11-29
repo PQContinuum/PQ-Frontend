@@ -244,29 +244,38 @@ export const MessageInput = memo(function MessageInput() {
         }
 
         let assistantContent = '';
+        let geoCulturalContent: { reply: string; [key: string]: any } | null = null;
 
-        // BUG FIX: Handle both JSON and streaming responses
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-          // Handle non-streaming JSON response for GeoCultural mode
-          const data = await response.json();
-          assistantContent = JSON.stringify(data);
-          updateMessage(assistantMessageId, () => assistantContent);
+        if (!response.body) throw new Error('Response body is missing.');
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
 
-        } else {
-          // Handle streaming response for normal chat
-          if (!response.body) throw new Error('Response body is missing.');
-          const reader = response.body.getReader();
-          const decoder = new TextDecoder();
-          let buffer = '';
-
-          const processBuffer = () => {
-            let boundary = buffer.indexOf('\n\n');
-            while (boundary !== -1) {
-              const chunk = buffer.slice(0, boundary);
-              buffer = buffer.slice(boundary + 2);
-              const event = parseSSEChunk(chunk);
-              if (event) {
+        const processBuffer = () => {
+          let boundary = buffer.indexOf('\n\n');
+          while (boundary !== -1) {
+            const chunk = buffer.slice(0, boundary);
+            buffer = buffer.slice(boundary + 2);
+            const event = parseSSEChunk(chunk);
+            if (event) {
+              if (geoCulturalMode) {
+                if (event.event === 'geocultural.start') {
+                  geoCulturalContent = { ...(event.data as object), reply: '' };
+                  assistantContent = JSON.stringify(geoCulturalContent);
+                  updateMessage(assistantMessageId, () => assistantContent);
+                } else if (event.event === 'geocultural.delta') {
+                  const delta = (event.data as { delta?: string })?.delta ?? '';
+                  if (geoCulturalContent) {
+                    geoCulturalContent.reply += delta;
+                    assistantContent = JSON.stringify(geoCulturalContent);
+                    updateMessage(assistantMessageId, () => assistantContent);
+                  }
+                } else if (event.event === 'error') {
+                  const error = (event.data as { error?: { message?: string } })?.error?.message ?? 'Error en el stream.';
+                  updateMessage(assistantMessageId, (prev) => prev + `\n\nError: ${error}`);
+                  assistantContent += `\n\nError: ${error}`;
+                }
+              } else {
                 if (event.event === 'response.output_text.delta') {
                   const delta = event.data?.delta ?? '';
                   updateMessage(assistantMessageId, (prev) => {
@@ -276,22 +285,22 @@ export const MessageInput = memo(function MessageInput() {
                   });
                 }
               }
-              boundary = buffer.indexOf('\n\n');
             }
-          };
-
-          while (true) {
-            const { value: chunk, done } = await reader.read();
-            if (chunk) {
-              buffer += decoder.decode(chunk, { stream: !done });
-              processBuffer();
-            }
-            if (done) break;
+            boundary = buffer.indexOf('\n\n');
           }
+        };
 
-          buffer += decoder.decode();
-          processBuffer();
+        while (true) {
+          const { value: chunk, done } = await reader.read();
+          if (chunk) {
+            buffer += decoder.decode(chunk, { stream: !done });
+            processBuffer();
+          }
+          if (done) break;
         }
+
+        buffer += decoder.decode();
+        processBuffer();
 
         // ✅ FIX: Guardar mensaje del asistente en Supabase Y confirmar
         if (currentConversationId && assistantContent) {

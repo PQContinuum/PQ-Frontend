@@ -41,9 +41,12 @@ export const ChatWindow = memo(function ChatWindow() {
       ref={containerRef}
       className="space-y-4"
     >
-      {messages.map((message) => (
+      {messages.map((message, index) => (
         <div key={message.id}>
-          <MessageBubble message={message} />
+          <MessageBubble
+            message={message}
+            isStreaming={isStreaming && index === messages.length - 1 && message.role === 'assistant'}
+          />
         </div>
       ))}
       {isStreaming && (
