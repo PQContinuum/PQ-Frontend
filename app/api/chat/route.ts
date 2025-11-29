@@ -14,14 +14,13 @@ type Place = {
     photos?: string[];
 };
 
-type GeoCulturalResponseFromAI = {
-
-    reply: string;
-
-    places: Place[];
-
-};
-
+// Define interface for Google Places API Photo object
+interface PlacePhoto {
+    height: number;
+    html_attributions: string[];
+    photo_reference: string;
+    width: number;
+}
 
 
 // Define interface for Google Geocoding API AddressComponent
@@ -472,127 +471,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                    const limit = aiIdeas.numberOfPlaces || 3; // Default to 3 places
-
-
-
-            
-
-
-
-                        
-
-
-
-            
-
-
-
-                                    const placesPromises = (aiIdeas.categories || ["tourist_attraction"]).map(async (category) => {
-
-
-
-            
-
-
-
-                                        const searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${userCoords.lat},${userCoords.lng}&radius=${searchRadius}&type=${category}&key=${googleApiKey}`;
-
-
-
-            
-
-
-
-                                        const searchResponse = await fetch(searchUrl);
-
-
-
-            
-
-
-
-                                        const searchData = await searchResponse.json();
-
-
-
-            
-
-
-
-                                        return searchData.results || [];
-
-
-
-            
-
-
-
-                                    });
-
-
-
-            
-
-
-
-                        
-
-
-
-            
-
-
-
-                                    const resultsByCategory = await Promise.all(placesPromises);
-
-
-
-            
-
-
-
-                                    const allPlaces = resultsByCategory.flat();
-
-
-
-            
-
-
-
-                        
-
-
-
-            
-
-
-
-                                    // Deduplicate places by place_id and select top results based on rating
-
-
-
-            
-
-
-
-                                    const uniquePlaces = Array.from(new Map(allPlaces.map(p => [p.place_id, p])).values());
-
-
-
-            
-
-
-
-                                    uniquePlaces.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-
-
-
-            
-
-
-
-                                    const topPlaces = uniquePlaces.slice(0, limit);
+                                                                        const limit = aiIdeas.numberOfPlaces || 3; // Default to 3 places
 
 
 
@@ -602,19 +481,13 @@ export async function POST(req: NextRequest) {
 
                                     
 
-            
-
-
-
-                                    if (topPlaces.length === 0) {
-
 
 
             
 
 
 
-                                         return NextResponse.json({
+                                                                        // 3. Use Google "Nearby Search" to find hyper-local places for each category
 
 
 
@@ -622,7 +495,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                            reply: `No encontré lugares de interés en las categorías [${(aiIdeas.categories || []).join(', ')}] en un radio de ${searchRadius/1000}km a tu alrededor en ${areaName}. ¡Intenta con otra búsqueda!`,
+                                                                        const placesPromises = (aiIdeas.categories || ["tourist_attraction"]).map(async (category) => {
 
 
 
@@ -630,7 +503,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                            places: [],
+                                                                            const searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${userCoords.lat},${userCoords.lng}&radius=${searchRadius}&type=${category}&fields=name,place_id,geometry,rating,types,photos,editorial_summary&key=${googleApiKey}`;
 
 
 
@@ -638,7 +511,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                            userCoords: userCoords,
+                                                                            const searchResponse = await fetch(searchUrl);
 
 
 
@@ -646,7 +519,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                        });
+                                                                            const searchData = await searchResponse.json();
 
 
 
@@ -654,7 +527,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                    }
+                                                                            return searchData.results || [];
 
 
 
@@ -662,7 +535,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                        
+                                                                        });
 
 
 
@@ -670,7 +543,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                    // 4. Format places and calculate final distances
+                                    
 
 
 
@@ -678,7 +551,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                    const placesWithCalculations = await Promise.all(topPlaces.map(async (place) => {
+                                                                        const resultsByCategory = await Promise.all(placesPromises);
 
 
 
@@ -686,7 +559,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                        const placeCoords = { lat: place.geometry.location.lat, lng: place.geometry.location.lng };
+                                                                        const allPlaces = resultsByCategory.flat();
 
 
 
@@ -694,7 +567,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                        const distance = haversineDistance(userCoords, placeCoords);
+                                    
 
 
 
@@ -702,34 +575,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                        const travel_time = estimateTravelTime(distance);
-
-                                        let detailedDescription: string | undefined;
-                                        let photos: string[] | undefined;
-
-                                        // Fetch detailed information if requested
-                                        if (aiIdeas.includeDescriptions && place.place_id) {
-                                            try {
-                                                const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=editorial_summary,photos&key=${googleApiKey}`;
-                                                const detailsResponse = await fetch(detailsUrl);
-                                                const detailsData = await detailsResponse.json();
-
-                                                if (detailsData.result) {
-                                                    detailedDescription = detailsData.result.editorial_summary?.overview;
-
-                                                    // Get photo URLs (max 3)
-                                                    if (detailsData.result.photos && detailsData.result.photos.length > 0) {
-                                                        photos = detailsData.result.photos
-                                                            .slice(0, 3)
-                                                            .map((photo: any) =>
-                                                                `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${photo.photo_reference}&key=${googleApiKey}`
-                                                            );
-                                                    }
-                                                }
-                                            } catch (error) {
-                                                console.error(`Failed to fetch details for ${place.name}:`, error);
-                                            }
-                                        }
+                                                                        // Deduplicate places by place_id and select top results based on rating
 
 
 
@@ -737,7 +583,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                        return {
+                                                                        const uniquePlaces = Array.from(new Map(allPlaces.map(p => [p.place_id, p])).values());
 
 
 
@@ -745,7 +591,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                            name: place.name,
+                                                                        uniquePlaces.sort((a, b) => (b.rating || 0) - (a.rating || 0));
 
 
 
@@ -753,7 +599,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                            description: `Rating: ${place.rating || 'N/A'} ★ • ${place.types?.[0]?.replace(/_/g, ' ') || 'Place'}`,
+                                                                        const topPlaces = uniquePlaces.slice(0, limit);
 
 
 
@@ -761,7 +607,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                            lat: placeCoords.lat,
+                                                                        
 
 
 
@@ -769,7 +615,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                            lng: placeCoords.lng,
+                                                                        if (topPlaces.length === 0) {
 
 
 
@@ -777,7 +623,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                            rating: place.rating || 0,
+                                                                             return NextResponse.json({
 
 
 
@@ -785,7 +631,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                            distance: `${distance.toFixed(1)} km`,
+                                                                                reply: `No encontré lugares de interés en las categorías [${(aiIdeas.categories || []).join(', ')}] en un radio de 2.5km a tu alrededor en ${areaName}. ¡Intenta con otra búsqueda!`,
 
 
 
@@ -793,11 +639,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                            travel_time,
-
-                                            ...(detailedDescription && { detailedDescription }),
-
-                                            ...(photos && { photos }),
+                                                                                places: [],
 
 
 
@@ -805,7 +647,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                        };
+                                                                                userCoords: userCoords,
 
 
 
@@ -813,28 +655,7 @@ export async function POST(req: NextRequest) {
 
 
 
-                                    }));
-
-                        const finalResponse = {
-
-
-
-                            reply: aiIdeas.reply,
-
-
-
-                            places: placesWithCalculations,
-
-
-
-                            userCoords: userCoords,
-
-
-                            userAreaName: areaName,
-
-
-
-                        };
+                                                                                userAreaName: areaName,
 
 
 
@@ -842,11 +663,263 @@ export async function POST(req: NextRequest) {
 
 
 
-                        return NextResponse.json(finalResponse);
+                                                                            });
 
 
 
-                    }
+            
+
+
+
+                                                                        }
+
+
+
+            
+
+
+
+                                    
+
+
+
+            
+
+
+
+                                                                        // 4. Format places, create photo URLs, and calculate final distances
+
+
+
+            
+
+
+
+                                                                        const placesWithCalculations: Place[] = topPlaces.map(place => {
+
+
+
+            
+
+
+
+                                                                            const placeCoords = { lat: place.geometry.location.lat, lng: place.geometry.location.lng };
+
+
+
+            
+
+
+
+                                                                            const distance = haversineDistance(userCoords, placeCoords);
+
+
+
+            
+
+
+
+                                                                            const travel_time = estimateTravelTime(distance);
+
+
+
+            
+
+
+
+                                                                            const photos = place.photos?.map((photo: PlacePhoto) => 
+
+
+
+            
+
+
+
+                                                                                `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${photo.photo_reference}&key=${googleApiKey}`
+
+
+
+            
+
+
+
+                                                                            ) || [];
+
+
+
+            
+
+
+
+                                    
+
+
+
+            
+
+
+
+                                                                            return {
+
+
+
+            
+
+
+
+                                                                                name: place.name,
+
+
+
+            
+
+
+
+                                                                                description: `Rating: ${place.rating || 'N/A'} ★ • ${place.types?.[0]?.replace(/_/g, ' ') || 'Place'}`,
+
+
+
+            
+
+
+
+                                                                                detailedDescription: place.editorial_summary?.overview,
+
+
+
+            
+
+
+
+                                                                                lat: placeCoords.lat,
+
+
+
+            
+
+
+
+                                                                                lng: placeCoords.lng,
+
+
+
+            
+
+
+
+                                                                                rating: place.rating || 0,
+
+
+
+            
+
+
+
+                                                                                photos: photos,
+
+
+
+            
+
+
+
+                                                                                distance: `${distance.toFixed(1)} km`,
+
+
+
+            
+
+
+
+                                                                                travel_time,
+
+
+
+            
+
+
+
+                                                                            };
+
+
+
+            
+
+
+
+                                                                        });
+
+
+
+            
+
+
+
+                                                            const finalResponse = {
+
+
+
+            
+
+
+
+                                                                reply: aiIdeas.reply,
+
+
+
+            
+
+
+
+                                                                places: placesWithCalculations,
+
+
+
+            
+
+
+
+                                                                userCoords: userCoords,
+
+
+
+            
+
+
+
+                                                                userAreaName: areaName,
+
+
+
+            
+
+
+
+                                                            };
+
+
+
+            
+
+
+
+                                    
+
+
+
+            
+
+
+
+                                                            return NextResponse.json(finalResponse);
+
+
+
+            
+
+
+
+                                                        }
 
         // Fallback to default streaming behavior if not in GeoCultural mode
         const stream = await streamAssistantReply(message, messages, userContext);

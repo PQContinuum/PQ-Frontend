@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { MapPin, Clock, Navigation, LocateFixed, Building, Star } from 'lucide-react';
 import {
@@ -155,6 +155,7 @@ export function GeoCulturalResponse({ data }: GeoCulturalResponseProps) {
                   <div className="max-w-[280px] p-1">
                     {/* Photo if available */}
                     {selectedPlace.photos && selectedPlace.photos.length > 0 && (
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={selectedPlace.photos[0]}
                         alt={selectedPlace.name}
@@ -240,6 +241,7 @@ export function GeoCulturalResponse({ data }: GeoCulturalResponseProps) {
                 {/* Photo gallery if available */}
                 {place.photos && place.photos.length > 0 && (
                   <div className="relative h-40 overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={place.photos[0]}
                       alt={place.name}
