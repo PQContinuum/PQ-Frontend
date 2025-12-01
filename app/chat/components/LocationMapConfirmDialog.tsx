@@ -207,37 +207,37 @@ export function LocationMapConfirmDialog({
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
             onClick={onClose}
           />
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:px-6 md:py-8 pointer-events-none">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ type: 'spring', duration: 0.5 }}
-              className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full overflow-hidden pointer-events-auto"
+              className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-sm sm:max-w-md md:max-w-2xl max-h-[95vh] overflow-y-auto pointer-events-auto"
             >
               <div className="relative">
                 <button
                   onClick={onClose}
-                  className="absolute top-4 right-4 p-2 rounded-full bg-white/90 hover:bg-white shadow-lg transition-colors z-10"
+                  className="absolute top-3 right-3 sm:top-4 sm:right-4 p-1.5 sm:p-2 rounded-full bg-white/90 hover:bg-white shadow-lg transition-colors z-10"
                 >
-                  <X className="size-5 text-gray-600" />
+                  <X className="size-4 sm:size-5 text-gray-600" />
                 </button>
 
-                <div className="px-8 pt-12 pb-6">
+                <div className="px-4 sm:px-6 md:px-8 pt-10 sm:pt-12 pb-4 sm:pb-6">
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-                    className="mx-auto w-20 h-20 bg-gradient-to-br from-[#00552b] to-[#00aa56] rounded-full flex items-center justify-center mb-6"
+                    className="mx-auto w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-[#00552b] to-[#00aa56] rounded-full flex items-center justify-center mb-4 sm:mb-6"
                   >
-                    <MapPin className="size-10 text-white" />
+                    <MapPin className="size-8 sm:size-10 text-white" />
                   </motion.div>
 
                   <motion.h2
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
-                    className="text-2xl font-bold text-[#111111] text-center mb-3"
+                    className="text-xl sm:text-2xl font-bold text-[#111111] text-center mb-2 sm:mb-3"
                   >
                     Confirma tu ubicación
                   </motion.h2>
@@ -246,17 +246,17 @@ export function LocationMapConfirmDialog({
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
-                    className="text-[#4c4c4c] text-center text-[15px] leading-relaxed mb-6"
+                    className="text-[#4c4c4c] text-center text-sm sm:text-[15px] leading-relaxed mb-4 sm:mb-6 px-2"
                   >
                     Mueve el pin en el mapa para ajustar tu ubicación exacta o confirma la ubicación actual.
                   </motion.p>
 
-                  {/* Map Container */}
+                  {/* Map Container - Responsive heights */}
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 400 }}
+                    animate={{ opacity: 1, height: 'auto' }}
                     transition={{ delay: 0.5 }}
-                    className="rounded-2xl overflow-hidden border-2 border-gray-200 mb-6"
+                    className="rounded-xl sm:rounded-2xl overflow-hidden border-2 border-gray-200 mb-4 sm:mb-6"
                   >
                     <APIProvider apiKey={apiKey}>
                       <Map
@@ -269,10 +269,7 @@ export function LocationMapConfirmDialog({
                         mapTypeControl={false}
                         fullscreenControl={false}
                         streetViewControl={false}
-                        style={{
-                          width: '100%',
-                          height: '400px',
-                        }}
+                        className="h-[280px] sm:h-[320px] md:h-[400px] w-full"
                       >
                         <AdvancedMarker
                           position={markerPosition}
@@ -287,8 +284,8 @@ export function LocationMapConfirmDialog({
                           }}
                         >
                           <div className="relative">
-                            <div className="w-12 h-12 bg-gradient-to-br from-[#00552b] to-[#00aa56] rounded-full flex items-center justify-center shadow-lg">
-                              <Navigation className="size-6 text-white" />
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-[#00552b] to-[#00aa56] rounded-full flex items-center justify-center shadow-lg">
+                              <Navigation className="size-5 sm:size-6 text-white" />
                             </div>
                             <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-[#00552b]" />
                           </div>
@@ -297,104 +294,106 @@ export function LocationMapConfirmDialog({
                     </APIProvider>
                   </motion.div>
 
-                  {/* Address Display */}
-                  {isGeocoding ? (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-3"
-                    >
-                      <svg className="animate-spin h-5 w-5 text-blue-600" viewBox="0 0 24 24">
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                          fill="none"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        />
-                      </svg>
-                      <p className="text-sm text-blue-800">Obteniendo dirección...</p>
-                    </motion.div>
-                  ) : geocodingError ? (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3"
-                    >
-                      <AlertCircle className="size-5 text-red-600 flex-shrink-0 mt-0.5" />
-                      <p className="text-sm text-red-800">{geocodingError}</p>
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="mb-6 p-4 bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-xl"
-                    >
-                      <div className="flex items-center gap-2 mb-3">
-                        <Check className="size-5 text-green-600" />
-                        <span className="font-semibold text-green-900">Ubicación seleccionada</span>
-                      </div>
-
-                      <div className="space-y-2 text-sm">
-                        {currentAddress.street && (
-                          <div>
-                            <span className="text-green-700 font-medium">Calle: </span>
-                            <span className="text-gray-800">
-                              {[currentAddress.street, currentAddress.streetNumber]
-                                .filter(Boolean)
-                                .join(' ')}
-                            </span>
-                          </div>
-                        )}
-                        {currentAddress.neighborhood && (
-                          <div>
-                            <span className="text-green-700 font-medium">Colonia: </span>
-                            <span className="text-gray-800">{currentAddress.neighborhood}</span>
-                          </div>
-                        )}
-                        {currentAddress.city && (
-                          <div>
-                            <span className="text-green-700 font-medium">Ciudad: </span>
-                            <span className="text-gray-800">
-                              {[currentAddress.city, currentAddress.state].filter(Boolean).join(', ')}
-                            </span>
-                          </div>
-                        )}
-                        <div className="pt-2 border-t border-green-200">
-                          <span className="text-xs text-green-700">
-                            Coordenadas: {markerPosition.lat.toFixed(7)}, {markerPosition.lng.toFixed(7)}
-                          </span>
+                  {/* Address Display - Fixed min-height responsive */}
+                  <div className="mb-4 sm:mb-6 min-h-[140px] sm:min-h-[160px]">
+                    {isGeocoding ? (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-2 sm:gap-3"
+                      >
+                        <svg className="animate-spin h-4 w-4 sm:h-5 sm:w-5 text-blue-600 flex-shrink-0" viewBox="0 0 24 24">
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                            fill="none"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
+                        </svg>
+                        <p className="text-xs sm:text-sm text-blue-800">Obteniendo dirección...</p>
+                      </motion.div>
+                    ) : geocodingError ? (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="p-3 sm:p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2 sm:gap-3"
+                      >
+                        <AlertCircle className="size-4 sm:size-5 text-red-600 flex-shrink-0 mt-0.5" />
+                        <p className="text-xs sm:text-sm text-red-800">{geocodingError}</p>
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="p-3 sm:p-4 bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-xl"
+                      >
+                        <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                          <Check className="size-4 sm:size-5 text-green-600" />
+                          <span className="text-sm sm:text-base font-semibold text-green-900">Ubicación seleccionada</span>
                         </div>
-                      </div>
-                    </motion.div>
-                  )}
+
+                        <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
+                          {currentAddress.street && (
+                            <div className="flex flex-wrap">
+                              <span className="text-green-700 font-medium">Calle: </span>
+                              <span className="text-gray-800 ml-1">
+                                {[currentAddress.street, currentAddress.streetNumber]
+                                  .filter(Boolean)
+                                  .join(' ')}
+                              </span>
+                            </div>
+                          )}
+                          {currentAddress.neighborhood && (
+                            <div className="flex flex-wrap">
+                              <span className="text-green-700 font-medium">Colonia: </span>
+                              <span className="text-gray-800 ml-1">{currentAddress.neighborhood}</span>
+                            </div>
+                          )}
+                          {currentAddress.city && (
+                            <div className="flex flex-wrap">
+                              <span className="text-green-700 font-medium">Ciudad: </span>
+                              <span className="text-gray-800 ml-1">
+                                {[currentAddress.city, currentAddress.state].filter(Boolean).join(', ')}
+                              </span>
+                            </div>
+                          )}
+                          <div className="pt-1.5 sm:pt-2 border-t border-green-200">
+                            <span className="text-[10px] sm:text-xs text-green-700 break-all">
+                              Coordenadas: {markerPosition.lat.toFixed(7)}, {markerPosition.lng.toFixed(7)}
+                            </span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </div>
 
                   {/* Action Buttons */}
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.6 }}
-                    className="space-y-3"
+                    className="space-y-2 sm:space-y-3"
                   >
                     <button
                       onClick={handleConfirm}
                       disabled={isGeocoding}
-                      className="w-full bg-gradient-to-r from-[#00552b] to-[#00aa56] text-white font-semibold py-4 px-6 rounded-2xl hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      className="w-full bg-gradient-to-r from-[#00552b] to-[#00aa56] text-white font-semibold py-3 sm:py-4 px-4 sm:px-6 rounded-xl sm:rounded-2xl hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base"
                     >
-                      <Check className="size-5" />
+                      <Check className="size-4 sm:size-5" />
                       Confirmar ubicación
                     </button>
                     <button
                       onClick={onClose}
                       disabled={isGeocoding}
-                      className="w-full text-[#4c4c4c] font-medium py-4 px-6 rounded-2xl hover:bg-gray-100 transition-colors disabled:opacity-50"
+                      className="w-full text-[#4c4c4c] font-medium py-3 sm:py-4 px-4 sm:px-6 rounded-xl sm:rounded-2xl hover:bg-gray-100 transition-colors disabled:opacity-50 text-sm sm:text-base"
                     >
                       Cancelar
                     </button>

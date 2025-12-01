@@ -78,12 +78,6 @@ export const MessageInput = memo(function MessageInput() {
   const [input, setInput] = useState('');
   const [showLocationDialog, setShowLocationDialog] = useState(false);
   const [showMapDialog, setShowMapDialog] = useState(false);
-  const [confirmedLocation, setConfirmedLocation] = useState<{
-    lat: number;
-    lng: number;
-    accuracy: number;
-    address: StructuredAddress;
-  } | null>(null);
   const queryClient = useQueryClient();
 
   const messages = useMessages();
@@ -152,19 +146,9 @@ export const MessageInput = memo(function MessageInput() {
     setShowMapDialog(false);
   }, []);
 
-  const handleContinueWithLocation = useCallback(() => {
-    // When user clicks "Continue with this location" in the permission dialog,
-    // close it and open the map confirmation dialog
-    if (address && coords) {
-      setShowLocationDialog(false);
-      setShowMapDialog(true);
-    }
-  }, [address, coords]);
-
   const handleConfirmMapLocation = useCallback(
     (location: { lat: number; lng: number; accuracy: number; address: StructuredAddress }) => {
-      // Save confirmed location and update store
-      setConfirmedLocation(location);
+      // Update store with confirmed location
       setUserLocation({
         lat: location.lat,
         lng: location.lng,
@@ -212,13 +196,14 @@ export const MessageInput = memo(function MessageInput() {
     [coords, geoCulturalMode, setGeoCulturalMode, setUserLocation, userLocation]
   );
 
-  // When location is obtained, open the map dialog instead of closing permission dialog
+  // When location is obtained, automatically open the map dialog
   const prevTimestampRef = useRef<number | null>(null);
   useEffect(() => {
     if (coords && address && showLocationDialog && coords.timestamp !== prevTimestampRef.current) {
       prevTimestampRef.current = coords.timestamp;
-      // Don't auto-close the permission dialog anymore
-      // Let the user click "Continue with this location" to open the map
+      // Automatically open map dialog when location is obtained
+      setShowLocationDialog(false);
+      setShowMapDialog(true);
     }
   }, [coords, address, showLocationDialog]);
 
@@ -445,7 +430,6 @@ export const MessageInput = memo(function MessageInput() {
         isOpen={showLocationDialog}
         onClose={handleCloseDialog}
         onAllow={handleAllowLocation}
-        onContinue={handleContinueWithLocation}
         error={locationError}
         isLoading={isLocationLoading}
         address={address}
