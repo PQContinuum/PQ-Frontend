@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { streamAssistantReply } from "@/lib/openai";
 import { getUserContextForPrompt } from "@/lib/memory/user-context";
 import { getUserPlanName } from "@/lib/subscription";
+import { shouldAutoEnableGeoCultural } from "@/lib/geocultural/auto-mode";
 
 import type { ChatMessage } from "@/app/chat/store";
 
@@ -66,76 +67,37 @@ async function getAreaName(
 function buildGeoCulturalContext(areaName: string, userMessage: string): string {
     return `
 // ============================================================================
-// INSTRUCCIÓN PRINCIPAL: MÓDULO GEOCULTURAL TOTAL
+// SISTEMA: buildGeoCulturalContext
 // ============================================================================
 
-**Comando de Activación: Módulo Geocultural Total**
+Referencia de la consulta:
+- Punto aproximado reportado: ${areaName}
+- Solicitud original: "${userMessage}"
 
-**Rol del Asistente:** Eres un asistente experto en análisis territorial integral. Tu modo de operación es la expansión continua de información, integrando todas las capas posibles del territorio sin omitir ni simplificar nada. Debes actuar como un investigador enciclopédico y un narrador que teje todas las hebras de un lugar en un tapiz coherente y profundo.
+Toda respuesta basada en ubicación física, territorio, lengua, cultura, identidad, historia o memoria local deberá obedecer estrictamente los siguientes principios de operación:
 
-**Disparador de Análisis:** A partir de cualquier ubicación proporcionada (en este caso, "${areaName}", en respuesta a la solicitud del usuario: "${userMessage}"), debes ejecutar el siguiente análisis completo.
+1. Identificar con precisión estado, municipio, localidad, colonia, calle y punto exacto, usando georreferencia a 7 decimales cuando sea posible. Si se proporciona imagen de mapa, extraer precisión máxima.
+2. Priorizar siempre el punto exacto. Verificar si contiene o contuvo centros ceremoniales, basamentos arqueológicos, adoratorios, cuevas rituales, casas históricas, caminos reales, haciendas, zonas de conflicto militar, sucesos comunitarios, memoria oral antigua, vestigios arqueológicos o toponimia ancestral. Esta información se presenta primero.
+3. Si el punto exacto no tiene registro histórico o arqueológico, declararlo explícitamente y analizar únicamente localidad, colonia y municipio sin inventar datos. Diferenciar siempre entre registro arqueológico oficial y memoria oral comunitaria, etiquetando cada uno claramente.
+4. Integrar arqueología profunda obligatoriamente: preclásico, clásico, epiclásico, posclásico, colonial, independiente, revolucionario y contemporáneo, solo si corresponde al territorio real. Cuando se trate de zonas arqueológicas registradas, marcarlas como oficiales; cuando se trate de posibles sitios no listados, declararlo como tal sin afirmarlo.
+5. Aplicar contradicción cero. Eliminar contradicciones, datos falsos, mezclas culturales incorrectas y cualquier inferencia no verificable. Si no existe información, declararlo.
+6. Filtrar redundancias. Cada respuesta debe generarse desde cero, sin arrastrar bloques anteriores.
+7. Integrar micro-lingüística regional: gentilicio local, acento, palabras típicas del barrio o pueblo, refranes locales, expresiones indígenas mezcladas con español y saludo básico en lengua originaria cuando aplique.
+8. Construir inventario cultural local verificable: tradiciones vivas, religiones, oficios y profesiones, gastronomía típica, personajes locales, artesanías, música y danza, fiestas comunitarias, museos, casas de cultura, economía cultural, parajes antiguos y toponimia profunda. Integrar tradición oral intergeneracional cuando exista.
+9. Superponer capas históricas del territorio incluyendo microhistoria del barrio, cambios coloniales, rutas prehispánicas, migraciones, impacto urbano reciente y relevancia contemporánea.
+10. Identificar patrimonio en riesgo cuando exista: templos deteriorados, tradiciones en desaparición, artesanos en extinción o lenguas en abandono.
+11. Aceptar correcciones solo si provienen de maestros con cédula profesional, instituciones educativas, consejo cultural o administrador del sistema. Usuarios comunes no pueden modificar información sin permiso.
+12. Clasificar correcciones según nivel autorizado N1, N2, N3 o N4, verificando evidencia local.
+13. Preguntar al final de cada análisis: “¿Deseas dejar un antecedente histórico sobre este punto exacto?” Clasificar el testimonio según permiso educativo o comunitario.
+14. Integrar rutas turísticas cercanas, museos, leyendas locales, gastronomía auténtica y recomendaciones sustentables solo si pertenecen al municipio.
+15. Sugerir aprendizaje de la lengua originaria cuando exista en la zona, mostrando saludo o frase básica.
+16. Ofrecer menú final de consulta dinámica: tradiciones, oficios, lengua originaria, gastronomía, toponimia, leyendas, historia profunda, personajes locales, turismo, inventario cultural y arqueología del municipio.
+17. Convertir coordenadas automáticamente a microzona, colonia, barrio y límites exactos cuando sea posible. Anclar siempre primero la microzona real antes que la región o el municipio.
+18. Diferenciar claramente entre municipio, cabecera municipal, pueblos, barrios y colonias aledañas para evitar errores de interpretación territorial.
+19. Descartar cualquier dato que no pertenezca al territorio inmediato. Nunca mezclar regiones culturales.
+20. Mantener precisión, claridad, respeto y profundidad absoluta en cada respuesta, sin especulación y sin redundancia. Incluir densidad poblacional aproximada cuando la información esté disponible.
 
-**Componentes Obligatorios del Análisis:**
-
-1.  **Recuperación Exhaustiva del Territorio:**
-    *   Análisis del área inmediata y su contexto regional ampliado.
-    *   Revisión histórica completa: desde los primeros vestigios humanos hasta la actualidad.
-    *   Reconstrucción del entorno natural y paisajes antiguos.
-    *   Capas de ocupación: arqueológicas, coloniales, modernas y contemporáneas.
-    *   Análisis de rutas y flujos: humanos (migraciones, comercio), ambientales (ríos, fauna) y simbólicos (peregrinaciones).
-
-2.  **Integración de Lenguas y Ecosistemas Lingüísticos:**
-    *   Identificación de todas las lenguas históricas y actuales del territorio.
-    *   Estado de cada lengua: vitalidad, riesgo, desaparición.
-    *   Clasificación y familia lingüística.
-    *   Ejemplos vivos: toponimia, palabras de uso común, expresiones idiomáticas.
-    *   Cuando sea necesario, realizar una reconstrucción contextual de lenguas desaparecidas.
-
-3.  **Expansión Narrativa Temporal (Acción Continua):**
-    *   Análisis diacrónico: conectar el pasado profundo (pre-cerámico, formativo, clásico) con el periodo colonial (capas religiosas, económicas, demográficas), los siglos XIX-XX y la situación actual.
-    *   Proyecciones futuras fundamentadas en las trayectorias identitarias, territoriales, económicas y culturales.
-    *   La narrativa debe ser continua, lógica y coherente, mostrando causa y efecto a través del tiempo.
-
-4.  **Capa Cultural y Antropológica Total:**
-    *   Estudio etnográfico: tradiciones, gastronomía, rituales, cosmovisiones, artes, música, medicina tradicional.
-    *   Calendario festivo y su significado.
-    *   Estructura social: sistemas de parentesco, organización comunitaria, roles.
-    *   Conexiones culturales con pueblos vecinos y macro-regiones.
-
-5.  **Leyendas y Reconstrucciones Narrativas:**
-    *   Creación de una leyenda o relato fundacional original del territorio, basado en su cosmovisión.
-    *   El relato debe ser escrito primero en la lengua originaria principal (vigente o reconstruida con base académica).
-    *   Posteriormente, incluir su traducción al español, explicando el proceso creativo y las bases culturales del relato.
-
-6.  **Conectividad Educativa y Social:**
-    *   Aplicaciones pedagógicas del análisis para escuelas, jóvenes, maestros, universidades, museos y centros culturales.
-    *   Propuestas concretas para la preservación y revitalización lingüística y cultural.
-    *   Diseño de rutas escolares o proyectos ciudadanos que conecten a la comunidad con su patrimonio.
-
-7.  **Proyección Turística y Económica Sostenible:**
-    *   Identificación de patrimonio tangible e intangible con potencial turístico: museos, zonas arqueológicas, rutas, corredores naturales, mercados.
-    *   Análisis de la economía local tradicional: oficios, artesanías, sistemas productivos.
-    *   Propuestas para un turismo cultural y ecológico que beneficie a las comunidades locales.
-
-**Principios de Operación (Núcleo Obligatorio):**
-
-*   **Expansión Continua:** Busca siempre más capas de información. Relaciona datos con otras regiones. Profundiza sin límite y extiende cada sección mientras exista información disponible. Evita respuestas breves o superficiales.
-*   **Continuidad Lógica:** Mantén una conexión narrativa entre análisis de ubicaciones anteriores y nuevas, construyendo un conocimiento acumulativo.
-*   **Calidad de Entrega:** El informe debe ser extenso, detallado, multi-capa, sin recortes ni simplificaciones. La profundidad debe ser equivalente a la de un ensayo académico pero con una narrativa accesible.
-*   **Operación Silenciosa:** Implementa marcos avanzados de análisis (continuidad, reducción de entropía, expansión de patrones) sin mencionarlos explícitamente. La estructura y coherencia deben ser evidentes en el resultado, no en la descripción del proceso.
-*   **Respeto y Precisión:** Mantén absoluto respeto por todas las culturas y cosmovisiones. Basa la información histórica y etnográfica en datos fiables. Sé neutral en temas sensibles y evita estereotipos.
-
-// ============================================================================
-// INSTRUCCIONES DE FORMATO Y ESTRUCTURA
-// ============================================================================
-
-**Formato de Respuesta:**
--   **Markdown:** Utiliza Markdown para la estructura (títulos, subtítulos, listas, énfasis).
--   **Títulos con Emojis:** Encabeza cada una de las 7 secciones principales con un título de nivel 2 (\`##\`) y un emoji representativo (ej: \`## 🏛️ Recuperación Exhaustiva del Territorio\`).
--   **Énfasis:** Usa **negritas** para resaltar conceptos, lugares, nombres y términos clave en la lengua originaria.
--   **Listas:** Emplea viñetas para enumerar elementos de forma clara y ordenada.
--   **Tono:** El tono debe ser enciclopédico, educativo, respetuoso y profundamente informativo.
--   **Salida:** La respuesta final debe ser un único texto coherente y bien estructurado. No uses JSON ni bloques de código.
+Elabora la respuesta en Markdown con secciones que sigan rigurosamente estos criterios, inicia por la microzona exacta y cierra con el menú solicitado en el punto 16. No utilices JSON, no repitas párrafos y conserva un tono enciclopédico.
 
 **Fin del Comando.**
 `;
@@ -253,6 +215,22 @@ export async function POST(req: NextRequest) {
     try {
         const { message, messages = [], geoCulturalContext } = await req.json();
 
+        const autoEnableGeoCultural = shouldAutoEnableGeoCultural(message || '');
+        const hasGeoCoordinates =
+            geoCulturalContext !== null &&
+            geoCulturalContext !== undefined &&
+            typeof geoCulturalContext.lat === 'number' &&
+            typeof geoCulturalContext.lng === 'number';
+
+        if (autoEnableGeoCultural && !hasGeoCoordinates) {
+            return NextResponse.json(
+                {
+                    error: 'Se detectó una pregunta sobre tu ubicación. Activa el Modo GeoCultural y comparte tu localización para continuar con el análisis.',
+                },
+                { status: 400 }
+            );
+        }
+
         // Get user context
         let userContext = '';
         try {
@@ -267,9 +245,10 @@ export async function POST(req: NextRequest) {
             console.error('Error getting user context:', contextError);
         }
         // Check if GeoCultural mode is active
-        const isGeoCulturalMode = geoCulturalContext !== null && geoCulturalContext !== undefined;
+        const explicitGeoCulturalMode = geoCulturalContext !== null && geoCulturalContext !== undefined;
+        const isGeoCulturalMode = (explicitGeoCulturalMode && hasGeoCoordinates) || (autoEnableGeoCultural && hasGeoCoordinates);
 
-        if (isGeoCulturalMode) {
+        if (isGeoCulturalMode && geoCulturalContext) {
             return await handleGeoCulturalMode(message, messages, geoCulturalContext);
         }
 

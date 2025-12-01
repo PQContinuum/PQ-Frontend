@@ -26,6 +26,7 @@ import { conversationKeys } from '@/hooks/use-conversations';
 import { useGeolocation } from '@/hooks/use-geolocation';
 import { LocationPermissionDialog } from './LocationPermissionDialog';
 import type { GeoCulturalAnalysisText } from '@/app/chat/components/MessageBubble';
+import { shouldAutoEnableGeoCultural } from '@/lib/geocultural/auto-mode';
 
 type SSEPayload = {
   delta?: string;
@@ -141,6 +142,31 @@ export const MessageInput = memo(function MessageInput() {
     setShowLocationDialog(false);
   }, []);
 
+  const ensureGeoCulturalIfNeeded = useCallback(
+    async (value: string) => {
+      if (!shouldAutoEnableGeoCultural(value)) {
+        return true;
+      }
+
+      if (!geoCulturalMode) {
+        setGeoCulturalMode(true);
+      }
+
+      if (userLocation) {
+        return true;
+      }
+
+      if (coords) {
+        setUserLocation({ lat: coords.lat, lng: coords.lng });
+        return true;
+      }
+
+      setShowLocationDialog(true);
+      return false;
+    },
+    [coords, geoCulturalMode, setGeoCulturalMode, setUserLocation, userLocation]
+  );
+
   // Update store when coords change
   const prevCoordsRef = useRef(coords);
   useEffect(() => {
@@ -162,18 +188,37 @@ export const MessageInput = memo(function MessageInput() {
     }
   }, [coords, showLocationDialog, geoCulturalMode, setGeoCulturalMode]);
 
+  const prevConversationIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (prevConversationIdRef.current && prevConversationIdRef.current !== conversationId) {
+      setGeoCulturalMode(false);
+      setUserLocation(null);
+      setShowLocationDialog(false);
+    }
+    if (!conversationId) {
+      setGeoCulturalMode(false);
+      setUserLocation(null);
+    }
+    prevConversationIdRef.current = conversationId ?? null;
+  }, [conversationId, setGeoCulturalMode, setUserLocation, setShowLocationDialog]);
+
   const submitMessage = useCallback(
     async (event?: FormEvent<HTMLFormElement>) => {
       event?.preventDefault();
       const value = input.trim();
       if (!value || isStreaming) return;
 
-        const userMessageId = createId();
-        const assistantMessageId = createId();
-        const payloadMessages = [
-          ...messages.filter((msg) => msg.content.trim().length > 0),
-          { role: 'user', content: value } as const,
-        ];
+      const canProceed = await ensureGeoCulturalIfNeeded(value);
+      if (!canProceed) {
+        return;
+      }
+
+      const userMessageId = createId();
+      const assistantMessageId = createId();
+      const payloadMessages = [
+        ...messages.filter((msg) => msg.content.trim().length > 0),
+        { role: 'user', content: value } as const,
+      ];
 
       addMessage({ id: userMessageId, role: 'user', content: value });
       addMessage({ id: assistantMessageId, role: 'assistant', content: '' });
@@ -349,6 +394,7 @@ export const MessageInput = memo(function MessageInput() {
       queryClient,
       geoCulturalMode,
       userLocation,
+      ensureGeoCulturalIfNeeded,
     ],
   );
 
