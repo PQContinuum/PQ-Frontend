@@ -22,7 +22,8 @@ interface AddressComponent {
 // ============================================================================
 
 /**
- * Get area name from coordinates using Google Geocoding API
+ * Get detailed area information from coordinates using Google Geocoding API
+ * Enhanced to provide maximum precision (like Uber/Rappi)
  */
 async function getAreaName(
     lat: number,
@@ -30,48 +31,109 @@ async function getAreaName(
     googleApiKey: string
 ): Promise<string> {
     try {
-        const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${googleApiKey}`;
+        // Use result_type to prioritize more specific results
+        const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&result_type=street_address|premise|subpremise|neighborhood|sublocality&key=${googleApiKey}`;
         const geocodeResponse = await fetch(geocodeUrl);
 
         if (geocodeResponse.ok) {
             const geocodeData = await geocodeResponse.json();
 
-            if (geocodeData.results && geocodeData.results[0]) {
-                const addressComponents = geocodeData.results[0].address_components;
-                const locality = addressComponents.find((c: AddressComponent) =>
-                    c.types.includes('locality')
+            if (geocodeData.results && geocodeData.results.length > 0) {
+                // Try to get the most specific address available
+                const result = geocodeData.results[0];
+                const addressComponents = result.address_components;
+
+                // Extract all relevant components with priority order
+                const streetNumber = addressComponents.find((c: AddressComponent) =>
+                    c.types.includes('street_number')
                 )?.long_name;
-                const sublocality = addressComponents.find((c: AddressComponent) =>
-                    c.types.includes('sublocality_level_1')
+                const route = addressComponents.find((c: AddressComponent) =>
+                    c.types.includes('route')
                 )?.long_name;
                 const neighborhood = addressComponents.find((c: AddressComponent) =>
                     c.types.includes('neighborhood')
+                )?.long_name;
+                const sublocalityL2 = addressComponents.find((c: AddressComponent) =>
+                    c.types.includes('sublocality_level_2')
+                )?.long_name;
+                const sublocalityL1 = addressComponents.find((c: AddressComponent) =>
+                    c.types.includes('sublocality_level_1')
+                )?.long_name;
+                const locality = addressComponents.find((c: AddressComponent) =>
+                    c.types.includes('locality')
+                )?.long_name;
+                const administrativeAreaL1 = addressComponents.find((c: AddressComponent) =>
+                    c.types.includes('administrative_area_level_1')
                 )?.long_name;
                 const country = addressComponents.find((c: AddressComponent) =>
                     c.types.includes('country')
                 )?.long_name;
 
-                return `${sublocality || neighborhood || locality || 'this area'}, ${country || ''}`;
+                // Build detailed address string with all available info
+                const parts: string[] = [];
+
+                // Street address if available (most precise)
+                if (route) {
+                    parts.push(streetNumber ? `${route} ${streetNumber}` : route);
+                }
+
+                // Neighborhood/Colony (colonia)
+                if (neighborhood) {
+                    parts.push(neighborhood);
+                } else if (sublocalityL2) {
+                    parts.push(sublocalityL2);
+                }
+
+                // Sublocality (delegación/alcaldía)
+                if (sublocalityL1) {
+                    parts.push(sublocalityL1);
+                }
+
+                // City/Municipality
+                if (locality) {
+                    parts.push(locality);
+                }
+
+                // State
+                if (administrativeAreaL1) {
+                    parts.push(administrativeAreaL1);
+                }
+
+                // Country
+                if (country) {
+                    parts.push(country);
+                }
+
+                const detailedAddress = parts.length > 0 ? parts.join(', ') : 'ubicación desconocida';
+
+                console.log(`[Geocoding] Resolved location: ${detailedAddress}`);
+                return detailedAddress;
             }
         }
     } catch (e) {
         console.error("Reverse geocoding failed:", e);
     }
 
-    return 'this area';
+    return 'ubicación desconocida';
 }
 
 /**
- * Build geocultural context prompt
+ * Build geocultural context prompt with precise coordinates
  */
-function buildGeoCulturalContext(areaName: string, userMessage: string): string {
+function buildGeoCulturalContext(
+    areaName: string,
+    userMessage: string,
+    lat: number,
+    lng: number
+): string {
     return `
 // ============================================================================
 // SISTEMA: buildGeoCulturalContext
 // ============================================================================
 
 Referencia de la consulta:
-- Punto aproximado reportado: ${areaName}
+- Coordenadas exactas (7 decimales): ${lat.toFixed(7)}, ${lng.toFixed(7)}
+- Dirección identificada: ${areaName}
 - Solicitud original: "${userMessage}"
 
 Toda respuesta basada en ubicación física, territorio, lengua, cultura, identidad, historia o memoria local deberá obedecer estrictamente los siguientes principios de operación:
@@ -136,21 +198,22 @@ async function handleGeoCulturalMode(
         googleApiKey
     );
 
-    // Build geocultural context
-    const geoCulturalPrompt = buildGeoCulturalContext(areaName, message);
+    // Build geocultural context with precise coordinates
+    const geoCulturalPrompt = buildGeoCulturalContext(
+        areaName,
+        message,
+        geoCulturalContext.lat,
+        geoCulturalContext.lng
+    );
 
-    // Create a custom encoder for the stream
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
 
-    // Create the response stream with metadata first
     const stream = new ReadableStream({
         async start(controller) {
-            // 1. Send geocultural.start event with metadata
             const startData = { type: 'geocultural_analysis', areaName: areaName };
             controller.enqueue(encoder.encode(`event: geocultural.start\ndata: ${JSON.stringify(startData)}\n\n`));
 
-            // Get the AI stream
             const aiStream = await streamAssistantReply(message, messages, geoCulturalPrompt);
             const reader = aiStream.getReader();
 
@@ -161,7 +224,6 @@ async function handleGeoCulturalMode(
                         break;
                     }
 
-                    // The chunk from the AI stream might contain multiple events.
                     const chunk = decoder.decode(value, { stream: true });
                     const lines = chunk.split('\n').filter(line => line.trim() !== '');
 
@@ -176,13 +238,11 @@ async function handleGeoCulturalMode(
 
                             try {
                                 const parsed = JSON.parse(data);
-                                // We assume the original stream sends deltas in a property, e.g., 'delta'
                                 if (parsed.delta) {
                                     const deltaData = { delta: parsed.delta };
                                     controller.enqueue(encoder.encode(`event: geocultural.delta\ndata: ${JSON.stringify(deltaData)}\n\n`));
                                 }
                             } catch (error) {
-                                // Could be a non-json part of the stream, ignore for now
                                 console.warn('Could not parse stream data chunk:', data, error);
                             }
                         }

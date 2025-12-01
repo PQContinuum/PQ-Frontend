@@ -89,8 +89,11 @@ export const MessageInput = memo(function MessageInput() {
     permissionState,
   } = useGeolocation({
     enableHighAccuracy: true,
-    timeout: 15000,
-    maximumAge: 60000,
+    timeout: 10000,
+    maximumAge: 0, // Always get fresh location (like Uber/Rappi)
+    targetAccuracy: 50, // Target 50m precision
+    maxAttempts: 3, // Try up to 3 times
+    averageReadings: 2, // Average 2 readings for better precision
   });
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -425,9 +428,22 @@ export const MessageInput = memo(function MessageInput() {
               </span>
             </div>
             {coords && coords.accuracy && (
-              <span className="text-xs text-[#00552b]/70 font-medium">
-                Precisión: {Math.round(coords.accuracy)}m
-              </span>
+              <div className="flex items-center gap-2">
+                <span className={`text-xs font-medium ${
+                  coords.accuracy <= 20 ? 'text-green-600' :
+                  coords.accuracy <= 50 ? 'text-yellow-600' :
+                  coords.accuracy <= 100 ? 'text-orange-600' :
+                  'text-red-600'
+                }`}>
+                  {coords.accuracy <= 20 ? '📍 Excelente' :
+                   coords.accuracy <= 50 ? '📍 Buena' :
+                   coords.accuracy <= 100 ? '📍 Regular' :
+                   '📍 Baja'}
+                </span>
+                <span className="text-xs text-[#00552b]/70 font-medium">
+                  (±{Math.round(coords.accuracy)}m)
+                </span>
+              </div>
             )}
           </div>
         )}
