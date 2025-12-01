@@ -25,6 +25,13 @@ export type TypingState = (typeof TYPING_STATES)[number];
 
 const TYPING_CYCLE_INTERVAL = 2000;
 
+export type UserLocation = {
+  lat: number;
+  lng: number;
+  accuracy?: number;
+  timestamp?: number;
+};
+
 // Solo UI state - Server state se maneja con TanStack Query
 type ChatStore = {
   // Current conversation UI state
@@ -33,7 +40,7 @@ type ChatStore = {
   typingStateIndex: number;
   conversationId: string | null;
   geoCulturalMode: boolean;
-  userLocation: { lat: number; lng: number } | null;
+  userLocation: UserLocation | null;
 
   // Actions
   addMessage: (message: ChatMessage) => void;
@@ -42,7 +49,7 @@ type ChatStore = {
   setStreaming: (value: boolean) => void;
   setConversationId: (id: string | null) => void;
   setGeoCulturalMode: (value: boolean) => void;
-  setUserLocation: (location: { lat: number; lng: number } | null) => void;
+  setUserLocation: (location: UserLocation | null) => void;
   reset: () => void;
 };
 

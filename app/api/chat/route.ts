@@ -4,6 +4,7 @@ import { streamAssistantReply } from "@/lib/openai";
 import { getUserContextForPrompt } from "@/lib/memory/user-context";
 import { getUserPlanName } from "@/lib/subscription";
 import { shouldAutoEnableGeoCultural } from "@/lib/geocultural/auto-mode";
+import { validateLocation } from "@/lib/geolocation/location-validator";
 
 import type { ChatMessage } from "@/app/chat/store";
 
@@ -172,14 +173,42 @@ Elabora la respuesta en Markdown con secciones que sigan rigurosamente estos cri
 async function handleGeoCulturalMode(
     message: string,
     messages: ChatMessage[],
-    geoCulturalContext: { lat: number; lng: number }
+    geoCulturalContext: { lat: number; lng: number; accuracy?: number; timestamp?: number }
 ) {
-    // Validate coordinates
+    // Validate coordinates exist
     if (!geoCulturalContext.lat || !geoCulturalContext.lng) {
         return NextResponse.json(
             { error: 'GeoCultural Mode is active but location is unavailable.' },
             { status: 400 }
         );
+    }
+
+    // Comprehensive location validation
+    const validationResult = validateLocation(
+        {
+            lat: geoCulturalContext.lat,
+            lng: geoCulturalContext.lng,
+            accuracy: geoCulturalContext.accuracy,
+            timestamp: geoCulturalContext.timestamp,
+        },
+        {
+            maxAccuracy: 200, // Max 200m accuracy
+            maxAgeSeconds: 60, // Max 60s old
+            strictMode: true, // Enable fake GPS detection
+        }
+    );
+
+    if (!validationResult.valid) {
+        console.warn('[GeoCultural] Location validation failed:', validationResult.error);
+        return NextResponse.json(
+            { error: validationResult.error || 'Ubicación inválida' },
+            { status: 400 }
+        );
+    }
+
+    // Log warnings if any
+    if (validationResult.warnings && validationResult.warnings.length > 0) {
+        console.warn('[GeoCultural] Location warnings:', validationResult.warnings);
     }
 
     // Validate API key
