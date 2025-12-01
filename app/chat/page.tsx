@@ -304,7 +304,7 @@ export default function ChatPage() {
                   {getConversationTitle()}
                 </p>
               </div>
-              <div className={`group rounded-full border-2 px-4 py-1.5 text-sm cursor-pointer transition-all hover:shadow-lg hover:scale-105 ${
+              {/*<div className={`group rounded-full border-2 px-4 py-1.5 text-sm cursor-pointer transition-all hover:shadow-lg hover:scale-105 ${
                 userPlan?.planName === 'Free' || !userPlan?.planName
                   ? 'border-[#7EEFB2] bg-[#7EEFB2]/10'
                   : userPlan?.planName === 'Básico' || userPlan?.planName === 'Basic'
@@ -336,7 +336,7 @@ export default function ChatPage() {
                     ? '180k tokens ahorrados'
                     : '180k tokens restantes'}
                 </span>
-              </div>
+              </div>*/}
             </div>
           </motion.header>
         )}
