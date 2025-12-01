@@ -3,8 +3,11 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, X, Check, Navigation, AlertCircle } from 'lucide-react';
-import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
+import { APIProvider, Map, AdvancedMarker, type MapMouseEvent } from '@vis.gl/react-google-maps';
 import type { StructuredAddress } from '@/lib/geolocation/address-types';
+
+// Type for marker drag events
+type MarkerDragEvent = google.maps.MapMouseEvent;
 
 type LocationMapConfirmDialogProps = {
   isOpen: boolean;
@@ -77,7 +80,7 @@ export function LocationMapConfirmDialog({
 
             // Helper to extract component
             const extractComponent = (type: string, format: 'long' | 'short' = 'long') => {
-              const component = components.find((c: any) => c.types.includes(type));
+              const component = components.find((c: { types: string[] }) => c.types.includes(type));
               if (!component) return null;
               return format === 'long' ? component.long_name : component.short_name;
             };
@@ -154,10 +157,11 @@ export function LocationMapConfirmDialog({
 
   // Handle map click to update marker position
   const handleMapClick = useCallback(
-    (event: any) => {
-      if (event.detail?.latLng) {
-        const newLat = event.detail.latLng.lat;
-        const newLng = event.detail.latLng.lng;
+    (event: MapMouseEvent) => {
+      const latLng = event.detail?.latLng;
+      if (latLng) {
+        const newLat = latLng.lat;
+        const newLng = latLng.lng;
         setMarkerPosition({ lat: newLat, lng: newLng });
         reverseGeocodePosition(newLat, newLng);
       }
@@ -274,7 +278,16 @@ export function LocationMapConfirmDialog({
                         <AdvancedMarker
                           position={markerPosition}
                           draggable={true}
-                          onDragEnd={(event: any) => {
+                          onDrag={(event: MarkerDragEvent) => {
+                            // Update position in real-time while dragging
+                            if (event.latLng) {
+                              const newLat = event.latLng.lat();
+                              const newLng = event.latLng.lng();
+                              setMarkerPosition({ lat: newLat, lng: newLng });
+                            }
+                          }}
+                          onDragEnd={(event: MarkerDragEvent) => {
+                            // Trigger geocoding only when drag ends
                             if (event.latLng) {
                               const newLat = event.latLng.lat();
                               const newLng = event.latLng.lng();
