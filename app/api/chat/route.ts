@@ -117,7 +117,8 @@ Elabora la respuesta en Markdown con secciones que sigan rigurosamente estos cri
 async function handleGeoCulturalMode(
     message: string,
     messages: ChatMessage[],
-    geoCulturalContext: { lat: number; lng: number; accuracy?: number; timestamp?: number }
+    geoCulturalContext: { lat: number; lng: number; accuracy?: number; timestamp?: number },
+    userContext?: string
 ) {
     // Validate coordinates exist
     if (!geoCulturalContext.lat || !geoCulturalContext.lng) {
@@ -192,6 +193,11 @@ async function handleGeoCulturalMode(
         fullAddress
     );
 
+    // Combine user context (facts, memory, plan) with geocultural context
+    const combinedContext = userContext
+        ? `${userContext}\n\n${geoCulturalPrompt}`
+        : geoCulturalPrompt;
+
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
 
@@ -200,7 +206,7 @@ async function handleGeoCulturalMode(
             const startData = { type: 'geocultural_analysis', areaName: areaName };
             controller.enqueue(encoder.encode(`event: geocultural.start\ndata: ${JSON.stringify(startData)}\n\n`));
 
-            const aiStream = await streamAssistantReply(message, messages, geoCulturalPrompt);
+            const aiStream = await streamAssistantReply(message, messages, combinedContext);
             const reader = aiStream.getReader();
 
             try {
@@ -295,7 +301,7 @@ export async function POST(req: NextRequest) {
         const isGeoCulturalMode = (explicitGeoCulturalMode && hasGeoCoordinates) || (autoEnableGeoCultural && hasGeoCoordinates);
 
         if (isGeoCulturalMode && geoCulturalContext) {
-            return await handleGeoCulturalMode(message, messages, geoCulturalContext);
+            return await handleGeoCulturalMode(message, messages, geoCulturalContext, userContext);
         }
 
         // Fallback to default streaming behavior
