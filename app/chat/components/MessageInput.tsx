@@ -23,10 +23,12 @@ import {
 import { useCreateConversation } from '@/hooks/use-conversations';
 import { useQueryClient } from '@tanstack/react-query';
 import { conversationKeys } from '@/hooks/use-conversations';
-import { useGeolocation } from '@/hooks/use-geolocation';
+import { usePreciseLocation } from '@/hooks/use-precise-location';
 import { LocationPermissionDialog } from './LocationPermissionDialog';
+import { LocationMapConfirmDialog } from './LocationMapConfirmDialog';
 import type { GeoCulturalAnalysisText } from '@/app/chat/components/MessageBubble';
 import { shouldAutoEnableGeoCultural } from '@/lib/geocultural/auto-mode';
+import type { StructuredAddress } from '@/lib/geolocation/address-types';
 
 type SSEPayload = {
   delta?: string;
@@ -75,6 +77,13 @@ export const MessageInput = memo(function MessageInput() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [input, setInput] = useState('');
   const [showLocationDialog, setShowLocationDialog] = useState(false);
+  const [showMapDialog, setShowMapDialog] = useState(false);
+  const [confirmedLocation, setConfirmedLocation] = useState<{
+    lat: number;
+    lng: number;
+    accuracy: number;
+    address: StructuredAddress;
+  } | null>(null);
   const queryClient = useQueryClient();
 
   const messages = useMessages();
@@ -82,20 +91,14 @@ export const MessageInput = memo(function MessageInput() {
   const userLocation = useUserLocation();
 
   const {
+    address,
     coords,
     isLoading: isLocationLoading,
     error: locationError,
     requestLocation,
-    permissionState,
-    sampleCount,
-  } = useGeolocation({
-    targetAccuracy: 50, // Target 50m precision (like Uber/Rappi)
-    minSamples: 3, // Minimum 3 samples before calibrated
-    maxSamples: 10, // Maximum 10 samples
-    timeout: 15000, // 15 second timeout
-    enableKalmanFilter: true, // Enable Kalman filtering (reduces noise by 43%)
-    rejectOutliers: true, // Reject suspicious GPS jumps
-  });
+    quality,
+    warnings,
+  } = usePreciseLocation();
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const textarea = e.target;
@@ -126,7 +129,7 @@ export const MessageInput = memo(function MessageInput() {
       setGeoCulturalMode(false);
       setUserLocation(null);
     } else {
-      if (permissionState === 'granted' && coords) {
+      if (coords) {
         setGeoCulturalMode(true);
         setUserLocation({
           lat: coords.lat,
@@ -138,7 +141,7 @@ export const MessageInput = memo(function MessageInput() {
         setShowLocationDialog(true);
       }
     }
-  }, [geoCulturalMode, setGeoCulturalMode, setUserLocation, permissionState, coords]);
+  }, [geoCulturalMode, setGeoCulturalMode, setUserLocation, coords]);
 
   const handleAllowLocation = useCallback(async () => {
     await requestLocation();
@@ -146,6 +149,37 @@ export const MessageInput = memo(function MessageInput() {
 
   const handleCloseDialog = useCallback(() => {
     setShowLocationDialog(false);
+    setShowMapDialog(false);
+  }, []);
+
+  const handleContinueWithLocation = useCallback(() => {
+    // When user clicks "Continue with this location" in the permission dialog,
+    // close it and open the map confirmation dialog
+    if (address && coords) {
+      setShowLocationDialog(false);
+      setShowMapDialog(true);
+    }
+  }, [address, coords]);
+
+  const handleConfirmMapLocation = useCallback(
+    (location: { lat: number; lng: number; accuracy: number; address: StructuredAddress }) => {
+      // Save confirmed location and update store
+      setConfirmedLocation(location);
+      setUserLocation({
+        lat: location.lat,
+        lng: location.lng,
+        accuracy: location.accuracy,
+        timestamp: Date.now(),
+      });
+      setGeoCulturalMode(true);
+      setShowMapDialog(false);
+      setShowLocationDialog(false);
+    },
+    [setUserLocation, setGeoCulturalMode]
+  );
+
+  const handleCloseMapDialog = useCallback(() => {
+    setShowMapDialog(false);
   }, []);
 
   const ensureGeoCulturalIfNeeded = useCallback(
@@ -178,28 +212,15 @@ export const MessageInput = memo(function MessageInput() {
     [coords, geoCulturalMode, setGeoCulturalMode, setUserLocation, userLocation]
   );
 
-  // Update store when coords change
-  const prevCoordsRef = useRef(coords);
+  // When location is obtained, open the map dialog instead of closing permission dialog
+  const prevTimestampRef = useRef<number | null>(null);
   useEffect(() => {
-    if (coords && coords !== prevCoordsRef.current && geoCulturalMode) {
-      setUserLocation({
-        lat: coords.lat,
-        lng: coords.lng,
-        accuracy: coords.accuracy,
-        timestamp: coords.timestamp,
-      });
-      prevCoordsRef.current = coords;
-      setShowLocationDialog(false);
+    if (coords && address && showLocationDialog && coords.timestamp !== prevTimestampRef.current) {
+      prevTimestampRef.current = coords.timestamp;
+      // Don't auto-close the permission dialog anymore
+      // Let the user click "Continue with this location" to open the map
     }
-  }, [coords, geoCulturalMode, setUserLocation]);
-
-  // Auto-enable GeoCultural Mode when location is granted
-  useEffect(() => {
-    if (coords && showLocationDialog && !geoCulturalMode) {
-      setGeoCulturalMode(true);
-      setShowLocationDialog(false);
-    }
-  }, [coords, showLocationDialog, geoCulturalMode, setGeoCulturalMode]);
+  }, [coords, address, showLocationDialog]);
 
   const prevConversationIdRef = useRef<string | null>(null);
   useEffect(() => {
@@ -424,36 +445,61 @@ export const MessageInput = memo(function MessageInput() {
         isOpen={showLocationDialog}
         onClose={handleCloseDialog}
         onAllow={handleAllowLocation}
+        onContinue={handleContinueWithLocation}
         error={locationError}
         isLoading={isLocationLoading}
+        address={address}
+        quality={quality}
+        warnings={warnings}
       />
+
+      {address && coords && (
+        <LocationMapConfirmDialog
+          isOpen={showMapDialog}
+          onClose={handleCloseMapDialog}
+          onConfirm={handleConfirmMapLocation}
+          initialLocation={{
+            lat: coords.lat,
+            lng: coords.lng,
+            accuracy: coords.accuracy,
+          }}
+          initialAddress={address}
+        />
+      )}
 
       <div className="space-y-3">
         {geoCulturalMode && (
           <div className="flex items-center justify-between gap-3 px-4 py-2 bg-gradient-to-r from-[#00552b]/10 to-[#00aa56]/10 rounded-2xl border border-[#00552b]/20">
-            <div className="flex items-center gap-2">
-              <MapPin className="size-4 text-[#00552b]" />
-              <span className="text-sm font-medium text-[#00552b]">
-                {!userLocation && isLocationLoading
-                  ? `Calibrando... (${sampleCount} ${sampleCount === 1 ? 'muestra' : 'muestras'})`
-                  : userLocation
-                  ? coords?.isCalibrated
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <MapPin className="size-4 text-[#00552b] shrink-0" />
+              <div className="flex flex-col min-w-0">
+                <span className="text-sm font-medium text-[#00552b]">
+                  {!userLocation && isLocationLoading
+                    ? 'Obteniendo ubicación precisa...'
+                    : userLocation && address
                     ? 'GeoCultural Mode activo ✓'
-                    : 'GeoCultural Mode activo'
-                  : 'Obteniendo ubicación...'}
-              </span>
+                    : userLocation
+                    ? 'GeoCultural Mode activo'
+                    : 'Obteniendo ubicación...'}
+                </span>
+                {address && address.neighborhood && (
+                  <span className="text-xs text-[#00552b]/70 truncate">
+                    {[address.neighborhood, address.city].filter(Boolean).join(', ')}
+                  </span>
+                )}
+              </div>
             </div>
-            {coords && coords.accuracy && (
-              <div className="flex items-center gap-2">
+            {coords && coords.accuracy && quality && (
+              <div className="flex items-center gap-2 shrink-0">
                 <span className={`text-xs font-medium ${
-                  coords.quality === 'excellent' ? 'text-green-600' :
-                  coords.quality === 'good' ? 'text-yellow-600' :
-                  coords.quality === 'fair' ? 'text-orange-600' :
+                  quality === 'excellent' ? 'text-green-600' :
+                  quality === 'good' ? 'text-blue-600' :
+                  quality === 'fair' ? 'text-yellow-600' :
                   'text-red-600'
                 }`}>
-                  {coords.quality === 'excellent' ? '📍 Excelente' :
-                   coords.quality === 'good' ? '📍 Buena' :
-                   coords.quality === 'fair' ? '📍 Regular' :
+                  {quality === 'excellent' ? '📍 Excelente' :
+                   quality === 'good' ? '📍 Buena' :
+                   quality === 'fair' ? '📍 Regular' :
                    '📍 Baja'}
                 </span>
                 <span className="text-xs text-[#00552b]/70 font-medium">
