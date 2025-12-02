@@ -139,7 +139,7 @@ async function handleGeoCulturalMode(
         {
             maxAccuracy: 200, // Max 200m accuracy
             maxAgeSeconds: 60, // Max 60s old
-            strictMode: true, // Enable fake GPS detection
+            strictMode: false, // Disable fake GPS detection (too strict for real mobile devices)
         }
     );
 
