@@ -1,0 +1,1 @@
+ALTER TABLE "conversations" ADD COLUMN "geocultural_context" text;

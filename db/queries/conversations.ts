@@ -82,7 +82,7 @@ export async function createConversation(
 export async function updateConversation(
   conversationId: string,
   userId: string,
-  data: Partial<Pick<Conversation, "title">>
+  data: Partial<Pick<Conversation, "title" | "geoCulturalContext">>
 ): Promise<Conversation | undefined> {
   const result = await db
     .update(conversations)

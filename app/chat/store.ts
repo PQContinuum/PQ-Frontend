@@ -30,6 +30,17 @@ export type UserLocation = {
   lng: number;
   accuracy?: number;
   timestamp?: number;
+  address?: {
+    formattedAddress?: string;
+    shortAddress?: string;
+    street?: string | null;
+    streetNumber?: string | null;
+    neighborhood?: string | null;
+    city?: string | null;
+    state?: string | null;
+    country?: string | null;
+    postalCode?: string | null;
+  };
 };
 
 // Solo UI state - Server state se maneja con TanStack Query

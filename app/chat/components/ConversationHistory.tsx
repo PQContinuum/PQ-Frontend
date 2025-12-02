@@ -2,7 +2,7 @@
 
 import React, { useCallback, memo } from 'react';
 import { Loader2 } from 'lucide-react';
-import { useConversationId, useSetConversationId, useReplaceMessages } from '../store';
+import { useConversationId, useSetConversationId, useReplaceMessages, useSetGeoCulturalMode, useSetUserLocation } from '../store';
 import { SidebarMenuItem, useSidebar } from '@/components/ui/sidebar';
 import { ConversationItem } from './ConversationItem';
 import {
@@ -27,6 +27,8 @@ export const ConversationHistory = memo(function ConversationHistory() {
   const conversationId = useConversationId();
   const setConversationId = useSetConversationId();
   const replaceMessages = useReplaceMessages();
+  const setGeoCulturalMode = useSetGeoCulturalMode();
+  const setUserLocation = useSetUserLocation();
 
   const { state } = useSidebar();
   const queryClient = useQueryClient();
@@ -51,6 +53,22 @@ export const ConversationHistory = memo(function ConversationHistory() {
       // Usar cache inmediatamente
       replaceMessages(cachedConversation.messages);
 
+      // Restaurar contexto geocultural si existe
+      if (cachedConversation.geoCulturalContext) {
+        try {
+          const geoCulturalData = JSON.parse(cachedConversation.geoCulturalContext);
+          setGeoCulturalMode(true);
+          setUserLocation(geoCulturalData);
+          console.log('[GeoCultural] Restored context from cached conversation:', geoCulturalData);
+        } catch (error) {
+          console.error('[GeoCultural] Error parsing cached geocultural context:', error);
+        }
+      } else {
+        // Limpiar contexto si la conversación no lo tiene
+        setGeoCulturalMode(false);
+        setUserLocation(null);
+      }
+
       // Revalidar en background sin bloquear UI
       queryClient.fetchQuery<ConversationWithMessages>({
         queryKey: conversationKeys.detail(id),
@@ -65,6 +83,22 @@ export const ConversationHistory = memo(function ConversationHistory() {
         // Actualizar solo si hay cambios
         if (JSON.stringify(freshConversation.messages) !== JSON.stringify(cachedConversation.messages)) {
           replaceMessages(freshConversation.messages);
+        }
+
+        // Actualizar contexto geocultural si cambió
+        if (freshConversation.geoCulturalContext !== cachedConversation.geoCulturalContext) {
+          if (freshConversation.geoCulturalContext) {
+            try {
+              const geoCulturalData = JSON.parse(freshConversation.geoCulturalContext);
+              setGeoCulturalMode(true);
+              setUserLocation(geoCulturalData);
+            } catch (error) {
+              console.error('[GeoCultural] Error parsing fresh geocultural context:', error);
+            }
+          } else {
+            setGeoCulturalMode(false);
+            setUserLocation(null);
+          }
         }
       }).catch((error) => {
         console.error('Background revalidation error:', error);
@@ -84,12 +118,28 @@ export const ConversationHistory = memo(function ConversationHistory() {
         });
 
         replaceMessages(conversation.messages);
+
+        // Restaurar contexto geocultural si existe
+        if (conversation.geoCulturalContext) {
+          try {
+            const geoCulturalData = JSON.parse(conversation.geoCulturalContext);
+            setGeoCulturalMode(true);
+            setUserLocation(geoCulturalData);
+            console.log('[GeoCultural] Restored context from fetched conversation:', geoCulturalData);
+          } catch (error) {
+            console.error('[GeoCultural] Error parsing geocultural context:', error);
+          }
+        } else {
+          // Limpiar contexto si la conversación no lo tiene
+          setGeoCulturalMode(false);
+          setUserLocation(null);
+        }
       } catch (error) {
         console.error('Error loading conversation:', error);
         setConversationId(null);
       }
     }
-  }, [setConversationId, replaceMessages, queryClient]);
+  }, [setConversationId, replaceMessages, setGeoCulturalMode, setUserLocation, queryClient]);
 
   const handleMouseEnter = useCallback((id: string) => {
     prefetchConversation(id);

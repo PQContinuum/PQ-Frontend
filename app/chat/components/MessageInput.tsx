@@ -123,19 +123,30 @@ export const MessageInput = memo(function MessageInput() {
       setGeoCulturalMode(false);
       setUserLocation(null);
     } else {
-      if (coords) {
+      if (coords && address) {
         setGeoCulturalMode(true);
         setUserLocation({
           lat: coords.lat,
           lng: coords.lng,
           accuracy: coords.accuracy,
           timestamp: Date.now(),
+          address: {
+            formattedAddress: address.formattedAddress,
+            shortAddress: address.shortAddress,
+            street: address.street,
+            streetNumber: address.streetNumber,
+            neighborhood: address.neighborhood,
+            city: address.city,
+            state: address.state,
+            country: address.country,
+            postalCode: address.postalCode,
+          },
         });
       } else {
         setShowLocationDialog(true);
       }
     }
-  }, [geoCulturalMode, setGeoCulturalMode, setUserLocation, coords]);
+  }, [geoCulturalMode, setGeoCulturalMode, setUserLocation, coords, address]);
 
   const handleAllowLocation = useCallback(async () => {
     await requestLocation();
@@ -148,12 +159,23 @@ export const MessageInput = memo(function MessageInput() {
 
   const handleConfirmMapLocation = useCallback(
     (location: { lat: number; lng: number; accuracy: number; address: StructuredAddress }) => {
-      // Update store with confirmed location
+      // Update store with confirmed location INCLUDING address
       setUserLocation({
         lat: location.lat,
         lng: location.lng,
         accuracy: location.accuracy,
         timestamp: Date.now(),
+        address: {
+          formattedAddress: location.address.formattedAddress,
+          shortAddress: location.address.shortAddress,
+          street: location.address.street,
+          streetNumber: location.address.streetNumber,
+          neighborhood: location.address.neighborhood,
+          city: location.address.city,
+          state: location.address.state,
+          country: location.address.country,
+          postalCode: location.address.postalCode,
+        },
       });
       setGeoCulturalMode(true);
       setShowMapDialog(false);
@@ -180,12 +202,23 @@ export const MessageInput = memo(function MessageInput() {
         return true;
       }
 
-      if (coords) {
+      if (coords && address) {
         setUserLocation({
           lat: coords.lat,
           lng: coords.lng,
           accuracy: coords.accuracy,
           timestamp: Date.now(),
+          address: {
+            formattedAddress: address.formattedAddress,
+            shortAddress: address.shortAddress,
+            street: address.street,
+            streetNumber: address.streetNumber,
+            neighborhood: address.neighborhood,
+            city: address.city,
+            state: address.state,
+            country: address.country,
+            postalCode: address.postalCode,
+          },
         });
         return true;
       }
@@ -193,7 +226,7 @@ export const MessageInput = memo(function MessageInput() {
       setShowLocationDialog(true);
       return false;
     },
-    [coords, geoCulturalMode, setGeoCulturalMode, setUserLocation, userLocation]
+    [coords, address, geoCulturalMode, setGeoCulturalMode, setUserLocation, userLocation]
   );
 
   // When location is obtained, automatically open the map dialog
@@ -295,13 +328,18 @@ export const MessageInput = memo(function MessageInput() {
           }
         }
 
+        // Update timestamp to current time for each message (keep coords/address same)
+        const freshGeoCulturalContext = geoCulturalMode && userLocation
+          ? { ...userLocation, timestamp: Date.now() }
+          : null;
+
         const response = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             message: value,
             messages: payloadMessages,
-            geoCulturalContext: geoCulturalMode ? userLocation : null,
+            geoCulturalContext: freshGeoCulturalContext,
           }),
         });
 
@@ -408,6 +446,17 @@ export const MessageInput = memo(function MessageInput() {
             queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
             fetch(`/api/conversations/${currentConversationId}/extract-facts`, { method: 'POST' })
               .catch(err => console.debug('Background fact extraction:', err.message));
+
+            // ✅ Guardar contexto geocultural en la conversación (persiste para futuras sesiones)
+            if (freshGeoCulturalContext) {
+              fetch(`/api/conversations/${currentConversationId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  geoCulturalContext: JSON.stringify(freshGeoCulturalContext),
+                }),
+              }).catch(err => console.debug('Background geocultural context save:', err.message));
+            }
 
           } catch (error) {
             console.error('Error saving assistant message:', error);

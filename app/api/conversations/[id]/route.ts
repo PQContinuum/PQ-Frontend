@@ -64,9 +64,13 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { title } = body;
+    const { title, geoCulturalContext } = body;
 
-    const conversation = await updateConversation(id, user.id, { title });
+    const updateData: { title?: string; geoCulturalContext?: string | null } = {};
+    if (title !== undefined) updateData.title = title;
+    if (geoCulturalContext !== undefined) updateData.geoCulturalContext = geoCulturalContext;
+
+    const conversation = await updateConversation(id, user.id, updateData);
 
     if (!conversation) {
       return NextResponse.json(

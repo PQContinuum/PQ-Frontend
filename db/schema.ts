@@ -42,6 +42,7 @@ export const conversations = pgTable("conversations", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id").notNull(), // Referencia a auth.users (sin FK)
   title: text("title").notNull(),
+  geoCulturalContext: text("geocultural_context"), // JSON string con ubicación para modo geocultural
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
