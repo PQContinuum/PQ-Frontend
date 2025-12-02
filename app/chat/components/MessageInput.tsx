@@ -129,7 +129,7 @@ export const MessageInput = memo(function MessageInput() {
           lat: coords.lat,
           lng: coords.lng,
           accuracy: coords.accuracy,
-          timestamp: coords.timestamp,
+          timestamp: Date.now(),
         });
       } else {
         setShowLocationDialog(true);
@@ -185,7 +185,7 @@ export const MessageInput = memo(function MessageInput() {
           lat: coords.lat,
           lng: coords.lng,
           accuracy: coords.accuracy,
-          timestamp: coords.timestamp,
+          timestamp: Date.now(),
         });
         return true;
       }
