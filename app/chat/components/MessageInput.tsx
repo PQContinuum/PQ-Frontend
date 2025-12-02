@@ -245,6 +245,8 @@ export const MessageInput = memo(function MessageInput() {
       setStreaming(true);
 
       let currentConversationId = conversationId;
+      let assistantContent = '';
+      let geoCulturalContent: (GeoCulturalAnalysisText & Record<string, unknown>) | null = null;
 
       try {
         // Si no hay conversación activa, crear una nueva
@@ -308,9 +310,6 @@ export const MessageInput = memo(function MessageInput() {
           throw new Error(errorData.error || 'No se pudo contactar con el asistente.');
         }
 
-        let assistantContent = '';
-        let geoCulturalContent: (GeoCulturalAnalysisText & Record<string, unknown>) | null = null;
-
         if (!response.body) throw new Error('Response body is missing.');
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
@@ -355,17 +354,41 @@ export const MessageInput = memo(function MessageInput() {
           }
         };
 
-        while (true) {
-          const { value: chunk, done } = await reader.read();
-          if (chunk) {
-            buffer += decoder.decode(chunk, { stream: !done });
-            processBuffer();
+        try {
+          while (true) {
+            const { value: chunk, done } = await reader.read();
+            if (chunk) {
+              buffer += decoder.decode(chunk, { stream: !done });
+              processBuffer();
+            }
+            if (done) break;
           }
-          if (done) break;
-        }
 
-        buffer += decoder.decode();
-        processBuffer();
+          buffer += decoder.decode();
+          processBuffer();
+        } catch (streamError) {
+          // Handle stream interruption (e.g., when app goes to background on mobile)
+          console.warn('[Stream] Connection interrupted, preserving partial content:', streamError);
+
+          // Process any remaining buffer before handling error
+          if (buffer) {
+            try {
+              buffer += decoder.decode();
+              processBuffer();
+            } catch (e) {
+              console.warn('[Stream] Error processing final buffer:', e);
+            }
+          }
+
+          // If we have partial content, keep it and add a note about interruption
+          if (assistantContent) {
+            console.log('[Stream] Preserved partial content:', assistantContent.substring(0, 100));
+            // Don't throw - we want to save the partial content
+          } else {
+            // Only throw if we have no content at all
+            throw streamError;
+          }
+        }
 
         // ✅ FIX: Guardar mensaje del asistente en Supabase Y confirmar
         if (currentConversationId && assistantContent) {
@@ -391,11 +414,42 @@ export const MessageInput = memo(function MessageInput() {
           }
         }
       } catch (err) {
-        const message =
-          err instanceof Error
-            ? err.message
-            : 'Ocurrió un problema al contactar con el asistente.';
-        updateMessage(assistantMessageId, () => message);
+        console.error('[Chat] Error during message submission:', err);
+
+        // Check if we already have partial content from streaming
+        if (assistantContent && assistantContent.length > 0) {
+          // We have partial content - keep it and don't overwrite with error
+          console.log('[Chat] Keeping partial content despite error');
+          // The content is already in the message, just end streaming
+
+          // Try to save partial content to database
+          if (currentConversationId) {
+            try {
+              await fetch(`/api/conversations/${currentConversationId}/messages`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  id: assistantMessageId,
+                  role: 'assistant',
+                  content: assistantContent,
+                }),
+              });
+
+              queryClient.invalidateQueries({ queryKey: conversationKeys.detail(currentConversationId) });
+              queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
+              console.log('[Chat] Partial content saved successfully');
+            } catch (saveError) {
+              console.error('[Chat] Error saving partial content:', saveError);
+            }
+          }
+        } else {
+          // No content received, show error message
+          const message =
+            err instanceof Error
+              ? err.message
+              : 'Ocurrió un problema al contactar con el asistente.';
+          updateMessage(assistantMessageId, () => message);
+        }
       } finally {
         setStreaming(false);
       }
