@@ -104,7 +104,7 @@ Referencia de la consulta:
 ESTRUCTURA OBLIGATORIA DE RESPUESTA - MODO GEOCULTURAL ULTRALOCAL MAESTRO:
 
 ──────────────────────────────────────────────────────────────────────────────
-0. IDENTIFICACIÓN ABSOLUTA DEL PUNTO EXACTO (MÓDULO CRÍTICO NUEVO)
+IDENTIFICACIÓN ABSOLUTA DEL PUNTO EXACTO (MÓDULO CRÍTICO)
 ──────────────────────────────────────────────────────────────────────────────
 
 OBLIGATORIO: Antes de analizar colonia o municipio, IDENTIFICAR el tipo de inmueble/punto exacto:
@@ -136,7 +136,7 @@ describir.inmueble_punto_exacto:
    ◦ importancia_local
 
 ──────────────────────────────────────────────────────────────────────────────
-1. TRIPLE BÚSQUEDA OBLIGATORIA
+TRIPLE BÚSQUEDA OBLIGATORIA
 ──────────────────────────────────────────────────────────────────────────────
 
 buscar.triple_capa:
@@ -145,7 +145,7 @@ buscar.triple_capa:
    ◦ comunitarias.intensivas (memoria oral, tradición local, testimonios)
 
 ──────────────────────────────────────────────────────────────────────────────
-2. ESCANEO COLONIA/LOCALIDAD/MUNICIPIO
+ESCANEO COLONIA/LOCALIDAD/MUNICIPIO
 ──────────────────────────────────────────────────────────────────────────────
 
 escanear.colonia_localidad:
@@ -194,7 +194,7 @@ escanear.colonia_localidad:
    ◦ ferias_locales.gastronomicas_culturales
 
 ──────────────────────────────────────────────────────────────────────────────
-3. MODO NO OMISIÓN TOTAL
+MODO NO OMISIÓN TOTAL
 ──────────────────────────────────────────────────────────────────────────────
 
 activar.modo_no_omision.total:
@@ -206,7 +206,7 @@ activar.modo_no_omision.total:
       - [MEMORIA COMUNITARIA] tradición oral, testimonios locales
 
 ──────────────────────────────────────────────────────────────────────────────
-4. GENERAR SALIDA EN FORMATO DE 12 BLOQUES NORMATIVO
+GENERAR SALIDA EN FORMATO DE 12 BLOQUES NORMATIVO
 ──────────────────────────────────────────────────────────────────────────────
 
 generar.salida.formato_12_bloques:
@@ -216,7 +216,7 @@ generar.salida.formato_12_bloques:
    ◦ Coordenadas exactas (7 decimales)
    ◦ Dirección identificada completa
 
-   BLOQUE 2: PUNTO EXACTO (INCLUYE MÓDULO 0 COMPLETO)
+   BLOQUE 2: PUNTO EXACTO
    ◦ Tipo de inmueble/estructura identificada
    ◦ Nombre, giro, función actual
    ◦ Historia del punto específico
@@ -316,7 +316,7 @@ REGLAS DE EJECUCIÓN ESTRICTAS
 10. EXHAUSTIVIDAD: Incluir TODO lo detectado aunque no aparezca en mapas oficiales
 
 **IMPORTANTE**: La respuesta DEBE seguir esta estructura de 12 bloques en formato Markdown.
-Comenzar SIEMPRE por el MÓDULO 0 (identificación del punto exacto), luego proceder con los 12 bloques.
+Comenzar SIEMPRE por la identificación del punto exacto, luego proceder con los 12 bloques.
 
 **Fin del Comando GeoCultural Ultralocal Maestro.**
 `;
