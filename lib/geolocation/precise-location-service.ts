@@ -229,6 +229,10 @@ function parseGeocodingResult(
 /**
  * Reverse geocode coordinates using Google Geocoding API
  *
+ * Uses a two-stage fallback approach:
+ * 1. First attempt: Use restrictive filters for precise addresses
+ * 2. Second attempt: Remove filters to get any available location data
+ *
  * @param lat Latitude (7 decimals precision)
  * @param lng Longitude (7 decimals precision)
  * @param apiKey Google Maps API Key
@@ -240,7 +244,7 @@ async function reverseGeocode(
   apiKey: string
 ): Promise<GoogleGeocodingResult | null> {
   try {
-    // Use result_type to prioritize specific results
+    // ATTEMPT 1: Try with restrictive filters for precise addresses
     // Priority: street_address > premise > neighborhood > sublocality
     const resultTypes = [
       'street_address',
@@ -255,21 +259,45 @@ async function reverseGeocode(
     url.searchParams.set('result_type', resultTypes);
     url.searchParams.set('key', apiKey);
 
-    console.log(`[Geocoding] Requesting: ${url.toString().replace(apiKey, 'API_KEY')}`);
+    console.log(`[Geocoding] Attempt 1: Requesting with filters: ${url.toString().replace(apiKey, 'API_KEY')}`);
 
-    const response = await fetch(url.toString());
+    let response = await fetch(url.toString());
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    const data: GoogleGeocodingResponse = await response.json();
+    let data: GoogleGeocodingResponse = await response.json();
 
     if (data.status === 'OK' && data.results.length > 0) {
-      console.log(`[Geocoding] Success: Found ${data.results.length} results`);
+      console.log(`[Geocoding] Attempt 1 Success: Found ${data.results.length} precise results`);
       return data.results[0]; // Return most precise result
+    }
+
+    // ATTEMPT 2: If first attempt fails, try without filters
+    // This handles remote areas, highways, rural locations, etc.
+    console.warn('[Geocoding] Attempt 1 failed, trying without filters (fallback)...');
+
+    const fallbackUrl = new URL('https://maps.googleapis.com/maps/api/geocode/json');
+    fallbackUrl.searchParams.set('latlng', `${lat.toFixed(7)},${lng.toFixed(7)}`);
+    fallbackUrl.searchParams.set('key', apiKey);
+    // NO result_type filter - accept any location data
+
+    console.log(`[Geocoding] Attempt 2: Requesting without filters: ${fallbackUrl.toString().replace(apiKey, 'API_KEY')}`);
+
+    response = await fetch(fallbackUrl.toString());
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    data = await response.json();
+
+    if (data.status === 'OK' && data.results.length > 0) {
+      console.log(`[Geocoding] Attempt 2 Success: Found ${data.results.length} results (fallback)`);
+      return data.results[0]; // Return whatever we got (city, state, country, etc.)
     } else if (data.status === 'ZERO_RESULTS') {
-      console.warn('[Geocoding] No results found for coordinates');
+      console.warn('[Geocoding] No results found even without filters');
       return null;
     } else {
       console.error(`[Geocoding] API error: ${data.status}`);
