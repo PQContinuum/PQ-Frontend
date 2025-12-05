@@ -153,14 +153,6 @@ export async function extractFactsFromMessages(
   messages: Message[]
 ): Promise<ExtractedFact[]> {
   try {
-    // Formatear mensajes para el prompt
-    const conversationText = messages
-      .map(msg => {
-        const role = msg.role === 'user' ? 'Usuario' : 'Asistente';
-        return `${role}: ${msg.content}`;
-      })
-      .join('\n\n');
-
     // Limitar tamaño de conversación (últimos 20 mensajes)
     const recentMessages = messages.slice(-20);
     const recentText = recentMessages

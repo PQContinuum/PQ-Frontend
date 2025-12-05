@@ -94,10 +94,6 @@ export class LocationKalmanFilter {
     const timeDelta = (location.timestamp - this.lastTimestamp) / 1000; // seconds
     this.lastTimestamp = location.timestamp;
 
-    // Adjust process noise based on time delta
-    // If more time has passed, we trust the process model less
-    const adjustedProcessNoise = this.PROCESS_NOISE * (timeDelta > 0 ? timeDelta : 1);
-
     // Use accuracy as measurement noise (in meters squared)
     const measurementNoise = Math.pow(location.accuracy, 2);
 

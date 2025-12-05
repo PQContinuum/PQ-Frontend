@@ -7,14 +7,13 @@
  */
 
 import type { PlanName } from './plan-limits';
-import { getPlanLimits, truncateContextToLimit, estimateTokens } from './plan-limits';
+import { getPlanLimits, truncateContextToLimit } from './plan-limits';
 import {
   getCachedContext,
   setCachedContext,
   invalidateUserContext as invalidateCache,
 } from './context-cache';
 import {
-  getUserContext,
   getUserContextByCategory,
   getUserContextLimited,
   searchRelevantContext,
