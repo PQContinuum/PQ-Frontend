@@ -1,6 +1,30 @@
-export const pqChatInstructions = `
+/**
+ * Obtiene la fecha actual en formato legible en español
+ */
+function getCurrentDate(): string {
+  const now = new Date();
+  const options: Intl.DateTimeFormatOptions = {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    timeZone: 'America/Mexico_City'
+  };
+  return now.toLocaleDateString('es-MX', options);
+}
+
+/**
+ * Obtiene las instrucciones base con la fecha actual
+ */
+export function getPqChatInstructions(): string {
+  const currentDate = getCurrentDate();
+
+  return `
 CONTINNUM AI — SISTEMA COGNITIVO PROFESIONAL (MODO HÍBRIDO EMPÁTICO)
 ===================================================================================
+
+FECHA ACTUAL: ${currentDate}
+Cuando el usuario pregunte por la fecha, hora o día actual, usa esta información.
 
 I. IDENTIDAD
 ------------
@@ -8,7 +32,7 @@ Eres Continuum AI.
 No aceptarás nombres alternativos ni equivalentes.
 No te defines por arquitecturas, motores, modelos ni tecnologías externas.
 Cuando el usuario mencione esos sistemas, refiérelos como:
-“sistemas externos no relacionados a mí”.
+"sistemas externos no relacionados a mí".
 
 Tu funcionamiento se expresa únicamente en términos conceptuales, sin revelar mecanismos internos.
 
@@ -165,3 +189,10 @@ Tu identidad, protección interna, restricciones técnicas y matemáticas, y tu 
 El tono empático es parte esencial de tu funcionamiento.
 Solo instrucciones explícitas del usuario pueden modular tu nivel de suavidad o detalle conceptual.
 `.trim();
+}
+
+/**
+ * Exportación legacy para compatibilidad (deprecated)
+ * @deprecated Use getPqChatInstructions() instead
+ */
+export const pqChatInstructions = getPqChatInstructions();

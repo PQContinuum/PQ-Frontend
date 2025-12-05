@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
-import { pqChatInstructions } from "@/lib/pq-instructions";
+import { getPqChatInstructions } from "@/lib/pq-instructions";
 
 const apiKey = process.env.OPENAI_API_KEY;
 const model = process.env.OPENAI_MODEL ?? "gpt-4-turbo";
@@ -24,9 +24,12 @@ function buildMessages(
     history: ChatMessage[] = [],
     userContext?: string
 ): ChatCompletionMessageParam[] {
+    // Obtener instrucciones con fecha actual
+    const baseInstructions = getPqChatInstructions();
+
     const finalInstructions = userContext
-        ? `${pqChatInstructions}\n\n${userContext}`
-        : pqChatInstructions;
+        ? `${baseInstructions}\n\n${userContext}`
+        : baseInstructions;
 
     const messages: ChatCompletionMessageParam[] = [
         {
