@@ -54,6 +54,59 @@ async function getDetailedAddress(
 }
 
 /**
+ * Fetch nearby points of interest to enrich geocultural context
+ * Uses Google Places Nearby Search with a compact summary per place
+ */
+async function getNearbyPlacesSummary(
+    lat: number,
+    lng: number,
+    googleApiKey: string,
+    radius: number = 1800,
+    limit: number = 6
+): Promise<string[]> {
+    const url = new URL('https://maps.googleapis.com/maps/api/place/nearbysearch/json');
+    url.searchParams.set('location', `${lat},${lng}`);
+    url.searchParams.set('radius', radius.toString());
+    url.searchParams.set('language', 'es');
+    url.searchParams.set('key', googleApiKey);
+
+    try {
+        const response = await fetch(url.toString());
+        if (!response.ok) {
+            console.warn('[Places] HTTP error:', response.status);
+            return [];
+        }
+
+        const data = await response.json() as {
+            results?: Array<{
+                name: string;
+                vicinity?: string;
+                business_status?: string;
+                rating?: number;
+                user_ratings_total?: number;
+                types?: string[];
+            }>;
+            status?: string;
+        };
+
+        if (!data.results || data.results.length === 0) return [];
+
+        return data.results.slice(0, limit).map((place) => {
+            const type = place.types?.[0]?.replace(/_/g, ' ') ?? 'lugar';
+            const rating = place.rating ? `, calif. ${place.rating.toFixed(1)} (${place.user_ratings_total ?? 0})` : '';
+            const vicinity = place.vicinity ? `, ${place.vicinity}` : '';
+            const status = place.business_status === 'OPERATIONAL' || !place.business_status
+                ? ''
+                : `, estado: ${place.business_status.toLowerCase()}`;
+            return `${place.name} (${type}${vicinity}${rating}${status})`;
+        });
+    } catch (error) {
+        console.warn('[Places] Error fetching nearby places:', error);
+        return [];
+    }
+}
+
+/**
  * Build geocultural context prompt with precise coordinates and structured address
  * Nueva estructura: geocultural.ultralocal.maestro con formato de 12 bloques
  */
@@ -62,7 +115,8 @@ function buildGeoCulturalContext(
     userMessage: string,
     lat: number,
     lng: number,
-    fullAddress: StructuredAddress | null
+    fullAddress: StructuredAddress | null,
+    nearbyPlaces: string[]
 ): string {
     // Build detailed address information for the prompt
     let addressDetails = '';
@@ -78,6 +132,10 @@ function buildGeoCulturalContext(
 
         addressDetails = parts.length > 0 ? '\n- Desglose: ' + parts.join(', ') : '';
     }
+
+    const placesLine = nearbyPlaces.length > 0
+        ? '\n- Referencias cercanas (contexto local): ' + nearbyPlaces.join(' | ')
+        : '';
 
     return `
 // ============================================================================
@@ -103,7 +161,7 @@ SE MANTIENEN (de instrucciones base):
 
 Referencia de la consulta:
 - Coordenadas exactas (7 decimales): ${lat.toFixed(7)}, ${lng.toFixed(7)}
-- Dirección identificada: ${areaName}${addressDetails}
+- Dirección identificada: ${areaName}${addressDetails}${placesLine}
 - Solicitud original: "${userMessage}"
 
 ESTRUCTURA OBLIGATORIA DE RESPUESTA - PROTOCOLO GEOCULTURAL ULTRALOCAL ACTUALIZADO:
@@ -296,7 +354,7 @@ Comenzar SIEMPRE por la identificación del punto exacto, luego proceder con los
 async function handleGeoCulturalMode(
     message: string,
     messages: ChatMessage[],
-    geoCulturalContext: { lat: number; lng: number; accuracy?: number; timestamp?: number },
+    geoCulturalContext: { lat: number; lng: number; accuracy?: number; timestamp?: number; address?: StructuredAddress | null },
     userContext?: string,
     attachments?: AttachmentInput[]
 ) {
@@ -345,8 +403,28 @@ async function handleGeoCulturalMode(
         );
     }
 
-    // Get detailed address from coordinates
-    const { areaName, fullAddress } = await getDetailedAddress(
+    // Prefer client-confirmed address; merge with reverse geocoding as fallback to keep micro-local detail
+    const clientAddress = geoCulturalContext.address ?? null;
+    const { areaName: geoAreaName, fullAddress: geoAddress } = await getDetailedAddress(
+        geoCulturalContext.lat,
+        geoCulturalContext.lng,
+        googleApiKey
+    );
+
+    const mergedAddress: StructuredAddress | null = (() => {
+        if (clientAddress && geoAddress) return { ...geoAddress, ...clientAddress };
+        return clientAddress ?? geoAddress ?? null;
+    })();
+
+    const areaName =
+        mergedAddress?.formattedAddress ||
+        mergedAddress?.shortAddress ||
+        geoAreaName ||
+        'ubicación desconocida';
+    const fullAddress = mergedAddress;
+
+    // Fetch nearby places to enrich context (best-effort; continue on failure)
+    const nearbyPlaces = await getNearbyPlacesSummary(
         geoCulturalContext.lat,
         geoCulturalContext.lng,
         googleApiKey
@@ -370,7 +448,8 @@ async function handleGeoCulturalMode(
         message,
         geoCulturalContext.lat,
         geoCulturalContext.lng,
-        fullAddress
+        fullAddress,
+        nearbyPlaces
     );
 
     // Combine user context (facts, memory, plan) with geocultural context
