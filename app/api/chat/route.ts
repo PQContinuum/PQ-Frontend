@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { streamAssistantReply } from "@/lib/openai";
+import { streamAssistantReply, type AttachmentInput } from "@/lib/openai";
 import { getUserContextForPrompt } from "@/lib/memory/user-context";
 import { getUserPlanName } from "@/lib/subscription";
 import { shouldAutoEnableGeoCultural } from "@/lib/geocultural/auto-mode";
 import { validateLocation } from "@/lib/geolocation/location-validator";
 import { reverseGeocodeServer } from "@/lib/geolocation/server-geocoding";
+import { db } from "@/db";
+import { conversationAttachments } from "@/db/schema";
+import { eq, inArray } from "drizzle-orm";
 
 import type { ChatMessage } from "@/app/chat/store";
 import type { StructuredAddress } from "@/lib/geolocation/address-types";
@@ -313,7 +316,8 @@ async function handleGeoCulturalMode(
     message: string,
     messages: ChatMessage[],
     geoCulturalContext: { lat: number; lng: number; accuracy?: number; timestamp?: number },
-    userContext?: string
+    userContext?: string,
+    attachments?: AttachmentInput[]
 ) {
     // Validate coordinates exist
     if (!geoCulturalContext.lat || !geoCulturalContext.lng) {
@@ -401,7 +405,7 @@ async function handleGeoCulturalMode(
             const startData = { type: 'geocultural_analysis', areaName: areaName };
             controller.enqueue(encoder.encode(`event: geocultural.start\ndata: ${JSON.stringify(startData)}\n\n`));
 
-            const aiStream = await streamAssistantReply(message, messages, combinedContext);
+            const aiStream = await streamAssistantReply(message, messages, combinedContext, attachments);
             const reader = aiStream.getReader();
 
             try {
@@ -460,7 +464,7 @@ async function handleGeoCulturalMode(
 
 export async function POST(req: NextRequest) {
     try {
-        const { message, messages = [], geoCulturalContext } = await req.json();
+        const { message, messages = [], geoCulturalContext, attachmentIds = [] } = await req.json();
 
         const autoEnableGeoCultural = shouldAutoEnableGeoCultural(message || '');
         const hasGeoCoordinates =
@@ -478,12 +482,13 @@ export async function POST(req: NextRequest) {
             );
         }
 
+        // Get user and supabase client
+        const supabase = await createSupabaseServerClient();
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+
         // Get user context
         let userContext = '';
         try {
-            const supabase = await createSupabaseServerClient();
-            const { data: { user }, error: authError } = await supabase.auth.getUser();
-
             if (!authError && user) {
                 const planName = await getUserPlanName(user.id);
                 userContext = await getUserContextForPrompt(user.id, planName, message);
@@ -491,16 +496,47 @@ export async function POST(req: NextRequest) {
         } catch (contextError) {
             console.error('Error getting user context:', contextError);
         }
+
+        // Fetch attachments if provided
+        let attachments: AttachmentInput[] = [];
+
+        if (attachmentIds.length > 0 && user) {
+            try {
+                const dbAttachments = await db
+                    .select()
+                    .from(conversationAttachments)
+                    .where(inArray(conversationAttachments.id, attachmentIds))
+                    .limit(10);
+
+                // Generate fresh signed URLs for each attachment
+                for (const att of dbAttachments) {
+                    const { data: signedUrlData } = await supabase.storage
+                        .from('conversation-attachments')
+                        .createSignedUrl(att.storagePath, 3600);
+
+                    if (signedUrlData?.signedUrl) {
+                        attachments.push({
+                            type: att.fileType as 'image' | 'document',
+                            url: signedUrlData.signedUrl,
+                            mimeType: att.mimeType,
+                        });
+                    }
+                }
+            } catch (attachmentError) {
+                console.error('Error fetching attachments:', attachmentError);
+            }
+        }
+
         // Check if GeoCultural mode is active
         const explicitGeoCulturalMode = geoCulturalContext !== null && geoCulturalContext !== undefined;
         const isGeoCulturalMode = (explicitGeoCulturalMode && hasGeoCoordinates) || (autoEnableGeoCultural && hasGeoCoordinates);
 
         if (isGeoCulturalMode && geoCulturalContext) {
-            return await handleGeoCulturalMode(message, messages, geoCulturalContext, userContext);
+            return await handleGeoCulturalMode(message, messages, geoCulturalContext, userContext, attachments);
         }
 
         // Fallback to default streaming behavior
-        const stream = await streamAssistantReply(message, messages, userContext);
+        const stream = await streamAssistantReply(message, messages, userContext, attachments);
 
         return new Response(stream, {
             headers: {

@@ -1,7 +1,7 @@
 import { eq, desc, and } from "drizzle-orm";
 import { db } from "@/db";
-import { conversations, messages } from "@/db/schema";
-import type { Conversation, NewConversation } from "@/db/schema";
+import { conversations, messages, conversationAttachments } from "@/db/schema";
+import type { Conversation, NewConversation, Message, ConversationAttachment } from "@/db/schema";
 
 /**
  * Obtener todas las conversaciones de un usuario
@@ -38,7 +38,20 @@ export async function getConversationById(
 }
 
 /**
- * Obtener una conversación con sus mensajes
+ * Tipo de mensaje con attachments
+ */
+export type MessageWithAttachments = Message & {
+  attachments?: Array<{
+    id: string;
+    fileName: string;
+    fileType: string;
+    fileSize: number;
+    mimeType?: string;
+  }>;
+};
+
+/**
+ * Obtener una conversación con sus mensajes y attachments
  */
 export async function getConversationWithMessages(
   conversationId: string,
@@ -50,15 +63,51 @@ export async function getConversationWithMessages(
     return null;
   }
 
+  // Obtener todos los mensajes de la conversación
   const conversationMessages = await db
     .select()
     .from(messages)
     .where(eq(messages.conversationId, conversationId))
     .orderBy(messages.createdAt);
 
+  // Obtener todos los attachments de la conversación que tienen messageId
+  const attachments = await db
+    .select()
+    .from(conversationAttachments)
+    .where(eq(conversationAttachments.conversationId, conversationId));
+
+  // Agrupar attachments por messageId
+  const attachmentsByMessageId = attachments.reduce((acc, att) => {
+    if (att.messageId) {
+      if (!acc[att.messageId]) {
+        acc[att.messageId] = [];
+      }
+      acc[att.messageId].push({
+        id: att.id,
+        fileName: att.fileName,
+        fileType: att.fileType,
+        fileSize: att.fileSize,
+        mimeType: att.mimeType,
+      });
+    }
+    return acc;
+  }, {} as Record<string, Array<{
+    id: string;
+    fileName: string;
+    fileType: string;
+    fileSize: number;
+    mimeType?: string;
+  }>>);
+
+  // Combinar mensajes con sus attachments
+  const messagesWithAttachments: MessageWithAttachments[] = conversationMessages.map(msg => ({
+    ...msg,
+    attachments: attachmentsByMessageId[msg.id] || undefined,
+  }));
+
   return {
     ...conversation,
-    messages: conversationMessages,
+    messages: messagesWithAttachments,
   };
 }
 

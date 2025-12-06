@@ -46,6 +46,7 @@ export const ChatWindow = memo(function ChatWindow() {
           <MessageBubble
             message={message}
             isStreaming={isStreaming && index === messages.length - 1 && message.role === 'assistant'}
+            attachments={message.attachments}
           />
         </div>
       ))}

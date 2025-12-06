@@ -36,6 +36,14 @@ export const contextCategoryEnum = pgEnum("context_category", [
   "summary"        // Resúmenes de contexto antiguo comprimido
 ]);
 
+// Enum para el tipo de attachment
+export const attachmentTypeEnum = pgEnum("attachment_type", [
+  "image",
+  "document",
+  "code",
+  "archive"
+]);
+
 // Tabla de conversaciones
 // user_id referencia a auth.users de Supabase (sin foreign key porque está en otro schema)
 export const conversations = pgTable("conversations", {
@@ -128,9 +136,43 @@ export const userContext = pgTable("user_context", {
     .defaultNow(),
 });
 
+// Tabla de attachments de conversaciones
+export const conversationAttachments = pgTable("conversation_attachments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+
+  // Relations
+  conversationId: uuid("conversation_id")
+    .notNull()
+    .references(() => conversations.id, { onDelete: "cascade" }),
+  messageId: uuid("message_id"), // Optional: link to specific message
+  userId: uuid("user_id").notNull(), // Owner
+
+  // File metadata
+  fileName: text("file_name").notNull(),
+  fileType: attachmentTypeEnum("file_type").notNull(),
+  mimeType: varchar("mime_type", { length: 255 }).notNull(),
+  fileSize: integer("file_size").notNull(), // bytes
+
+  // Storage
+  storagePath: text("storage_path").notNull(), // Path in Supabase Storage
+  publicUrl: text("public_url"), // Public URL (if public bucket)
+  signedUrl: text("signed_url"), // Temporary signed URL
+  signedUrlExpiry: timestamp("signed_url_expiry", { withTimezone: true }),
+
+  // Preview & metadata
+  thumbnailPath: text("thumbnail_path"), // Thumbnail for images
+  metadata: text("metadata"), // JSON: { width, height, pages, etc. }
+
+  // Timestamps
+  uploadedAt: timestamp("uploaded_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 // Relaciones
 export const conversationsRelations = relations(conversations, ({ many }) => ({
   messages: many(messages),
+  attachments: many(conversationAttachments),
 }));
 
 export const messagesRelations = relations(messages, ({ one }) => ({
@@ -158,6 +200,17 @@ export const userContextRelations = relations(userContext, ({ one }) => ({
   }),
 }));
 
+export const conversationAttachmentsRelations = relations(conversationAttachments, ({ one }) => ({
+  conversation: one(conversations, {
+    fields: [conversationAttachments.conversationId],
+    references: [conversations.id],
+  }),
+  message: one(messages, {
+    fields: [conversationAttachments.messageId],
+    references: [messages.id],
+  }),
+}));
+
 // Tipos TypeScript inferidos del esquema
 export type Conversation = typeof conversations.$inferSelect;
 export type NewConversation = typeof conversations.$inferInsert;
@@ -169,3 +222,5 @@ export type Payment = typeof payments.$inferSelect;
 export type NewPayment = typeof payments.$inferInsert;
 export type UserContext = typeof userContext.$inferSelect;
 export type NewUserContext = typeof userContext.$inferInsert;
+export type ConversationAttachment = typeof conversationAttachments.$inferSelect;
+export type NewConversationAttachment = typeof conversationAttachments.$inferInsert;

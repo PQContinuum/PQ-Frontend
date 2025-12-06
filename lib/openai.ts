@@ -1,9 +1,9 @@
 import OpenAI from "openai";
-import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
+import type { ChatCompletionMessageParam, ChatCompletionContentPart } from "openai/resources/chat/completions";
 import { getPqChatInstructions } from "@/lib/pq-instructions";
 
 const apiKey = process.env.OPENAI_API_KEY;
-const model = process.env.OPENAI_MODEL ?? "gpt-4-turbo";
+const model = process.env.OPENAI_MODEL ?? "gpt-4o"; // Changed to gpt-4o for vision support
 
 if (!apiKey) {
     throw new Error("OPENAI_API_KEY is required");
@@ -11,19 +11,84 @@ if (!apiKey) {
 
 const client = new OpenAI({ apiKey });
 
-type ChatMessage = {
+export type ChatMessage = {
     role: "user" | "assistant";
-    content: string;
+    content: string | ChatCompletionContentPart[]; // Support multimodal content
 };
+
+export type AttachmentInput = {
+    type: 'image' | 'document';
+    url: string;
+    mimeType: string;
+};
+
+/**
+ * Build message content with attachments
+ */
+async function buildMessageContent(
+    message: string,
+    attachments?: AttachmentInput[]
+): Promise<string | ChatCompletionContentPart[]> {
+    if (!attachments || attachments.length === 0) {
+        return message;
+    }
+
+    const contentParts: ChatCompletionContentPart[] = [
+        { type: "text", text: message },
+    ];
+
+    // Process attachments
+    for (const attachment of attachments) {
+        if (attachment.type === 'image') {
+            // Add image as image_url
+            contentParts.push({
+                type: "image_url",
+                image_url: {
+                    url: attachment.url,
+                    detail: "high", // Use "high" for detailed analysis, "low" for speed
+                },
+            });
+        } else if (attachment.type === 'document') {
+            // For text documents, fetch and add content as text
+            if (attachment.mimeType === 'text/plain' || attachment.mimeType === 'text/markdown') {
+                try {
+                    const response = await fetch(attachment.url);
+                    if (response.ok) {
+                        const textContent = await response.text();
+                        contentParts.push({
+                            type: "text",
+                            text: `\n\n--- Contenido del archivo "${attachment.url.split('/').pop()}" ---\n${textContent}\n--- Fin del archivo ---\n`,
+                        });
+                    }
+                } catch (error) {
+                    console.error(`Error reading document ${attachment.url}:`, error);
+                    contentParts.push({
+                        type: "text",
+                        text: `\n[Error: No se pudo leer el archivo]\n`,
+                    });
+                }
+            } else if (attachment.mimeType === 'application/pdf') {
+                // For PDFs, add a note that it's a PDF (future: extract text)
+                contentParts.push({
+                    type: "text",
+                    text: `\n[Archivo PDF adjunto: ${attachment.url.split('/').pop()}]\n`,
+                });
+            }
+        }
+    }
+
+    return contentParts;
+}
 
 /**
  * Creates an array of messages in the format expected by the Chat Completions API.
  */
-function buildMessages(
+async function buildMessages(
     message: string,
     history: ChatMessage[] = [],
-    userContext?: string
-): ChatCompletionMessageParam[] {
+    userContext?: string,
+    attachments?: AttachmentInput[]
+): Promise<ChatCompletionMessageParam[]> {
     // Obtener instrucciones con fecha actual
     const baseInstructions = getPqChatInstructions();
 
@@ -45,29 +110,31 @@ function buildMessages(
         }
     }
 
-    // Add the current user message
+    // Add the current user message with attachments
     messages.push({
         role: "user",
-        content: message,
+        content: await buildMessageContent(message, attachments),
     });
 
     return messages;
 }
 
 /**
- * Returns a streaming reply from the OpenAI Chat Completions API.
+ * Returns a streaming reply from the OpenAI Chat Completions API with vision support.
  */
 export async function streamAssistantReply(
     message: string,
     history: ChatMessage[] = [],
-    userContext?: string
+    userContext?: string,
+    attachments?: AttachmentInput[]
 ) {
-    const messages = buildMessages(message, history, userContext);
+    const messages = await buildMessages(message, history, userContext, attachments);
 
     const stream = await client.chat.completions.create({
         model,
         messages,
         stream: true,
+        max_tokens: attachments && attachments.length > 0 ? 4096 : undefined, // Increase for vision
     });
 
     const readableStream = new ReadableStream({
@@ -88,20 +155,22 @@ export async function streamAssistantReply(
 }
 
 /**
- * Returns a complete, non-streaming reply from the OpenAI Chat Completions API.
+ * Returns a complete, non-streaming reply with vision support.
  */
 export async function getAssistantReply(
     message: string,
     history: ChatMessage[] = [],
-    userContext?: string
+    userContext?: string,
+    attachments?: AttachmentInput[]
 ): Promise<string> {
-    const messages = buildMessages(message, history, userContext);
+    const messages = await buildMessages(message, history, userContext, attachments);
 
     try {
         const response = await client.chat.completions.create({
             model,
             messages,
             stream: false, // Ensure streaming is off
+            max_tokens: attachments && attachments.length > 0 ? 4096 : undefined,
         });
 
         const content = response.choices[0]?.message?.content;

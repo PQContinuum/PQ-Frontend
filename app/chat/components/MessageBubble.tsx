@@ -7,6 +7,7 @@ import remarkGfm from 'remark-gfm';
 
 import type { ChatMessage } from '@/app/chat/store';
 import { GeoCulturalResponse } from './GeoCulturalResponse';
+import { AttachmentsPreview } from './AttachmentsPreview';
 
 import 'highlight.js/styles/github.css';
 
@@ -19,6 +20,13 @@ export type GeoCulturalAnalysisText = {
 type MessageBubbleProps = {
   message: ChatMessage;
   isStreaming?: boolean;
+  attachments?: Array<{
+    id: string;
+    fileName: string;
+    fileType: string;
+    fileSize: number;
+    mimeType?: string;
+  }>;
 };
 
 type MarkdownCodeProps = ComponentPropsWithoutRef<'code'> & {
@@ -65,7 +73,7 @@ const CodeBlock = ({
   );
 };
 
-export function MessageBubble({ message, isStreaming = false }: MessageBubbleProps) {
+export function MessageBubble({ message, isStreaming = false, attachments }: MessageBubbleProps) {
   const isUser = message.role === 'user';
 
   const { geoCulturalData, geoCulturalText, isLoadingGeoCultural } = useMemo(() => {
@@ -324,6 +332,9 @@ export function MessageBubble({ message, isStreaming = false }: MessageBubblePro
         }`}
       >
         <div className="flex w-full flex-col gap-2">
+          {isUser && attachments && attachments.length > 0 && (
+            <AttachmentsPreview attachments={attachments} />
+          )}
           <div className="markdown prose prose-sm max-w-none text-current prose-headings:text-[#111111] prose-strong:text-[#111111]">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}

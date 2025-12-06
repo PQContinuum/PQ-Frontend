@@ -1,8 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { Conversation, Message } from '@/db/schema';
+import type { Conversation } from '@/db/schema';
+import type { MessageWithAttachments } from '@/db/queries/conversations';
 
 export type ConversationWithMessages = Conversation & {
-  messages: Message[];
+  messages: MessageWithAttachments[];
 };
 
 // Query keys

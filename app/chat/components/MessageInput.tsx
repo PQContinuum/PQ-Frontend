@@ -9,8 +9,16 @@ import {
   memo,
   useEffect,
 } from 'react';
-import { ArrowUp, MapPin } from 'lucide-react';
+import { ArrowUp, MapPin, Paperclip, Plus, Check, Loader2 } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
+import { FileUpload } from './FileUpload';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 import {
   useMessages,
@@ -78,6 +86,9 @@ export const MessageInput = memo(function MessageInput() {
   const [input, setInput] = useState('');
   const [showLocationDialog, setShowLocationDialog] = useState(false);
   const [showMapDialog, setShowMapDialog] = useState(false);
+  const [showFileUpload, setShowFileUpload] = useState(false);
+  const [attachments, setAttachments] = useState<Array<{ id: string; fileName: string; fileType: string; fileSize: number; url: string; thumbnailUrl?: string; mimeType?: string }>>([]);
+  const [isCreatingConversation, setIsCreatingConversation] = useState(false);
   const queryClient = useQueryClient();
 
   const messages = useMessages();
@@ -258,7 +269,15 @@ export const MessageInput = memo(function MessageInput() {
     async (event?: FormEvent<HTMLFormElement>) => {
       event?.preventDefault();
       const value = input.trim();
-      if (!value || isStreaming) return;
+      if (isStreaming) return;
+
+      // Validar que haya texto si hay archivos adjuntos
+      if (attachments.length > 0 && !value) {
+        alert('Por favor escribe un mensaje para enviar junto con los archivos adjuntos');
+        return;
+      }
+
+      if (!value) return;
 
       const canProceed = await ensureGeoCulturalIfNeeded(value);
       if (!canProceed) {
@@ -272,7 +291,12 @@ export const MessageInput = memo(function MessageInput() {
         { role: 'user', content: value } as const,
       ];
 
-      addMessage({ id: userMessageId, role: 'user', content: value });
+      addMessage({
+        id: userMessageId,
+        role: 'user',
+        content: value,
+        attachments: attachments.length > 0 ? attachments : undefined
+      });
       addMessage({ id: assistantMessageId, role: 'assistant', content: '' });
       setInput('');
       setStreaming(true);
@@ -314,6 +338,22 @@ export const MessageInput = memo(function MessageInput() {
             });
 
             if (response.ok) {
+              // Si hay attachments, actualizar su messageId
+              if (attachments.length > 0) {
+                try {
+                  await fetch(`/api/conversations/${currentConversationId}/attachments/link`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      attachmentIds: attachments.map(a => a.id),
+                      messageId: userMessageId,
+                    }),
+                  });
+                } catch (linkError) {
+                  console.error('Error linking attachments to message:', linkError);
+                }
+              }
+
               // ✅ Invalidar cache para que TanStack Query recargue datos frescos
               queryClient.invalidateQueries({
                 queryKey: conversationKeys.detail(currentConversationId),
@@ -340,8 +380,13 @@ export const MessageInput = memo(function MessageInput() {
             message: value,
             messages: payloadMessages,
             geoCulturalContext: freshGeoCulturalContext,
+            attachmentIds: attachments.map(a => a.id),
           }),
         });
+
+        // Clear attachments after sending
+        setAttachments([]);
+        setShowFileUpload(false);
 
         if (!response.ok) {
           const errorData = await response.json();
@@ -517,6 +562,9 @@ export const MessageInput = memo(function MessageInput() {
       geoCulturalMode,
       userLocation,
       ensureGeoCulturalIfNeeded,
+      attachments,
+      setAttachments,
+      setShowFileUpload,
     ],
   );
 
@@ -596,21 +644,99 @@ export const MessageInput = memo(function MessageInput() {
             )}
           </div>
         )}
+
+        {showFileUpload && (
+          <div
+            className="bg-white rounded-3xl border border-black/5 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.08)] backdrop-blur-sm"
+            style={{
+              animation: 'slideInFromLeft 0.3s ease-out forwards',
+            }}
+          >
+            {conversationId ? (
+              <FileUpload
+                conversationId={conversationId}
+                onAttachmentsChange={setAttachments}
+              />
+            ) : (
+              <div className="text-center py-12">
+                <div className="relative inline-block">
+                  <div className="absolute inset-0 bg-[#00552b]/20 rounded-full blur-xl animate-pulse"></div>
+                  <Loader2 className="relative w-8 h-8 text-[#00552b] animate-spin" />
+                </div>
+                <p className="text-sm text-gray-600 mt-4 font-medium">Preparando espacio para tus archivos...</p>
+              </div>
+            )}
+          </div>
+        )}
+
         <form
           onSubmit={submitMessage}
           className="flex flex-row items-center justify-between gap-3 rounded-[2rem] border border-black/5 bg-white px-4 py-3 shadow-[0_20px_50px_rgba(0,0,0,0.08)]"
         >
-          <button
-            type="button"
-            onClick={handleLocationToggle}
-            disabled={isStreaming}
-            className={`flex shrink-0 items-center justify-center rounded-full p-2 transition ${geoCulturalMode
-                ? 'bg-[#00552b] text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            } disabled:opacity-40 disabled:cursor-not-allowed`}
-          >
-            <MapPin className="size-5" />
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                disabled={isStreaming}
+                className={`relative flex shrink-0 items-center justify-center rounded-full p-2 transition ${
+                  geoCulturalMode || showFileUpload || attachments.length > 0
+                    ? 'bg-[#00552b] text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                } disabled:opacity-40 disabled:cursor-not-allowed`}
+              >
+                <Plus className="size-5" />
+                {attachments.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium">
+                    {attachments.length}
+                  </span>
+                )}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56">
+              <DropdownMenuItem
+                onClick={handleLocationToggle}
+                disabled={isStreaming}
+                className="cursor-pointer"
+              >
+                <MapPin className="mr-2 size-4" />
+                <span className="flex-1">Modo GeoCultural</span>
+                {geoCulturalMode && <Check className="size-4 text-[#00552b]" />}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={async () => {
+                  // Si no hay conversación, crear una
+                  if (!conversationId && !isCreatingConversation) {
+                    setIsCreatingConversation(true);
+                    try {
+                      const conversation = await createConversationMutation.mutateAsync({
+                        title: 'Nueva conversación',
+                      });
+                      setConversationId(conversation.id);
+                      setShowFileUpload(true);
+                    } catch (error) {
+                      console.error('Error creating conversation:', error);
+                    } finally {
+                      setIsCreatingConversation(false);
+                    }
+                  } else if (conversationId) {
+                    setShowFileUpload(!showFileUpload);
+                  }
+                }}
+                disabled={isStreaming || isCreatingConversation}
+                className="cursor-pointer"
+              >
+                <Paperclip className="mr-2 size-4" />
+                <span className="flex-1">Adjuntar archivos</span>
+                {attachments.length > 0 && (
+                  <span className="ml-auto text-xs font-medium text-[#00552b]">
+                    {attachments.length}
+                  </span>
+                )}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <textarea
             ref={textareaRef}
             autoFocus
@@ -624,8 +750,9 @@ export const MessageInput = memo(function MessageInput() {
           />
           <button
             type="submit"
-            disabled={!input.trim() || isStreaming}
+            disabled={(!input.trim() && attachments.length === 0) || isStreaming}
             className="flex shrink-0 items-center justify-center rounded-full bg-[#00552b] p-2 text-white transition hover:bg-[#00552b]/80 disabled:cursor-not-allowed disabled:bg-[#00552b]/40"
+            title={attachments.length > 0 && !input.trim() ? 'Escribe un mensaje para enviar con los archivos' : ''}
           >
             <ArrowUp className="size-5" />
           </button>

@@ -10,6 +10,13 @@ export type ChatMessage = {
   id: string;
   role: ChatRole;
   content: string;
+  attachments?: Array<{
+    id: string;
+    fileName: string;
+    fileType: string;
+    fileSize: number;
+    mimeType?: string;
+  }>;
 };
 
 export const TYPING_STATES = [
