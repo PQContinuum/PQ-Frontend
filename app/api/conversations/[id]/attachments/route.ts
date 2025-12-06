@@ -28,6 +28,24 @@ const ALLOWED_DOCUMENT_TYPES = [
   // PDFs
   'application/pdf',
 
+  // Microsoft Office Documents
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+  'application/msword', // .doc
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+  'application/vnd.ms-excel', // .xls
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
+  'application/vnd.ms-powerpoint', // .ppt
+
+  // OpenDocument formats
+  'application/vnd.oasis.opendocument.text', // .odt
+  'application/vnd.oasis.opendocument.spreadsheet', // .ods
+  'application/vnd.oasis.opendocument.presentation', // .odp
+
+  // Rich text and eBooks
+  'application/rtf', // .rtf
+  'text/rtf',
+  'application/epub+zip', // .epub
+
   // Texto plano y markdown
   'text/plain',
   'text/markdown',
@@ -49,6 +67,8 @@ const ALLOWED_DOCUMENT_TYPES = [
   'text/x-ruby',
   'text/x-swift',
   'text/x-kotlin',
+  'text/css',
+  'text/x-sql',
 
   // Datos estructurados
   'application/json',
@@ -58,6 +78,9 @@ const ALLOWED_DOCUMENT_TYPES = [
   'text/html',
   'application/x-yaml',
   'text/yaml',
+
+  // Notebooks
+  'application/x-ipynb+json', // Jupyter notebooks
 
   // Configuración
   'application/toml',

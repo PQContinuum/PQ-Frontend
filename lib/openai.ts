@@ -124,46 +124,111 @@ async function buildMessageContent(
                     });
                 }
             } else {
-                // For all other text-based documents (TXT, MD, JSON, CSV, XML, HTML, YAML, código fuente, etc.)
-                try {
-                    const response = await fetch(attachment.url);
+                // Handle Office documents (Word, Excel, PowerPoint, ODT, etc.) with officeparser
+                const isOfficeDoc = attachment.mimeType && (
+                    attachment.mimeType.includes('wordprocessingml') || // .docx
+                    attachment.mimeType.includes('msword') || // .doc
+                    attachment.mimeType.includes('spreadsheetml') || // .xlsx
+                    attachment.mimeType.includes('ms-excel') || // .xls
+                    attachment.mimeType.includes('presentationml') || // .pptx
+                    attachment.mimeType.includes('ms-powerpoint') || // .ppt
+                    attachment.mimeType.includes('opendocument') || // .odt, .ods, .odp
+                    attachment.mimeType.includes('rtf') || // .rtf
+                    attachment.mimeType.includes('epub') // .epub
+                );
 
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                if (isOfficeDoc) {
+                    try {
+                        const response = await fetch(attachment.url);
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        }
+
+                        const arrayBuffer = await response.arrayBuffer();
+                        const buffer = Buffer.from(arrayBuffer);
+
+                        // Dynamic import of officeparser
+                        const officeParser = await import('officeparser');
+
+                        // Extract text from Office document
+                        const extractedText = await officeParser.parseOfficeAsync(buffer);
+                        const docText = extractedText.trim();
+
+                        // Detect document type
+                        let docType = 'documento';
+                        if (attachment.mimeType?.includes('word')) docType = 'Word';
+                        else if (attachment.mimeType?.includes('excel') || attachment.mimeType?.includes('spreadsheet')) docType = 'Excel';
+                        else if (attachment.mimeType?.includes('powerpoint') || attachment.mimeType?.includes('presentation')) docType = 'PowerPoint';
+                        else if (attachment.mimeType?.includes('opendocument.text')) docType = 'ODT';
+                        else if (attachment.mimeType?.includes('opendocument.spreadsheet')) docType = 'ODS';
+                        else if (attachment.mimeType?.includes('opendocument.presentation')) docType = 'ODP';
+                        else if (attachment.mimeType?.includes('rtf')) docType = 'RTF';
+                        else if (attachment.mimeType?.includes('epub')) docType = 'EPUB';
+
+                        if (docText) {
+                            contentParts.push({
+                                type: "text",
+                                text: `\n\n--- Contenido del documento ${docType} "${fileName}" ---\n${docText}\n--- Fin del documento ---\n`,
+                            });
+                        } else {
+                            contentParts.push({
+                                type: "text",
+                                text: `\n[Documento ${docType} "${fileName}" adjunto - no se pudo extraer texto]\n`,
+                            });
+                        }
+                    } catch (error) {
+                        console.error(`Error reading Office document ${attachment.url}:`, error);
+                        const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
+                        contentParts.push({
+                            type: "text",
+                            text: `\n[Error al leer el documento "${fileName}": ${errorMsg}]\n`,
+                        });
                     }
+                } else {
+                    // For all other text-based documents (TXT, MD, JSON, CSV, XML, HTML, YAML, CSS, SQL, código fuente, etc.)
+                    try {
+                        const response = await fetch(attachment.url);
 
-                    // Check if response is actually text/binary content, not HTML error page
-                    const contentType = response.headers.get('content-type');
-                    if (contentType?.includes('text/html') && !attachment.mimeType?.includes('html')) {
-                        throw new Error('Received HTML instead of file content - URL may have expired');
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        }
+
+                        // Check if response is actually text/binary content, not HTML error page
+                        const contentType = response.headers.get('content-type');
+                        if (contentType?.includes('text/html') && !attachment.mimeType?.includes('html')) {
+                            throw new Error('Received HTML instead of file content - URL may have expired');
+                        }
+
+                        const textContent = await response.text();
+
+                        // Detectar tipo de archivo para mejor contexto
+                        let fileType = 'texto';
+                        if (attachment.mimeType?.includes('json')) fileType = 'JSON';
+                        else if (attachment.mimeType?.includes('csv')) fileType = 'CSV';
+                        else if (attachment.mimeType?.includes('xml')) fileType = 'XML';
+                        else if (attachment.mimeType?.includes('html')) fileType = 'HTML';
+                        else if (attachment.mimeType?.includes('yaml')) fileType = 'YAML';
+                        else if (attachment.mimeType?.includes('javascript')) fileType = 'JavaScript';
+                        else if (attachment.mimeType?.includes('typescript')) fileType = 'TypeScript';
+                        else if (attachment.mimeType?.includes('python')) fileType = 'Python';
+                        else if (attachment.mimeType?.includes('java')) fileType = 'Java';
+                        else if (attachment.mimeType?.includes('markdown')) fileType = 'Markdown';
+                        else if (attachment.mimeType?.includes('css')) fileType = 'CSS';
+                        else if (attachment.mimeType?.includes('sql')) fileType = 'SQL';
+                        else if (attachment.mimeType?.includes('ipynb')) fileType = 'Jupyter Notebook';
+
+                        contentParts.push({
+                            type: "text",
+                            text: `\n\n--- Contenido del archivo ${fileType} "${fileName}" ---\n${textContent}\n--- Fin del archivo ---\n`,
+                        });
+                    } catch (error) {
+                        console.error(`Error reading document ${attachment.url}:`, error);
+                        const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
+                        contentParts.push({
+                            type: "text",
+                            text: `\n[Error al leer el archivo "${fileName}": ${errorMsg}]\n`,
+                        });
                     }
-
-                    const textContent = await response.text();
-
-                    // Detectar tipo de archivo para mejor contexto
-                    let fileType = 'texto';
-                    if (attachment.mimeType?.includes('json')) fileType = 'JSON';
-                    else if (attachment.mimeType?.includes('csv')) fileType = 'CSV';
-                    else if (attachment.mimeType?.includes('xml')) fileType = 'XML';
-                    else if (attachment.mimeType?.includes('html')) fileType = 'HTML';
-                    else if (attachment.mimeType?.includes('yaml')) fileType = 'YAML';
-                    else if (attachment.mimeType?.includes('javascript')) fileType = 'JavaScript';
-                    else if (attachment.mimeType?.includes('typescript')) fileType = 'TypeScript';
-                    else if (attachment.mimeType?.includes('python')) fileType = 'Python';
-                    else if (attachment.mimeType?.includes('java')) fileType = 'Java';
-                    else if (attachment.mimeType?.includes('markdown')) fileType = 'Markdown';
-
-                    contentParts.push({
-                        type: "text",
-                        text: `\n\n--- Contenido del archivo ${fileType} "${fileName}" ---\n${textContent}\n--- Fin del archivo ---\n`,
-                    });
-                } catch (error) {
-                    console.error(`Error reading document ${attachment.url}:`, error);
-                    const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
-                    contentParts.push({
-                        type: "text",
-                        text: `\n[Error al leer el archivo "${fileName}": ${errorMsg}]\n`,
-                    });
                 }
             }
         }
