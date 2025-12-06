@@ -8,10 +8,14 @@ import { validateLocation } from "@/lib/geolocation/location-validator";
 import { reverseGeocodeServer } from "@/lib/geolocation/server-geocoding";
 import { db } from "@/db";
 import { conversationAttachments } from "@/db/schema";
-import { eq, inArray } from "drizzle-orm";
+import { inArray } from "drizzle-orm";
 
 import type { ChatMessage } from "@/app/chat/store";
 import type { StructuredAddress } from "@/lib/geolocation/address-types";
+
+// Force Node.js runtime for PDF parsing
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -498,7 +502,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Fetch attachments if provided
-        let attachments: AttachmentInput[] = [];
+        const attachments: AttachmentInput[] = [];
 
         if (attachmentIds.length > 0 && user) {
             try {

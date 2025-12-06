@@ -49,30 +49,122 @@ async function buildMessageContent(
                 },
             });
         } else if (attachment.type === 'document') {
-            // For text documents, fetch and add content as text
-            if (attachment.mimeType === 'text/plain' || attachment.mimeType === 'text/markdown') {
+            const fileName = attachment.url.split('/').pop() || 'archivo';
+
+            // Handle PDFs separately (need special parsing)
+            if (attachment.mimeType === 'application/pdf') {
                 try {
                     const response = await fetch(attachment.url);
-                    if (response.ok) {
-                        const textContent = await response.text();
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    // Check if response is actually PDF content, not HTML error page
+                    const contentType = response.headers.get('content-type');
+                    if (contentType?.includes('text/html')) {
+                        throw new Error('Received HTML instead of PDF content - URL may have expired');
+                    }
+
+                    const arrayBuffer = await response.arrayBuffer();
+                    const uint8Array = new Uint8Array(arrayBuffer);
+
+                    // Dynamic import of pdfjs-dist
+                    const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
+
+                    // Disable worker to avoid compatibility issues
+                    pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+
+                    // Load the PDF document
+                    const loadingTask = pdfjsLib.getDocument({
+                        data: uint8Array,
+                        useWorkerFetch: false,
+                        isEvalSupported: false,
+                        useSystemFonts: true,
+                    });
+                    const pdfDocument = await loadingTask.promise;
+
+                    let pdfText = '';
+
+                    // Extract text from all pages
+                    for (let pageNum = 1; pageNum <= pdfDocument.numPages; pageNum++) {
+                        const page = await pdfDocument.getPage(pageNum);
+                        const textContent = await page.getTextContent();
+                        const pageText = textContent.items
+                            .map((item) => {
+                                // TextItem has str property, TextMarkedContent doesn't
+                                if ('str' in item) {
+                                    return item.str;
+                                }
+                                return '';
+                            })
+                            .join(' ');
+                        pdfText += pageText + '\n\n';
+                    }
+
+                    pdfText = pdfText.trim();
+
+                    if (pdfText) {
                         contentParts.push({
                             type: "text",
-                            text: `\n\n--- Contenido del archivo "${attachment.url.split('/').pop()}" ---\n${textContent}\n--- Fin del archivo ---\n`,
+                            text: `\n\n--- Contenido del archivo PDF "${fileName}" ---\n${pdfText}\n--- Fin del archivo ---\n`,
+                        });
+                    } else {
+                        contentParts.push({
+                            type: "text",
+                            text: `\n[Archivo PDF "${fileName}" adjunto - no se pudo extraer texto]\n`,
                         });
                     }
                 } catch (error) {
-                    console.error(`Error reading document ${attachment.url}:`, error);
+                    console.error(`Error reading PDF ${attachment.url}:`, error);
+                    const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
                     contentParts.push({
                         type: "text",
-                        text: `\n[Error: No se pudo leer el archivo]\n`,
+                        text: `\n[Error al leer el archivo PDF "${fileName}": ${errorMsg}]\n`,
                     });
                 }
-            } else if (attachment.mimeType === 'application/pdf') {
-                // For PDFs, add a note that it's a PDF (future: extract text)
-                contentParts.push({
-                    type: "text",
-                    text: `\n[Archivo PDF adjunto: ${attachment.url.split('/').pop()}]\n`,
-                });
+            } else {
+                // For all other text-based documents (TXT, MD, JSON, CSV, XML, HTML, YAML, código fuente, etc.)
+                try {
+                    const response = await fetch(attachment.url);
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    // Check if response is actually text/binary content, not HTML error page
+                    const contentType = response.headers.get('content-type');
+                    if (contentType?.includes('text/html') && !attachment.mimeType?.includes('html')) {
+                        throw new Error('Received HTML instead of file content - URL may have expired');
+                    }
+
+                    const textContent = await response.text();
+
+                    // Detectar tipo de archivo para mejor contexto
+                    let fileType = 'texto';
+                    if (attachment.mimeType?.includes('json')) fileType = 'JSON';
+                    else if (attachment.mimeType?.includes('csv')) fileType = 'CSV';
+                    else if (attachment.mimeType?.includes('xml')) fileType = 'XML';
+                    else if (attachment.mimeType?.includes('html')) fileType = 'HTML';
+                    else if (attachment.mimeType?.includes('yaml')) fileType = 'YAML';
+                    else if (attachment.mimeType?.includes('javascript')) fileType = 'JavaScript';
+                    else if (attachment.mimeType?.includes('typescript')) fileType = 'TypeScript';
+                    else if (attachment.mimeType?.includes('python')) fileType = 'Python';
+                    else if (attachment.mimeType?.includes('java')) fileType = 'Java';
+                    else if (attachment.mimeType?.includes('markdown')) fileType = 'Markdown';
+
+                    contentParts.push({
+                        type: "text",
+                        text: `\n\n--- Contenido del archivo ${fileType} "${fileName}" ---\n${textContent}\n--- Fin del archivo ---\n`,
+                    });
+                } catch (error) {
+                    console.error(`Error reading document ${attachment.url}:`, error);
+                    const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
+                    contentParts.push({
+                        type: "text",
+                        text: `\n[Error al leer el archivo "${fileName}": ${errorMsg}]\n`,
+                    });
+                }
             }
         }
     }
@@ -106,7 +198,13 @@ async function buildMessages(
     // Add historical messages
     for (const msg of history) {
         if (msg.role && msg.content) {
-            messages.push({ role: msg.role, content: msg.content });
+            if (msg.role === 'user') {
+                messages.push({ role: 'user', content: msg.content });
+            } else {
+                // Assistant messages must be strings, not content parts
+                const textContent = typeof msg.content === 'string' ? msg.content : '';
+                messages.push({ role: 'assistant', content: textContent });
+            }
         }
     }
 

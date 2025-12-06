@@ -3,6 +3,10 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createMessage, updateMessage } from "@/db/queries/messages";
 import { getConversationById, updateConversation } from "@/db/queries/conversations";
 
+// Force Node.js runtime for database operations
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 // POST /api/conversations/[id]/messages - Crear un mensaje
 export async function POST(
   request: NextRequest,

@@ -90,8 +90,7 @@ export class LocationKalmanFilter {
       return location; // Return first reading as-is
     }
 
-    // Calculate time delta
-    const timeDelta = (location.timestamp - this.lastTimestamp) / 1000; // seconds
+    // Update timestamp (time delta not currently used in simple Kalman filter)
     this.lastTimestamp = location.timestamp;
 
     // Use accuracy as measurement noise (in meters squared)

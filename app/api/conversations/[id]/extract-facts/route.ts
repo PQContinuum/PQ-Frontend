@@ -21,6 +21,10 @@ import { getUserPlanName } from '@/lib/subscription';
 import { getPlanLimits, canAddMoreContext } from '@/lib/memory/plan-limits';
 import { invalidateUserContext, enforceContextLimits } from '@/lib/memory/user-context';
 
+// Force Node.js runtime for database operations
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

@@ -2,11 +2,68 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { db } from "@/db";
 import { conversationAttachments } from "@/db/schema";
-import sharp, { Metadata } from "sharp"; // Install: npm install sharp
+import sharp from "sharp";
+
+// Force Node.js runtime (required for sharp and file processing)
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
-const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-const ALLOWED_DOCUMENT_TYPES = ['application/pdf', 'text/plain', 'text/markdown'];
+
+// OpenAI GPT-4o Vision soporta: PNG, JPEG, GIF, WebP, BMP, TIFF, HEIF
+const ALLOWED_IMAGE_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/bmp',
+  'image/tiff',
+  'image/heif',
+  'image/heic',
+  'image/svg+xml',
+];
+
+// Tipos de documentos que podemos extraer como texto
+const ALLOWED_DOCUMENT_TYPES = [
+  // PDFs
+  'application/pdf',
+
+  // Texto plano y markdown
+  'text/plain',
+  'text/markdown',
+
+  // Código fuente
+  'text/javascript',
+  'application/javascript',
+  'text/typescript',
+  'application/typescript',
+  'text/x-python',
+  'application/x-python-code',
+  'text/x-java-source',
+  'text/x-c',
+  'text/x-c++',
+  'text/x-csharp',
+  'text/x-go',
+  'text/x-rust',
+  'text/x-php',
+  'text/x-ruby',
+  'text/x-swift',
+  'text/x-kotlin',
+
+  // Datos estructurados
+  'application/json',
+  'text/csv',
+  'application/xml',
+  'text/xml',
+  'text/html',
+  'application/x-yaml',
+  'text/yaml',
+
+  // Configuración
+  'application/toml',
+  'text/x-ini',
+  'application/x-sh',
+];
 
 export async function POST(
   req: NextRequest,
@@ -82,7 +139,7 @@ export async function POST(
 
     // Generate thumbnail for images
     let thumbnailPath = null;
-    let metadata: Metadata = {};
+    let metadata: Record<string, unknown> = {};
 
     if (isImage) {
       try {

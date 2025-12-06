@@ -6,6 +6,10 @@ import {
   deleteConversation,
 } from "@/db/queries/conversations";
 
+// Force Node.js runtime for database operations
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 // GET /api/conversations/[id] - Obtener una conversación con sus mensajes
 export async function GET(
   request: NextRequest,

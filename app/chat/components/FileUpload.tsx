@@ -111,7 +111,7 @@ export function FileUpload({ conversationId, onAttachmentsChange }: FileUploadPr
           id="file-upload"
           className="hidden"
           multiple
-          accept="image/jpeg,image/png,image/gif,image/webp,application/pdf,text/plain"
+          accept="image/*,application/pdf,text/*,application/json,text/csv,application/xml,text/xml,text/html,application/x-yaml,.js,.ts,.tsx,.jsx,.py,.java,.c,.cpp,.cs,.go,.rs,.php,.rb,.swift,.kt,.sh,.yaml,.yml,.toml,.ini,.md"
           onChange={(e) => handleUpload(e.target.files)}
           disabled={uploading}
         />
@@ -140,9 +140,15 @@ export function FileUpload({ conversationId, onAttachmentsChange }: FileUploadPr
             {uploading ? 'Subiendo archivos...' : dragActive ? '¡Suelta los archivos aquí!' : 'Arrastra archivos o haz clic'}
           </p>
           <p className="text-xs text-gray-500 text-center">
-            <span className="font-medium">Imágenes:</span> PNG, JPG, GIF, WebP · <span className="font-medium">Docs:</span> PDF, TXT
+            <span className="font-medium">Imágenes:</span> PNG, JPG, GIF, WebP, BMP, TIFF, HEIF, SVG
           </p>
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="text-xs text-gray-500 text-center mt-0.5">
+            <span className="font-medium">Documentos:</span> PDF, TXT, MD · <span className="font-medium">Código:</span> JS, TS, PY, Java, etc.
+          </p>
+          <p className="text-xs text-gray-500 text-center mt-0.5">
+            <span className="font-medium">Datos:</span> JSON, CSV, XML, HTML, YAML
+          </p>
+          <p className="text-xs text-gray-400 mt-1.5">
             Máximo 20MB por archivo
           </p>
         </label>

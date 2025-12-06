@@ -7,6 +7,10 @@ import {
 } from "@/db/queries/conversations";
 import { createMessage } from "@/db/queries/messages";
 
+// Force Node.js runtime for database operations
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 // GET /api/conversations - Obtener todas las conversaciones del usuario
 export async function GET() {
   try {
