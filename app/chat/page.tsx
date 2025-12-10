@@ -11,6 +11,7 @@ import {
   Sparkles,
   LogOut,
   Loader2,
+  Volume2,
 } from 'lucide-react';
 
 import {
@@ -49,6 +50,7 @@ import { ChatWindow } from './components/ChatWindow';
 import { MessageInput } from './components/MessageInput';
 import { ConversationHistory } from './components/ConversationHistory';
 import { SettingsDialog } from './components/SettingsDialog';
+import { TTSSettingsModal } from './components/TTSSettingsModal';
 import { useMessages, useReplaceMessages, useSetConversationId } from './store';
 import { createSupabaseBrowserClient } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
@@ -61,6 +63,7 @@ export default function ChatPage() {
   const [isCreatingNew, setIsCreatingNew] = React.useState(false);
   const [userEmail, setUserEmail] = React.useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = React.useState(false);
+  const [ttsSettingsOpen, setTtsSettingsOpen] = React.useState(false);
   const [logoutDialogOpen, setLogoutDialogOpen] = React.useState(false);
   const [isLoggingOut, setIsLoggingOut] = React.useState(false);
   const { data: userPlan } = useUserPlan();
@@ -123,6 +126,9 @@ export default function ChatPage() {
         break;
       case 'settings':
         setSettingsOpen(true);
+        break;
+      case 'voice':
+        setTtsSettingsOpen(true);
         break;
     }
     // Reset select value after action
@@ -274,6 +280,12 @@ export default function ChatPage() {
                       <span>Configuración</span>
                     </div>
                   </SelectItem>
+                  <SelectItem value="voice">
+                    <div className="flex items-center gap-2">
+                      <Volume2 className="size-4" />
+                      <span>Configuración de Voz</span>
+                    </div>
+                  </SelectItem>
                   <SelectItem value="logout">
                     <div className="flex items-center gap-2">
                       <LogOut className="size-4" />
@@ -304,6 +316,14 @@ export default function ChatPage() {
                   {getConversationTitle()}
                 </p>
               </div>
+              <button
+                onClick={() => setTtsSettingsOpen(true)}
+                className="flex items-center justify-center size-8 rounded-full text-[#4c4c4c] hover:text-[#00552b] hover:bg-[#00552b]/10 transition-all"
+                title="Configuración de voz"
+                aria-label="Configuración de voz"
+              >
+                <Volume2 className="size-4" />
+              </button>
               {/*<div className={`group rounded-full border-2 px-4 py-1.5 text-sm cursor-pointer transition-all hover:shadow-lg hover:scale-105 ${
                 userPlan?.planName === 'Free' || !userPlan?.planName
                   ? 'border-[#7EEFB2] bg-[#7EEFB2]/10'
@@ -410,6 +430,11 @@ export default function ChatPage() {
         onOpenChange={setSettingsOpen}
         userEmail={userEmail}
         userPlan={userPlan?.planName || 'Free'}
+      />
+
+      <TTSSettingsModal
+        open={ttsSettingsOpen}
+        onOpenChange={setTtsSettingsOpen}
       />
 
       <Dialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>

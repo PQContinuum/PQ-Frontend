@@ -8,6 +8,7 @@ import remarkGfm from 'remark-gfm';
 import type { ChatMessage } from '@/app/chat/store';
 import { GeoCulturalResponse } from './GeoCulturalResponse';
 import { AttachmentsPreview } from './AttachmentsPreview';
+import { SpeechButton } from './SpeechButton';
 
 import 'highlight.js/styles/github.css';
 
@@ -298,11 +299,16 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
 
             {/* Footer decoration */}
             <div className="pt-6 border-t border-[#00552b]/10">
-              <div className="flex items-center justify-center gap-2 text-xs text-[#00552b]/40">
-                <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span className="font-medium">Análisis territorial completo</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs text-[#00552b]/40">
+                  <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="font-medium">Análisis territorial completo</span>
+                </div>
+                {!isStreaming && geoCulturalText.reply && (
+                  <SpeechButton text={geoCulturalText.reply} />
+                )}
               </div>
             </div>
           </div>
@@ -324,61 +330,69 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
-      <div
-        className={`inline-flex max-w-full rounded-4xl border px-4 py-2 text-[15px] leading-relaxed ${
-          isUser
-            ? 'border-transparent bg-[#00552b] text-white font-medium'
-            : 'border-transparent bg-transparent text-black'
-        }`}
-      >
-        <div className="flex w-full flex-col gap-2">
-          {isUser && attachments && attachments.length > 0 && (
-            <AttachmentsPreview attachments={attachments} />
-          )}
-          <div className="markdown prose prose-sm max-w-none text-current prose-headings:text-[#111111] prose-strong:text-[#111111]">
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              rehypePlugins={[rehypeHighlight]}
-              components={{
-                pre: ({ children }) => {
-                  const codeElement = children as React.ReactElement;
-                  const codeProps = codeElement?.props as { className?: string; children?: React.ReactNode };
-                  const className = codeProps?.className || '';
-                  const language = className.replace('language-', '') || 'text';
-                  const value = String(codeProps?.children || '');
+      <div className="flex flex-col gap-1">
+        <div
+          className={`inline-flex max-w-full rounded-4xl border px-4 py-2 text-[15px] leading-relaxed ${
+            isUser
+              ? 'border-transparent bg-[#00552b] text-white font-medium'
+              : 'border-transparent bg-transparent text-black'
+          }`}
+        >
+          <div className="flex w-full flex-col gap-2">
+            {isUser && attachments && attachments.length > 0 && (
+              <AttachmentsPreview attachments={attachments} />
+            )}
+            <div className="markdown prose prose-sm max-w-none text-current prose-headings:text-[#111111] prose-strong:text-[#111111]">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeHighlight]}
+                components={{
+                  pre: ({ children }) => {
+                    const codeElement = children as React.ReactElement;
+                    const codeProps = codeElement?.props as { className?: string; children?: React.ReactNode };
+                    const className = codeProps?.className || '';
+                    const language = className.replace('language-', '') || 'text';
+                    const value = String(codeProps?.children || '');
 
-                  return <CodeBlock language={language} value={value} />;
-                },
-                code({ inline, className, children, ...props }: MarkdownCodeProps) {
-                  if (inline) {
-                    return (
-                      <code
-                        {...props}
-                        className="rounded-md bg-black/5 px-1.5 py-0.5 text-[0.92em] text-[#111111]"
-                      >
-                        {children}
-                      </code>
-                    );
-                  }
-                  // For non-inline code, let the pre component handle it
-                  return <code {...props} className={className}>{children}</code>;
-                },
-                a: (props) => (
-                  <a
-                    {...props}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-medium text-[#111111] underline underline-offset-4"
-                  />
-                ),
-                ul: (props) => <ul {...props} className="list-disc pl-6" />,
-                ol: (props) => <ol {...props} className="list-decimal pl-6" />,
-              }}
-            >
-              {message.content || ' '}
-            </ReactMarkdown>
+                    return <CodeBlock language={language} value={value} />;
+                  },
+                  code({ inline, className, children, ...props }: MarkdownCodeProps) {
+                    if (inline) {
+                      return (
+                        <code
+                          {...props}
+                          className="rounded-md bg-black/5 px-1.5 py-0.5 text-[0.92em] text-[#111111]"
+                        >
+                          {children}
+                        </code>
+                      );
+                    }
+                    // For non-inline code, let the pre component handle it
+                    return <code {...props} className={className}>{children}</code>;
+                  },
+                  a: (props) => (
+                    <a
+                      {...props}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium text-[#111111] underline underline-offset-4"
+                    />
+                  ),
+                  ul: (props) => <ul {...props} className="list-disc pl-6" />,
+                  ol: (props) => <ol {...props} className="list-decimal pl-6" />,
+                }}
+              >
+                {message.content || ' '}
+              </ReactMarkdown>
+            </div>
           </div>
         </div>
+        {/* Speech button for assistant messages */}
+        {!isUser && !isStreaming && message.content && (
+          <div className="flex justify-start pl-2">
+            <SpeechButton text={message.content} />
+          </div>
+        )}
       </div>
     </div>
   );
