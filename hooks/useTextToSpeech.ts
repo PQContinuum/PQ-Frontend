@@ -26,22 +26,12 @@ export function stopAllTTS() {
   globalStopCallback?.();
 }
 
-// Global state for managing audio across components
-let globalStopFn: (() => void) | null = null;
-
-// Audio cache for repeated plays (cache by text hash)
+// Audio cache for repeated plays (instant on second play)
 const audioCache = new Map<string, string>();
 
-// Generate simple hash for cache key
-function hashText(text: string, voice: string): string {
-  let hash = 0;
-  const str = `${voice}:${text}`;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
-  }
-  return `tts_${hash}`;
+// Simple cache key
+function getCacheKey(text: string, voice: string): string {
+  return `${voice}:${text.slice(0, 100)}:${text.length}`;
 }
 
 // Custom error for rate limits
@@ -52,23 +42,17 @@ class TTSRateLimitError extends Error {
   }
 }
 
-// Minimum bytes to buffer before starting playback (faster start)
-const MIN_BUFFER_SIZE = 32000; // ~32KB = ~2 seconds of audio
-
-// Fetch audio with early playback (starts playing while downloading)
-async function fetchAudioWithEarlyPlayback(
+// Fetch complete audio - simple and stable
+async function fetchAudio(
   text: string,
   voice: string,
   signal?: AbortSignal
-): Promise<{ audio: HTMLAudioElement; blobPromise: Promise<string> }> {
-  const cacheKey = hashText(text, voice);
+): Promise<string> {
+  const cacheKey = getCacheKey(text, voice);
 
-  // Check cache first - instant playback
+  // Cache hit = instant playback
   if (audioCache.has(cacheKey)) {
-    return {
-      audio: new Audio(audioCache.get(cacheKey)!),
-      blobPromise: Promise.resolve(audioCache.get(cacheKey)!),
-    };
+    return audioCache.get(cacheKey)!;
   }
 
   const response = await fetch('/api/tts', {
@@ -86,56 +70,13 @@ async function fetchAudioWithEarlyPlayback(
     throw new Error('TTS failed');
   }
 
-  const reader = response.body?.getReader();
-  if (!reader) throw new Error('No reader');
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
 
-  const chunks: ArrayBuffer[] = [];
-  let totalSize = 0;
-  let earlyBlobUrl: string | null = null;
+  // Cache for future plays
+  audioCache.set(cacheKey, url);
 
-  // Read chunks until we have enough to start playing
-  while (totalSize < MIN_BUFFER_SIZE) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    if (signal?.aborted) throw new Error('Aborted');
-    chunks.push(value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength));
-    totalSize += value.length;
-  }
-
-  // Create early blob for immediate playback
-  const earlyBlob = new Blob(chunks, { type: 'audio/mpeg' });
-  earlyBlobUrl = URL.createObjectURL(earlyBlob);
-  const audio = new Audio(earlyBlobUrl);
-
-  // Continue downloading rest in background
-  const blobPromise = (async () => {
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        if (signal?.aborted) return earlyBlobUrl!;
-        chunks.push(value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength));
-      }
-
-      // Create final complete blob
-      const finalBlob = new Blob(chunks, { type: 'audio/mpeg' });
-      const finalUrl = URL.createObjectURL(finalBlob);
-
-      // Cache the complete audio
-      audioCache.set(cacheKey, finalUrl);
-
-      // Clean up early blob
-      if (earlyBlobUrl) {
-        URL.revokeObjectURL(earlyBlobUrl);
-      }
-
-      return finalUrl;
-    } catch {
-      return earlyBlobUrl!;
-    }
-  })();
-
-  return { audio, blobPromise };
+  return url;
 }
 
 export function useTextToSpeech(): UseTextToSpeechReturn {
@@ -186,16 +127,12 @@ export function useTextToSpeech(): UseTextToSpeechReturn {
     }
   }, [state.isPaused]);
 
-  // SPEAK - Start speaking text with streaming
+  // SPEAK - Start speaking text
   const speak = useCallback(async (text: string) => {
     if (!text.trim()) return;
 
-    // Stop any global playback
-    if (globalStopFn && globalStopFn !== stop) {
-      globalStopFn();
-    }
+    // Stop any other playback first
     stop();
-    globalStopFn = stop;
     isStoppedRef.current = false;
 
     const voice = getSelectedVoice();
@@ -213,15 +150,12 @@ export function useTextToSpeech(): UseTextToSpeechReturn {
     abortRef.current = new AbortController();
 
     try {
-      // Fetch with early playback - starts playing as soon as we have minimum buffer
-      const { audio } = await fetchAudioWithEarlyPlayback(
-        cleanText,
-        voice,
-        abortRef.current.signal
-      );
+      // Fetch complete audio (stable, no partial playback issues)
+      const audioUrl = await fetchAudio(cleanText, voice, abortRef.current.signal);
 
       if (isStoppedRef.current) return;
 
+      const audio = new Audio(audioUrl);
       audioRef.current = audio;
 
       audio.onplay = () => {
@@ -231,7 +165,6 @@ export function useTextToSpeech(): UseTextToSpeechReturn {
       audio.onended = () => {
         setState(s => ({ ...s, isPlaying: false, isPaused: false }));
         audioRef.current = null;
-        globalStopFn = null;
       };
 
       audio.onerror = () => {
