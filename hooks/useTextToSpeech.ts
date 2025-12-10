@@ -18,6 +18,40 @@ interface UseTextToSpeechReturn extends TTSState {
   toggle: (text: string) => void;
 }
 
+// =============================================
+// GLOBAL TTS EVENT SYSTEM
+// =============================================
+type TTSEventType = 'voice-changed' | 'stop-all';
+type TTSEventCallback = () => void;
+
+class TTSEventEmitter {
+  private listeners = new Map<TTSEventType, Set<TTSEventCallback>>();
+
+  on(event: TTSEventType, callback: TTSEventCallback) {
+    if (!this.listeners.has(event)) {
+      this.listeners.set(event, new Set());
+    }
+    this.listeners.get(event)!.add(callback);
+    return () => this.off(event, callback);
+  }
+
+  off(event: TTSEventType, callback: TTSEventCallback) {
+    this.listeners.get(event)?.delete(callback);
+  }
+
+  emit(event: TTSEventType) {
+    this.listeners.get(event)?.forEach(cb => cb());
+  }
+}
+
+// Global singleton
+export const ttsEvents = new TTSEventEmitter();
+
+// Global stop function for external use
+export function stopAllTTS() {
+  ttsEvents.emit('stop-all');
+}
+
 // Global state for managing audio across components
 let globalStopFn: (() => void) | null = null;
 
@@ -291,9 +325,20 @@ export function useTextToSpeech(): UseTextToSpeechReturn {
     }
   }, [state.isLoading, state.isPlaying, state.isPaused, stop, pause, resume, speak]);
 
-  // Cleanup on unmount
+  // Listen for global TTS events (voice change, stop all)
   useEffect(() => {
+    const unsubscribeVoiceChange = ttsEvents.on('voice-changed', () => {
+      // Stop current playback when voice settings change
+      stop();
+    });
+
+    const unsubscribeStopAll = ttsEvents.on('stop-all', () => {
+      stop();
+    });
+
     return () => {
+      unsubscribeVoiceChange();
+      unsubscribeStopAll();
       stop();
     };
   }, [stop]);

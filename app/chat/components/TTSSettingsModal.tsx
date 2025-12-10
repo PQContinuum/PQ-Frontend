@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useCallback } from 'react';
+import { memo } from 'react';
 import { Volume2 } from 'lucide-react';
 import {
   Dialog,
@@ -22,7 +22,6 @@ import {
   GENDER_OPTIONS,
   getVoiceConfig,
 } from '@/utils/voiceMapping';
-import { clearTTSCache } from '@/hooks/useTextToSpeech';
 
 interface TTSSettingsModalProps {
   open: boolean;
@@ -34,26 +33,6 @@ function TTSSettingsModalComponent({ open, onOpenChange }: TTSSettingsModalProps
   const gender = useGender();
   const setLanguage = useSetLanguage();
   const setGender = useSetGender();
-
-  const handleLanguageChange = useCallback(
-    (newLanguage: Language) => {
-      if (newLanguage !== language) {
-        setLanguage(newLanguage);
-        clearTTSCache();
-      }
-    },
-    [language, setLanguage]
-  );
-
-  const handleGenderChange = useCallback(
-    (newGender: Gender) => {
-      if (newGender !== gender) {
-        setGender(newGender);
-        clearTTSCache();
-      }
-    },
-    [gender, setGender]
-  );
 
   // Get current voice info
   const currentVoice = getVoiceConfig(language, gender);
@@ -85,7 +64,7 @@ function TTSSettingsModalComponent({ open, onOpenChange }: TTSSettingsModalProps
                   <button
                     key={langKey}
                     type="button"
-                    onClick={() => handleLanguageChange(langKey)}
+                    onClick={() => setLanguage(langKey)}
                     className={`
                       flex items-center justify-center gap-2 px-4 py-3 rounded-xl
                       text-sm font-medium transition-all duration-200
@@ -117,7 +96,7 @@ function TTSSettingsModalComponent({ open, onOpenChange }: TTSSettingsModalProps
                   <button
                     key={genderKey}
                     type="button"
-                    onClick={() => handleGenderChange(genderKey)}
+                    onClick={() => setGender(genderKey)}
                     className={`
                       flex items-center justify-center gap-2 px-4 py-3 rounded-xl
                       text-sm font-medium transition-all duration-200

@@ -10,6 +10,23 @@ import {
   DEFAULT_TTS_SETTINGS,
 } from '@/utils/voiceMapping';
 
+// Import TTS events to notify voice changes
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let ttsEvents: any = null;
+
+// Lazy load to avoid circular dependency
+function emitVoiceChanged() {
+  if (!ttsEvents) {
+    // Dynamic import to avoid SSR issues
+    import('@/hooks/useTextToSpeech').then(module => {
+      ttsEvents = module.ttsEvents;
+      ttsEvents?.emit('voice-changed');
+    });
+  } else {
+    ttsEvents.emit('voice-changed');
+  }
+}
+
 interface TTSSettingsState {
   // Settings
   language: Language;
@@ -31,18 +48,28 @@ export const useTTSSettings = create<TTSSettingsState>()(
         gender: DEFAULT_TTS_SETTINGS.gender,
 
         // Actions
-        setLanguage: (language: Language) =>
-          set({ language }, false, 'setLanguage'),
+        setLanguage: (language: Language) => {
+          const current = get().language;
+          if (current !== language) {
+            set({ language }, false, 'setLanguage');
+            emitVoiceChanged();
+          }
+        },
 
-        setGender: (gender: Gender) =>
-          set({ gender }, false, 'setGender'),
+        setGender: (gender: Gender) => {
+          const current = get().gender;
+          if (current !== gender) {
+            set({ gender }, false, 'setGender');
+            emitVoiceChanged();
+          }
+        },
 
         getSelectedVoice: (): OpenAIVoice => {
           const { language, gender } = get();
           return getVoice(language, gender);
         },
 
-        reset: () =>
+        reset: () => {
           set(
             {
               language: DEFAULT_TTS_SETTINGS.language,
@@ -50,7 +77,9 @@ export const useTTSSettings = create<TTSSettingsState>()(
             },
             false,
             'reset'
-          ),
+          );
+          emitVoiceChanged();
+        },
       }),
       {
         name: 'tts-settings',

@@ -35,12 +35,12 @@ export const VOICE_MAP: Record<Language, Record<Gender, VoiceConfig>> = {
     female: {
       voice: 'nova',
       label: 'Nova',
-      description: 'Voz femenina cálida y natural para español',
+      description: 'Voz femenina cálida y natural - Español Latino',
     },
     male: {
       voice: 'onyx',
       label: 'Onyx',
-      description: 'Voz masculina profunda y clara para español',
+      description: 'Voz masculina profunda y clara - Español Latino',
     },
   },
   en: {
@@ -75,7 +75,7 @@ export function getVoiceConfig(language: Language, gender: Gender): VoiceConfig 
  * Language display names
  */
 export const LANGUAGE_OPTIONS: Record<Language, { label: string; flag: string }> = {
-  es: { label: 'Español', flag: '🇪🇸' },
+  es: { label: 'Español (MX)', flag: '🇲🇽' },
   en: { label: 'English', flag: '🇺🇸' },
 };
 
