@@ -22,7 +22,7 @@ import {
   GENDER_OPTIONS,
   getVoiceConfig,
 } from '@/utils/voiceMapping';
-import { clearAudioCache } from '@/hooks/useTextToSpeech';
+import { clearTTSCache } from '@/hooks/useTextToSpeech';
 
 interface TTSSettingsModalProps {
   open: boolean;
@@ -39,8 +39,7 @@ function TTSSettingsModalComponent({ open, onOpenChange }: TTSSettingsModalProps
     (newLanguage: Language) => {
       if (newLanguage !== language) {
         setLanguage(newLanguage);
-        // Clear audio cache when language changes since cached audio won't match new settings
-        clearAudioCache();
+        clearTTSCache();
       }
     },
     [language, setLanguage]
@@ -50,8 +49,7 @@ function TTSSettingsModalComponent({ open, onOpenChange }: TTSSettingsModalProps
     (newGender: Gender) => {
       if (newGender !== gender) {
         setGender(newGender);
-        // Clear audio cache when gender changes
-        clearAudioCache();
+        clearTTSCache();
       }
     },
     [gender, setGender]

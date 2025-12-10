@@ -2,7 +2,8 @@
  * OpenAI TTS Voice Mapping
  * Maps language + gender combinations to optimal OpenAI voices
  *
- * Available voices: alloy, ash, ballad, coral, echo, fable, nova, onyx, sage, shimmer, verse
+ * Available voices for tts-1 (fast model):
+ * alloy, ash, coral, echo, fable, nova, onyx, sage, shimmer
  *
  * Voice characteristics:
  * - nova: Warm, confident, feminine - excellent for Spanish
@@ -11,13 +12,13 @@
  * - alloy: Neutral, versatile
  * - echo: Clear, deep, masculine
  * - onyx: Deep, authoritative, masculine
- * - fable: Narrative, expressive
+ * - fable: Narrative, expressive (British accent)
  * - sage: Calm, measured
  */
 
 export type Language = 'es' | 'en';
 export type Gender = 'female' | 'male';
-export type OpenAIVoice = 'alloy' | 'ash' | 'ballad' | 'coral' | 'echo' | 'fable' | 'nova' | 'onyx' | 'sage' | 'shimmer' | 'verse';
+export type OpenAIVoice = 'alloy' | 'ash' | 'coral' | 'echo' | 'fable' | 'nova' | 'onyx' | 'sage' | 'shimmer';
 
 export interface VoiceConfig {
   voice: OpenAIVoice;
