@@ -9,45 +9,35 @@ interface SpeechButtonProps {
 }
 
 /**
- * Speech button component for TTS playback
+ * Speech button with play/pause/resume functionality
  *
  * States:
- * - Idle: Play icon
+ * - Idle: Play icon (speaker)
  * - Loading: Spinner
- * - Playing: Sound wave icon
- * - After play: Replay icon
+ * - Playing: Pause icon
+ * - Paused: Play icon (resume)
  */
 function SpeechButtonComponent({ text, className = '' }: SpeechButtonProps) {
-  const { speak, stop, isLoading, isPlaying, error } = useTextToSpeech();
+  const { toggle, isLoading, isPlaying, isPaused, error } = useTextToSpeech();
 
   const handleClick = useCallback(
-    async (e: React.MouseEvent) => {
+    (e: React.MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
-
-      if (isLoading) {
-        return; // Prevent double-clicks during loading
-      }
-
-      if (isPlaying) {
-        stop();
-        return;
-      }
-
-      await speak(text);
+      toggle(text);
     },
-    [speak, stop, isLoading, isPlaying, text]
+    [toggle, text]
   );
 
-  // Determine button state and icon
-  const getButtonContent = () => {
+  // Determine icon based on state
+  const getIcon = () => {
+    // Loading - spinner
     if (isLoading) {
       return (
         <svg
           className="size-3.5 animate-spin"
           fill="none"
           viewBox="0 0 24 24"
-          aria-hidden="true"
         >
           <circle
             className="opacity-25"
@@ -66,24 +56,34 @@ function SpeechButtonComponent({ text, className = '' }: SpeechButtonProps) {
       );
     }
 
+    // Playing - show pause icon
     if (isPlaying) {
-      // Sound wave / stop icon
       return (
         <svg
           className="size-3.5"
-          fill="none"
+          fill="currentColor"
           viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-          aria-hidden="true"
         >
-          <rect x="6" y="4" width="4" height="16" rx="1" fill="currentColor" />
-          <rect x="14" y="4" width="4" height="16" rx="1" fill="currentColor" />
+          <rect x="6" y="4" width="4" height="16" rx="1" />
+          <rect x="14" y="4" width="4" height="16" rx="1" />
         </svg>
       );
     }
 
-    // Default: Play icon
+    // Paused - show play/resume icon
+    if (isPaused) {
+      return (
+        <svg
+          className="size-3.5"
+          fill="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path d="M8 5v14l11-7z" />
+        </svg>
+      );
+    }
+
+    // Idle - show speaker icon
     return (
       <svg
         className="size-3.5"
@@ -91,7 +91,6 @@ function SpeechButtonComponent({ text, className = '' }: SpeechButtonProps) {
         viewBox="0 0 24 24"
         stroke="currentColor"
         strokeWidth={2}
-        aria-hidden="true"
       >
         <path
           strokeLinecap="round"
@@ -104,7 +103,16 @@ function SpeechButtonComponent({ text, className = '' }: SpeechButtonProps) {
 
   const getAriaLabel = () => {
     if (isLoading) return 'Cargando audio...';
-    if (isPlaying) return 'Detener reproducción';
+    if (isPlaying) return 'Pausar';
+    if (isPaused) return 'Reanudar';
+    return 'Reproducir';
+  };
+
+  const getTitle = () => {
+    if (error) return error;
+    if (isLoading) return 'Cargando...';
+    if (isPlaying) return 'Click para pausar';
+    if (isPaused) return 'Click para reanudar';
     return 'Reproducir mensaje';
   };
 
@@ -120,15 +128,16 @@ function SpeechButtonComponent({ text, className = '' }: SpeechButtonProps) {
         hover:bg-[#00552b]/10
         transition-all duration-200
         focus:outline-none focus:ring-2 focus:ring-[#00552b]/30 focus:ring-offset-1
-        disabled:opacity-50 disabled:cursor-not-allowed
-        ${isPlaying ? 'text-[#00552b] bg-[#00552b]/10' : ''}
+        disabled:cursor-wait
+        ${isPlaying ? 'text-[#00552b] bg-[#00552b]/15' : ''}
+        ${isPaused ? 'text-[#00552b] bg-[#00552b]/10 ring-2 ring-[#00552b]/20' : ''}
         ${error ? 'text-red-500 hover:text-red-600' : ''}
         ${className}
       `}
       aria-label={getAriaLabel()}
-      title={error || getAriaLabel()}
+      title={getTitle()}
     >
-      {getButtonContent()}
+      {getIcon()}
     </button>
   );
 }
