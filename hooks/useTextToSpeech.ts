@@ -26,10 +26,9 @@ export function stopAllTTS() {
   globalStopCallback?.();
 }
 
-// Audio cache for repeated plays (instant on second play)
+// Audio cache for MP3 fallback
 const audioCache = new Map<string, string>();
 
-// Simple cache key
 function getCacheKey(text: string, voice: string): string {
   return `${voice}:${text.slice(0, 100)}:${text.length}`;
 }
@@ -42,42 +41,226 @@ class TTSRateLimitError extends Error {
   }
 }
 
-// Fetch complete audio - simple and stable
-async function fetchAudio(
-  text: string,
-  voice: string,
-  signal?: AbortSignal
-): Promise<string> {
-  const cacheKey = getCacheKey(text, voice);
+// =============================================
+// PCM STREAMING AUDIO PLAYER
+// Uses Web Audio API with buffering for smooth playback
+// =============================================
+class PCMStreamPlayer {
+  private audioContext: AudioContext | null = null;
+  private isPlaying = false;
+  private isPaused = false;
+  private scheduledTime = 0;
+  private sourceNodes: AudioBufferSourceNode[] = [];
+  private gainNode: GainNode | null = null;
+  private onEndCallback: (() => void) | null = null;
+  private onStartCallback: (() => void) | null = null;
+  private hasStarted = false;
+  private isProcessing = false;
+  private streamEnded = false;
 
-  // Cache hit = instant playback
-  if (audioCache.has(cacheKey)) {
-    return audioCache.get(cacheKey)!;
-  }
+  // PCM format: 24kHz, 16-bit signed, mono, little-endian
+  private readonly SAMPLE_RATE = 24000;
 
-  const response = await fetch('/api/tts', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text, voice }),
-    signal,
-  });
+  // Buffer settings for smooth playback
+  // Accumulate ~100ms (2400 samples) before starting playback
+  private readonly MIN_BUFFER_SAMPLES = 2400;
+  // Process in chunks of ~200ms (4800 samples) for efficiency
+  private readonly CHUNK_SIZE_SAMPLES = 4800;
 
-  if (!response.ok) {
-    if (response.status === 429) {
-      const data = await response.json();
-      throw new TTSRateLimitError(data.message || 'Límite de TTS alcanzado');
+  // Accumulation buffer for incoming PCM data
+  private accumulatedBuffer: Int16Array = new Int16Array(0);
+  private totalSamplesScheduled = 0;
+  // Leftover byte from previous chunk (PCM is 16-bit = 2 bytes per sample)
+  private leftoverByte: number | null = null;
+
+  async init() {
+    if (!this.audioContext) {
+      this.audioContext = new AudioContext({ sampleRate: this.SAMPLE_RATE });
+      this.gainNode = this.audioContext.createGain();
+      this.gainNode.connect(this.audioContext.destination);
     }
-    throw new Error('TTS failed');
+    if (this.audioContext.state === 'suspended') {
+      await this.audioContext.resume();
+    }
+    this.scheduledTime = this.audioContext.currentTime;
+    this.hasStarted = false;
+    this.streamEnded = false;
+    this.isProcessing = false;
+    this.accumulatedBuffer = new Int16Array(0);
+    this.leftoverByte = null;
+    this.totalSamplesScheduled = 0;
+    console.log('[PCM] init() complete, audioContext state:', this.audioContext.state);
   }
 
-  const blob = await response.blob();
-  const url = URL.createObjectURL(blob);
+  // Append new PCM data to accumulated buffer
+  private appendToBuffer(pcmData: ArrayBuffer) {
+    let bytes = new Uint8Array(pcmData);
 
-  // Cache for future plays
-  audioCache.set(cacheKey, url);
+    // If we have a leftover byte from previous chunk, prepend it
+    if (this.leftoverByte !== null) {
+      const newBytes = new Uint8Array(bytes.length + 1);
+      newBytes[0] = this.leftoverByte;
+      newBytes.set(bytes, 1);
+      bytes = newBytes;
+      this.leftoverByte = null;
+    }
 
-  return url;
+    // If odd number of bytes, save the last one for next chunk
+    if (bytes.length % 2 !== 0) {
+      this.leftoverByte = bytes[bytes.length - 1];
+      bytes = bytes.slice(0, -1);
+    }
+
+    if (bytes.length === 0) return;
+
+    // Convert to Int16Array (requires even byte count)
+    const newData = new Int16Array(bytes.buffer, bytes.byteOffset, bytes.length / 2);
+    const combined = new Int16Array(this.accumulatedBuffer.length + newData.length);
+    combined.set(this.accumulatedBuffer);
+    combined.set(newData, this.accumulatedBuffer.length);
+    this.accumulatedBuffer = combined;
+  }
+
+  // Convert 16-bit PCM to Float32
+  private pcmToFloat32(int16: Int16Array): Float32Array {
+    const float32 = new Float32Array(int16.length);
+    for (let i = 0; i < int16.length; i++) {
+      float32[i] = int16[i] / 32768;
+    }
+    return float32;
+  }
+
+  private scheduleAudioChunk(float32: Float32Array) {
+    console.log('[PCM] scheduleAudioChunk called, samples:', float32.length);
+    if (!this.audioContext || !this.gainNode || !this.isPlaying) return;
+
+    const audioBuffer = this.audioContext.createBuffer(1, float32.length, this.SAMPLE_RATE);
+    audioBuffer.getChannelData(0).set(float32);
+
+    const source = this.audioContext.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(this.gainNode);
+
+    // Schedule playback with small overlap prevention
+    const startTime = Math.max(this.scheduledTime, this.audioContext.currentTime + 0.01);
+    source.start(startTime);
+    this.scheduledTime = startTime + audioBuffer.duration;
+    this.totalSamplesScheduled += float32.length;
+
+    this.sourceNodes.push(source);
+
+    // Trigger start callback on first chunk
+    if (!this.hasStarted) {
+      this.hasStarted = true;
+      this.onStartCallback?.();
+    }
+
+    // Clean up finished nodes
+    source.onended = () => {
+      const index = this.sourceNodes.indexOf(source);
+      if (index > -1) this.sourceNodes.splice(index, 1);
+
+      // Check if all audio has finished and stream has ended
+      if (this.streamEnded && this.sourceNodes.length === 0 && !this.isPaused) {
+        this.onEndCallback?.();
+      }
+    };
+  }
+
+  private processBuffer(forceFlush = false) {
+    console.log('[PCM] processBuffer called, forceFlush:', forceFlush, 'isProcessing:', this.isProcessing, 'isPlaying:', this.isPlaying, 'bufferLen:', this.accumulatedBuffer.length);
+    if (this.isProcessing || !this.audioContext || !this.gainNode || !this.isPlaying || this.isPaused) {
+      console.log('[PCM] processBuffer early return - isProcessing:', this.isProcessing, 'audioContext:', !!this.audioContext, 'gainNode:', !!this.gainNode, 'isPlaying:', this.isPlaying, 'isPaused:', this.isPaused);
+      return;
+    }
+    this.isProcessing = true;
+
+    // Wait for minimum buffer before starting (unless flushing at end)
+    const minSamples = forceFlush ? 1 : (this.hasStarted ? this.CHUNK_SIZE_SAMPLES / 2 : this.MIN_BUFFER_SAMPLES);
+    console.log('[PCM] minSamples needed:', minSamples, 'hasStarted:', this.hasStarted, 'bufferLen:', this.accumulatedBuffer.length);
+
+    while (this.accumulatedBuffer.length >= minSamples) {
+      // Take a chunk from the buffer
+      const chunkSize = Math.min(this.CHUNK_SIZE_SAMPLES, this.accumulatedBuffer.length);
+      const chunk = this.accumulatedBuffer.slice(0, chunkSize);
+      this.accumulatedBuffer = this.accumulatedBuffer.slice(chunkSize);
+
+      const float32 = this.pcmToFloat32(chunk);
+      this.scheduleAudioChunk(float32);
+    }
+
+    // Flush remaining samples at the end
+    if (forceFlush && this.accumulatedBuffer.length > 0) {
+      const float32 = this.pcmToFloat32(this.accumulatedBuffer);
+      this.scheduleAudioChunk(float32);
+      this.accumulatedBuffer = new Int16Array(0);
+    }
+
+    this.isProcessing = false;
+  }
+
+  async addChunk(pcmData: ArrayBuffer) {
+    console.log('[PCM] addChunk called, bytes:', pcmData.byteLength, 'isPlaying:', this.isPlaying);
+    if (!this.isPlaying || pcmData.byteLength === 0) return;
+
+    this.appendToBuffer(pcmData);
+    console.log('[PCM] Buffer size after append:', this.accumulatedBuffer.length, 'samples');
+    this.processBuffer();
+  }
+
+  async play(onStart?: () => void, onEnd?: () => void) {
+    await this.init();
+    this.isPlaying = true;
+    this.isPaused = false;
+    this.onStartCallback = onStart || null;
+    this.onEndCallback = onEnd || null;
+  }
+
+  finish() {
+    console.log('[PCM] finish() called, totalSamplesScheduled:', this.totalSamplesScheduled, 'bufferLen:', this.accumulatedBuffer.length);
+    this.streamEnded = true;
+    // Flush any remaining buffered audio
+    this.processBuffer(true);
+
+    // If no audio was scheduled at all, call end callback
+    if (this.totalSamplesScheduled === 0) {
+      console.log('[PCM] No samples scheduled, calling end callback');
+      this.onEndCallback?.();
+    }
+  }
+
+  pause() {
+    this.isPaused = true;
+    this.audioContext?.suspend();
+  }
+
+  resume() {
+    this.isPaused = false;
+    this.audioContext?.resume();
+    this.processBuffer();
+  }
+
+  stop() {
+    this.isPlaying = false;
+    this.isPaused = false;
+    this.streamEnded = false;
+    this.isProcessing = false;
+    this.accumulatedBuffer = new Int16Array(0);
+    this.leftoverByte = null;
+    this.sourceNodes.forEach(node => {
+      try { node.stop(); } catch {}
+    });
+    this.sourceNodes = [];
+    this.hasStarted = false;
+    this.totalSamplesScheduled = 0;
+  }
+
+  get playing() { return this.isPlaying && !this.isPaused; }
+  get paused() { return this.isPaused; }
 }
+
+// Global PCM player instance (reused across calls)
+let pcmPlayer: PCMStreamPlayer | null = null;
 
 export function useTextToSpeech(): UseTextToSpeechReturn {
   const [state, setState] = useState<TTSState>({
@@ -88,7 +271,6 @@ export function useTextToSpeech(): UseTextToSpeechReturn {
   });
 
   const abortRef = useRef<AbortController | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const isStoppedRef = useRef<boolean>(false);
 
   const getSelectedVoice = useTTSSettings((s) => s.getSelectedVoice);
@@ -98,46 +280,35 @@ export function useTextToSpeech(): UseTextToSpeechReturn {
     isStoppedRef.current = true;
     abortRef.current?.abort();
     abortRef.current = null;
-
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-      audioRef.current = null;
-    }
+    pcmPlayer?.stop();
 
     setState({ isLoading: false, isPlaying: false, isPaused: false, error: null });
   }, []);
 
-  // PAUSE - Pauses current audio, maintains position
+  // PAUSE
   const pause = useCallback(() => {
-    if (audioRef.current && !state.isPaused) {
-      audioRef.current.pause();
+    if (state.isPlaying && pcmPlayer) {
+      pcmPlayer.pause();
       setState(s => ({ ...s, isPlaying: false, isPaused: true }));
     }
-  }, [state.isPaused]);
+  }, [state.isPlaying]);
 
-  // RESUME - Continues from paused position
+  // RESUME
   const resume = useCallback(() => {
-    if (audioRef.current && state.isPaused) {
-      audioRef.current.play().then(() => {
-        setState(s => ({ ...s, isPlaying: true, isPaused: false }));
-      }).catch(() => {
-        setState(s => ({ ...s, error: 'Error al reanudar', isPaused: false }));
-      });
+    if (state.isPaused && pcmPlayer) {
+      pcmPlayer.resume();
+      setState(s => ({ ...s, isPlaying: true, isPaused: false }));
     }
   }, [state.isPaused]);
 
-  // SPEAK - Start speaking text
+  // SPEAK - Stream PCM audio for instant playback
   const speak = useCallback(async (text: string) => {
     if (!text.trim()) return;
 
-    // Stop any other playback first
     stop();
     isStoppedRef.current = false;
 
     const voice = getSelectedVoice();
-
-    // Clean text: remove excessive whitespace, limit to 4096 chars (OpenAI limit)
     const cleanText = text
       .replace(/\n{3,}/g, '\n\n')
       .replace(/[ \t]+/g, ' ')
@@ -149,29 +320,70 @@ export function useTextToSpeech(): UseTextToSpeechReturn {
     setState({ isLoading: true, isPlaying: false, isPaused: false, error: null });
     abortRef.current = new AbortController();
 
+    // Check cache first for MP3 (instant playback)
+    const cacheKey = getCacheKey(cleanText, voice);
+    if (audioCache.has(cacheKey)) {
+      try {
+        const audio = new Audio(audioCache.get(cacheKey)!);
+        audio.onplay = () => setState({ isLoading: false, isPlaying: true, isPaused: false, error: null });
+        audio.onended = () => setState(s => ({ ...s, isPlaying: false, isPaused: false }));
+        await audio.play();
+        return;
+      } catch {}
+    }
+
     try {
-      // Fetch complete audio (stable, no partial playback issues)
-      const audioUrl = await fetchAudio(cleanText, voice, abortRef.current.signal);
+      // Request PCM format for streaming
+      const response = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: cleanText, voice, format: 'pcm' }),
+        signal: abortRef.current.signal,
+      });
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          const data = await response.json();
+          throw new TTSRateLimitError(data.message || 'Límite de TTS alcanzado');
+        }
+        throw new Error('TTS failed');
+      }
 
       if (isStoppedRef.current) return;
 
-      const audio = new Audio(audioUrl);
-      audioRef.current = audio;
+      // Initialize PCM player
+      if (!pcmPlayer) pcmPlayer = new PCMStreamPlayer();
 
-      audio.onplay = () => {
-        setState({ isLoading: false, isPlaying: true, isPaused: false, error: null });
-      };
+      await pcmPlayer.play(
+        () => setState({ isLoading: false, isPlaying: true, isPaused: false, error: null }),
+        () => setState(s => ({ ...s, isPlaying: false, isPaused: false }))
+      );
 
-      audio.onended = () => {
-        setState(s => ({ ...s, isPlaying: false, isPaused: false }));
-        audioRef.current = null;
-      };
+      // Stream PCM chunks to player
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('No reader');
 
-      audio.onerror = () => {
-        setState({ isLoading: false, isPlaying: false, isPaused: false, error: 'Error de reproducción' });
-      };
+      while (true) {
+        const { done, value } = await reader.read();
 
-      await audio.play();
+        if (isStoppedRef.current) {
+          reader.cancel();
+          break;
+        }
+
+        if (done) {
+          pcmPlayer.finish();
+          break;
+        }
+
+        if (value && value.byteLength > 0) {
+          console.log('[TTS] Received chunk, byteLength:', value.byteLength);
+          // Create a proper copy of the chunk data
+          const chunkBuffer = new ArrayBuffer(value.byteLength);
+          new Uint8Array(chunkBuffer).set(value);
+          await pcmPlayer.addChunk(chunkBuffer);
+        }
+      }
 
     } catch (error) {
       if (error instanceof Error && (error.name === 'AbortError' || error.message === 'Aborted')) {
@@ -193,7 +405,7 @@ export function useTextToSpeech(): UseTextToSpeechReturn {
     }
   }, [getSelectedVoice, stop]);
 
-  // TOGGLE - Smart toggle: play/pause/resume based on current state
+  // TOGGLE
   const toggle = useCallback((text: string) => {
     if (state.isLoading) {
       stop();

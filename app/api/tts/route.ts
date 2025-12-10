@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Parse request
-    const { text, voice } = await request.json();
+    const { text, voice, format } = await request.json();
 
     if (!text || typeof text !== 'string') {
       return NextResponse.json({ error: 'Text is required' }, { status: 400 });
@@ -52,6 +52,9 @@ export async function POST(request: NextRequest) {
     const selectedVoice: Voice = VALID_VOICES.includes(voice as Voice) ? voice : 'nova';
     const inputText = text.slice(0, 4096);
 
+    // Use PCM for streaming (faster), MP3 for fallback
+    const responseFormat = format === 'pcm' ? 'pcm' : 'mp3';
+
     // =============================================
     // STREAMING TTS - Direct pipe from OpenAI
     // =============================================
@@ -62,10 +65,10 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'tts-1',           // Fast model
+        model: 'tts-1',
         voice: selectedVoice,
         input: inputText,
-        response_format: 'mp3',
+        response_format: responseFormat,
         speed: 1.0,
       }),
     });
@@ -84,11 +87,14 @@ export async function POST(request: NextRequest) {
       console.error('[TTS] Failed to record usage:', err);
     });
 
-    // Stream directly to client - audio starts playing immediately
+    // Stream directly to client
+    const contentType = responseFormat === 'pcm' ? 'audio/pcm' : 'audio/mpeg';
+
     return new Response(openaiResponse.body, {
       status: 200,
       headers: {
-        'Content-Type': 'audio/mpeg',
+        'Content-Type': contentType,
+        'X-Audio-Format': responseFormat,
         'Transfer-Encoding': 'chunked',
         'Cache-Control': 'no-cache',
       },
