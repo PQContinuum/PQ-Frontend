@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-
-export const runtime = 'edge';
+import { canUseTTS, recordTTSUsage } from '@/lib/tts-usage';
 
 // Valid voices for tts-1
 const VALID_VOICES = ['alloy', 'ash', 'coral', 'echo', 'fable', 'nova', 'onyx', 'sage', 'shimmer'] as const;
@@ -24,12 +23,34 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Text is required' }, { status: 400 });
     }
 
+    // =============================================
+    // CHECK TTS USAGE LIMITS
+    // =============================================
+    const { allowed, reason, usage } = await canUseTTS(user.id);
+
+    if (!allowed) {
+      return NextResponse.json(
+        {
+          error: 'Límite de TTS alcanzado',
+          message: reason,
+          usage: {
+            todayCount: usage?.todayCount,
+            monthCount: usage?.monthCount,
+            dailyLimit: usage?.dailyLimit,
+            monthlyLimit: usage?.monthlyLimit,
+          }
+        },
+        { status: 429 }
+      );
+    }
+
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
       return NextResponse.json({ error: 'TTS not configured' }, { status: 500 });
     }
 
     const selectedVoice: Voice = VALID_VOICES.includes(voice as Voice) ? voice : 'nova';
+    const inputText = text.slice(0, 4096);
 
     // =============================================
     // STREAMING TTS - Direct pipe from OpenAI
@@ -43,7 +64,7 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         model: 'tts-1',           // Fast model
         voice: selectedVoice,
-        input: text.slice(0, 4096),
+        input: inputText,
         response_format: 'mp3',
         speed: 1.0,
       }),
@@ -57,6 +78,11 @@ export async function POST(request: NextRequest) {
         { status: openaiResponse.status }
       );
     }
+
+    // Record usage (async, don't wait)
+    recordTTSUsage(user.id, inputText.length, selectedVoice).catch(err => {
+      console.error('[TTS] Failed to record usage:', err);
+    });
 
     // Stream directly to client - audio starts playing immediately
     return new Response(openaiResponse.body, {

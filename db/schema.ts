@@ -136,6 +136,22 @@ export const userContext = pgTable("user_context", {
     .defaultNow(),
 });
 
+// Tabla de uso de TTS (Text-to-Speech)
+// Registra cada uso de TTS para control de límites por plan
+export const ttsUsage = pgTable("tts_usage", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull(), // Referencia a auth.users
+
+  // Metadata de la solicitud
+  characterCount: integer("character_count").notNull(), // Caracteres del texto
+  voiceUsed: varchar("voice_used", { length: 50 }).notNull(), // nova, alloy, etc.
+
+  // Timestamp
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 // Tabla de attachments de conversaciones
 export const conversationAttachments = pgTable("conversation_attachments", {
   id: uuid("id").primaryKey().defaultRandom(),

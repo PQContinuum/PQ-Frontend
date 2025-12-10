@@ -53,6 +53,14 @@ function splitIntoChunks(text: string, maxLength: number = 400): string[] {
   return chunks.filter(c => c.length > 0);
 }
 
+// Custom error for rate limits
+class TTSRateLimitError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'TTSRateLimitError';
+  }
+}
+
 // Fetch audio for a single chunk
 async function fetchChunkAudio(
   text: string,
@@ -72,7 +80,14 @@ async function fetchChunkAudio(
     signal,
   });
 
-  if (!response.ok) throw new Error('TTS failed');
+  if (!response.ok) {
+    // Handle rate limit
+    if (response.status === 429) {
+      const data = await response.json();
+      throw new TTSRateLimitError(data.message || 'Límite de TTS alcanzado');
+    }
+    throw new Error('TTS failed');
+  }
 
   const blob = await response.blob();
   const url = URL.createObjectURL(blob);
@@ -242,11 +257,19 @@ export function useTextToSpeech(): UseTextToSpeechReturn {
       if (error instanceof Error && error.name === 'AbortError') {
         return;
       }
+
+      // Handle rate limit error with user-friendly message
+      const errorMessage = error instanceof TTSRateLimitError
+        ? error.message
+        : error instanceof Error
+          ? error.message
+          : 'Error de TTS';
+
       setState({
         isLoading: false,
         isPlaying: false,
         isPaused: false,
-        error: error instanceof Error ? error.message : 'TTS error',
+        error: errorMessage,
       });
     }
   }, [getSelectedVoice, stop, playNext, prefetchRemaining]);

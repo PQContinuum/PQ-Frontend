@@ -13,6 +13,69 @@
 
 export type PlanName = 'Free' | 'Basic' | 'Professional' | 'Enterprise';
 
+// ============================================================================
+// TTS (Text-to-Speech) LIMITS
+// ============================================================================
+
+export type TTSPlanLimits = {
+  // Máximo de reproducciones TTS por día
+  maxTTSPerDay: number;
+  // Máximo de reproducciones TTS por mes
+  maxTTSPerMonth: number;
+  // Si tiene acceso a TTS
+  ttsEnabled: boolean;
+  // Costo estimado máximo USD/mes
+  estimatedMaxCostUSD: number;
+};
+
+/**
+ * LÍMITES DE TTS POR PLAN
+ * =======================
+ * Basado en análisis financiero:
+ * - Costo OpenAI TTS: ~$0.01 USD por reproducción
+ * - Objetivo: mantener costo TTS ≤ 25-30% del precio del plan
+ */
+export const TTS_LIMITS: Record<PlanName, TTSPlanLimits> = {
+  Free: {
+    maxTTSPerDay: 5,
+    maxTTSPerMonth: 150,
+    ttsEnabled: true,
+    estimatedMaxCostUSD: 1.50,
+  },
+  Basic: {
+    maxTTSPerDay: 20,
+    maxTTSPerMonth: 600,
+    ttsEnabled: true,
+    estimatedMaxCostUSD: 6.00,
+  },
+  Professional: {
+    maxTTSPerDay: 50,
+    maxTTSPerMonth: 1500,
+    ttsEnabled: true,
+    estimatedMaxCostUSD: 15.00,
+  },
+  Enterprise: {
+    maxTTSPerDay: 200,
+    maxTTSPerMonth: 6000,
+    ttsEnabled: true,
+    estimatedMaxCostUSD: 60.00,
+  },
+};
+
+/**
+ * Obtiene los límites de TTS del plan
+ */
+export function getTTSLimits(planName: PlanName | null | undefined): TTSPlanLimits {
+  if (!planName || !(planName in TTS_LIMITS)) {
+    return TTS_LIMITS.Free;
+  }
+  return TTS_LIMITS[planName];
+}
+
+// ============================================================================
+// MEMORY LIMITS
+// ============================================================================
+
 export type MemoryPlanLimits = {
   // Máximo de hechos/contextos que puede guardar el usuario
   maxContextItems: number;

@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Documentación de Límites TTS por Plan</title>
+  <style>
+    body {
+      font-family: 'Calibri', 'Arial', sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      color: #333;
+      line-height: 1.6;
+    }
+    h1 {
+      color: #00552b;
+      border-bottom: 3px solid #00552b;
+      padding-bottom: 10px;
+    }
+    h2 {
+      color: #00552b;
+      margin-top: 30px;
+    }
+    h3 {
+      color: #4c4c4c;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      font-size: 14px;
+    }
+    th {
+      background-color: #00552b;
+      color: white;
+      padding: 12px 8px;
+      text-align: left;
+      font-weight: bold;
+    }
+    td {
+      border: 1px solid #ddd;
+      padding: 10px 8px;
+    }
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    tr:hover {
+      background-color: #f1f1f1;
+    }
+    .highlight {
+      background-color: #e8f5e9;
+      font-weight: bold;
+    }
+    .chart-container {
+      margin: 30px 0;
+      padding: 20px;
+      background-color: #f9f9f9;
+      border-radius: 8px;
+    }
+    .bar-chart {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    .bar-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .bar-label {
+      width: 120px;
+      font-weight: bold;
+      font-size: 13px;
+    }
+    .bar-container {
+      flex: 1;
+      background-color: #e0e0e0;
+      height: 30px;
+      border-radius: 4px;
+      position: relative;
+    }
+    .bar {
+      height: 100%;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      padding-left: 10px;
+      color: white;
+      font-weight: bold;
+      font-size: 12px;
+    }
+    .bar-free { background: linear-gradient(to right, #78909c, #90a4ae); width: 2.5%; }
+    .bar-basic { background: linear-gradient(to right, #42a5f5, #64b5f6); width: 10%; }
+    .bar-pro { background: linear-gradient(to right, #00552b, #00aa56); width: 25%; }
+    .bar-enterprise { background: linear-gradient(to right, #f57c00, #ff9800); width: 100%; }
+
+    .bar-month-free { width: 2.5%; }
+    .bar-month-basic { width: 10%; }
+    .bar-month-pro { width: 25%; }
+    .bar-month-enterprise { width: 100%; }
+
+    .cost-table td:last-child {
+      text-align: right;
+      font-weight: bold;
+    }
+    .note {
+      background-color: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 15px;
+      margin: 20px 0;
+      font-size: 14px;
+    }
+    .summary-box {
+      background: linear-gradient(to right, #e8f5e9, #c8e6c9);
+      border: 2px solid #00552b;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    .formula {
+      font-family: 'Courier New', monospace;
+      background-color: #f5f5f5;
+      padding: 10px;
+      border-radius: 4px;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Sistema de Límites TTS (Text-to-Speech)</h1>
+
+<p><strong>Fecha:</strong> Diciembre 2024<br>
+<strong>Versión:</strong> 1.0</p>
+
+<h2>1. Resumen Ejecutivo</h2>
+
+<div class="summary-box">
+  <p>El sistema de Text-to-Speech (TTS) utiliza la API de OpenAI para convertir texto a audio.
+  Para mantener la rentabilidad del servicio, se han establecido límites de uso por plan de suscripción.</p>
+
+  <p><strong>Costo base OpenAI TTS:</strong> ~$0.01 USD por reproducción (promedio)</p>
+  <p><strong>Objetivo:</strong> Mantener el costo de TTS ≤ 25-30% del precio del plan</p>
+</div>
+
+<h2>2. Límites por Plan</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Plan</th>
+      <th>Precio Mensual</th>
+      <th>Límite Diario</th>
+      <th>Límite Mensual</th>
+      <th>Costo Máx USD</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Free</strong></td>
+      <td>$0 MXN</td>
+      <td>5 reproducciones</td>
+      <td>150 reproducciones</td>
+      <td>$1.50 USD</td>
+    </tr>
+    <tr>
+      <td><strong>Basic</strong></td>
+      <td>$349 MXN (~$17.45 USD)</td>
+      <td>20 reproducciones</td>
+      <td>600 reproducciones</td>
+      <td>$6.00 USD</td>
+    </tr>
+    <tr class="highlight">
+      <td><strong>Professional</strong></td>
+      <td>$1,499 MXN (~$74.95 USD)</td>
+      <td>50 reproducciones</td>
+      <td>1,500 reproducciones</td>
+      <td>$15.00 USD</td>
+    </tr>
+    <tr>
+      <td><strong>Enterprise</strong></td>
+      <td>$4,199 MXN (~$209.95 USD)</td>
+      <td>200 reproducciones</td>
+      <td>6,000 reproducciones</td>
+      <td>$60.00 USD</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>3. Visualización de Límites Diarios</h2>
+
+<div class="chart-container">
+  <h3>Reproducciones TTS por Día</h3>
+  <div class="bar-chart">
+    <div class="bar-row">
+      <span class="bar-label">Free</span>
+      <div class="bar-container">
+        <div class="bar bar-free">5</div>
+      </div>
+    </div>
+    <div class="bar-row">
+      <span class="bar-label">Basic</span>
+      <div class="bar-container">
+        <div class="bar bar-basic">20</div>
+      </div>
+    </div>
+    <div class="bar-row">
+      <span class="bar-label">Professional</span>
+      <div class="bar-container">
+        <div class="bar bar-pro">50</div>
+      </div>
+    </div>
+    <div class="bar-row">
+      <span class="bar-label">Enterprise</span>
+      <div class="bar-container">
+        <div class="bar bar-enterprise">200</div>
+      </div>
+    </div>
+  </div>
+  <p style="text-align: center; font-size: 12px; color: #666; margin-top: 10px;">
+    Escala: 0 a 200 reproducciones/día
+  </p>
+</div>
+
+<h2>4. Visualización de Límites Mensuales</h2>
+
+<div class="chart-container">
+  <h3>Reproducciones TTS por Mes</h3>
+  <div class="bar-chart">
+    <div class="bar-row">
+      <span class="bar-label">Free</span>
+      <div class="bar-container">
+        <div class="bar bar-free bar-month-free">150</div>
+      </div>
+    </div>
+    <div class="bar-row">
+      <span class="bar-label">Basic</span>
+      <div class="bar-container">
+        <div class="bar bar-basic bar-month-basic">600</div>
+      </div>
+    </div>
+    <div class="bar-row">
+      <span class="bar-label">Professional</span>
+      <div class="bar-container">
+        <div class="bar bar-pro bar-month-pro">1,500</div>
+      </div>
+    </div>
+    <div class="bar-row">
+      <span class="bar-label">Enterprise</span>
+      <div class="bar-container">
+        <div class="bar bar-enterprise bar-month-enterprise">6,000</div>
+      </div>
+    </div>
+  </div>
+  <p style="text-align: center; font-size: 12px; color: #666; margin-top: 10px;">
+    Escala: 0 a 6,000 reproducciones/mes
+  </p>
+</div>
+
+<h2>5. Análisis de Costos vs Ingresos</h2>
+
+<table class="cost-table">
+  <thead>
+    <tr>
+      <th>Plan</th>
+      <th>Ingreso (USD)</th>
+      <th>Costo Máx TTS</th>
+      <th>% del Ingreso</th>
+      <th>Margen Bruto</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Free</strong></td>
+      <td>$0.00</td>
+      <td>$1.50</td>
+      <td>∞ (subsidio)</td>
+      <td>-$1.50</td>
+    </tr>
+    <tr>
+      <td><strong>Basic</strong></td>
+      <td>$17.45</td>
+      <td>$6.00</td>
+      <td>34.4%</td>
+      <td>$11.45</td>
+    </tr>
+    <tr class="highlight">
+      <td><strong>Professional</strong></td>
+      <td>$74.95</td>
+      <td>$15.00</td>
+      <td>20.0%</td>
+      <td>$59.95</td>
+    </tr>
+    <tr>
+      <td><strong>Enterprise</strong></td>
+      <td>$209.95</td>
+      <td>$60.00</td>
+      <td>28.6%</td>
+      <td>$149.95</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="note">
+  <strong>Nota:</strong> El plan Free representa un subsidio estratégico para adquisición de usuarios.
+  Se espera que un bajo porcentaje de usuarios Free lleguen al límite mensual de 150 reproducciones.
+</div>
+
+<h2>6. Fórmula de Cálculo</h2>
+
+<div class="formula">
+  <strong>Costo por reproducción:</strong><br>
+  Costo = (caracteres / 1000) × $0.015 USD<br><br>
+
+  <strong>Estimación promedio:</strong><br>
+  ~400 caracteres por chunk × $0.015/1000 ≈ $0.006 USD<br>
+  + overhead de API ≈ <strong>$0.01 USD/reproducción</strong>
+</div>
+
+<h2>7. Implementación Técnica</h2>
+
+<h3>7.1 Archivos Clave</h3>
+<ul>
+  <li><code>lib/memory/plan-limits.ts</code> - Configuración de límites</li>
+  <li><code>lib/tts-usage.ts</code> - Tracking de uso</li>
+  <li><code>app/api/tts/route.ts</code> - API endpoint con verificación</li>
+  <li><code>db/schema.ts</code> - Tabla <code>tts_usage</code></li>
+</ul>
+
+<h3>7.2 Flujo de Verificación</h3>
+<ol>
+  <li>Usuario solicita TTS → API recibe request</li>
+  <li>Se obtiene el plan del usuario (tabla <code>subscriptions</code>)</li>
+  <li>Se cuentan reproducciones del día/mes (tabla <code>tts_usage</code>)</li>
+  <li>Si está bajo el límite → genera audio → registra uso</li>
+  <li>Si excede límite → retorna error 429 con mensaje</li>
+</ol>
+
+<h3>7.3 Estructura de Base de Datos</h3>
+
+<div class="formula">
+  <strong>Tabla: tts_usage</strong><br>
+  - id: UUID (PK)<br>
+  - user_id: UUID<br>
+  - character_count: INTEGER<br>
+  - voice_used: VARCHAR(50)<br>
+  - created_at: TIMESTAMP WITH TIME ZONE
+</div>
+
+<h2>8. Mensajes de Error</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Código</th>
+      <th>Condición</th>
+      <th>Mensaje</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>429</td>
+      <td>Límite diario alcanzado</td>
+      <td>"Has alcanzado el límite diario de X reproducciones. Se reinicia mañana."</td>
+    </tr>
+    <tr>
+      <td>429</td>
+      <td>Límite mensual alcanzado</td>
+      <td>"Has alcanzado el límite mensual de X reproducciones. Considera actualizar tu plan."</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>9. Recomendaciones de Ajuste</h2>
+
+<div class="note">
+  <strong>Para ajustar límites:</strong><br>
+  1. Editar <code>lib/memory/plan-limits.ts</code><br>
+  2. Modificar los valores en <code>TTS_LIMITS</code><br>
+  3. Reiniciar el servidor<br><br>
+
+  <strong>Consideraciones:</strong>
+  <ul>
+    <li>Mantener costo TTS ≤ 30% del precio del plan</li>
+    <li>Free: subsidio aceptable para adquisición</li>
+    <li>Monitorear uso real para ajustar límites</li>
+  </ul>
+</div>
+
+<hr>
+
+<p style="text-align: center; color: #666; font-size: 12px;">
+  Documento generado automáticamente - PQ Frontend<br>
+  Para más información, consultar el código fuente en los archivos mencionados.
+</p>
+
+</body>
+</html>

@@ -1,6 +1,6 @@
 {
-  "id": "4f4a67b9-247f-47cc-a2b2-1fb473d77293",
-  "prevId": "7bf331d8-8be6-4b64-9824-f1b6297e297b",
+  "id": "7eccac8b-e0e3-4a22-8a05-0f5ebee160b4",
+  "prevId": "4f4a67b9-247f-47cc-a2b2-1fb473d77293",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -418,6 +418,51 @@
           ]
         }
       },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.tts_usage": {
+      "name": "tts_usage",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "character_count": {
+          "name": "character_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "voice_used": {
+          "name": "voice_used",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
