@@ -9,7 +9,7 @@ import {
   memo,
   useEffect,
 } from 'react';
-import { ArrowUp, MapPin, Paperclip, Plus, Check, Loader2, Image, X, ChevronDown, Lock, Zap } from 'lucide-react';
+import { ArrowUp, MapPin, Paperclip, Plus, Check, Loader2, Image, X, ChevronDown, Lock } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { FileUpload } from './FileUpload';
 import {
@@ -85,17 +85,22 @@ const parseSSEChunk = (chunk: string): SSEvent | null => {
 };
 
 // Size options with aspect ratio labels
-const SIZE_OPTIONS: { value: ImageGenSize; label: string; icon: string }[] = [
-  { value: '1024x1024', label: '1:1', icon: '⬜' },
-  { value: '1024x1536', label: '2:3', icon: '📱' },
-  { value: '1536x1024', label: '3:2', icon: '🖼️' },
+const SIZE_OPTIONS: { value: ImageGenSize; label: string }[] = [
+  { value: '1024x1024', label: '1:1' },
+  { value: '1024x1536', label: '2:3' },
+  { value: '1536x1024', label: '3:2' },
 ];
 
-// Quality options
-const QUALITY_OPTIONS: { value: ImageGenQuality; label: string; description: string }[] = [
-  { value: 'low', label: 'Rápida', description: 'Generación rápida' },
-  { value: 'medium', label: 'Balanceada', description: 'Balance velocidad/calidad' },
-  { value: 'high', label: 'Alta', description: 'Máxima calidad' },
+// Quality options with colors
+const QUALITY_OPTIONS: {
+  value: ImageGenQuality;
+  label: string;
+  description: string;
+  color: string;
+}[] = [
+  { value: 'low', label: 'Rápida', description: 'Generación rápida', color: 'text-emerald-600' },
+  { value: 'medium', label: 'Balanceada', description: 'Balance velocidad/calidad', color: 'text-blue-600' },
+  { value: 'high', label: 'Alta', description: 'Máxima calidad', color: 'text-amber-600' },
 ];
 
 export const MessageInput = memo(function MessageInput() {
@@ -847,37 +852,38 @@ export const MessageInput = memo(function MessageInput() {
                       type="button"
                       onClick={() => setImageSize(size.value)}
                       disabled={isLoading}
-                      className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition ${
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition ${
                         imageSize === size.value
                           ? 'bg-white text-gray-900 shadow-sm'
                           : 'text-gray-500 hover:text-gray-700'
                       } disabled:opacity-40`}
                     >
-                      <span>{size.icon}</span>
-                      <span>{size.label}</span>
+                      {size.label}
                     </button>
                   ))}
                 </div>
 
-                {/* Quality selector */}
+                {/* Quality selector - Same style as size selector with colors */}
                 <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
-                  {QUALITY_OPTIONS.filter(q => imageUsage?.allowedQualities?.includes(q.value) || q.value === 'low').map((q) => (
-                    <button
-                      key={q.value}
-                      type="button"
-                      onClick={() => setImageQuality(q.value)}
-                      disabled={isLoading}
-                      className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition ${
-                        imageQuality === q.value
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-500 hover:text-gray-700'
-                      } disabled:opacity-40`}
-                      title={q.description}
-                    >
-                      {q.value === 'high' && <Zap className="size-3 text-amber-500" />}
-                      <span>{q.label}</span>
-                    </button>
-                  ))}
+                  {QUALITY_OPTIONS.filter(q => imageUsage?.allowedQualities?.includes(q.value) || q.value === 'low').map((q) => {
+                    const isSelected = imageQuality === q.value;
+                    return (
+                      <button
+                        key={q.value}
+                        type="button"
+                        onClick={() => setImageQuality(q.value)}
+                        disabled={isLoading}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-150 ${
+                          isSelected
+                            ? `bg-white shadow-sm ${q.color}`
+                            : 'text-gray-500 hover:text-gray-700'
+                        } disabled:opacity-40`}
+                        title={q.description}
+                      >
+                        {q.label}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {/* Close button */}
