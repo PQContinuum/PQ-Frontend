@@ -12,6 +12,100 @@ import { SpeechButton } from './SpeechButton';
 
 import 'highlight.js/styles/github.css';
 
+// Skeleton component for image generation - creative animated preview
+const ImageGeneratingSkeleton = () => (
+  <div className="w-[280px] h-[280px] rounded-2xl overflow-hidden relative bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50">
+    {/* Animated gradient background */}
+    <div className="absolute inset-0 bg-gradient-to-r from-blue-100/50 via-purple-100/50 to-pink-100/50 animate-[gradient-shift_3s_ease-in-out_infinite]" />
+
+    {/* Floating particles effect */}
+    <div className="absolute inset-0 overflow-hidden">
+      <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-blue-400/30 rounded-full animate-[float-particle_2s_ease-in-out_infinite]" />
+      <div className="absolute top-1/3 right-1/4 w-1.5 h-1.5 bg-purple-400/30 rounded-full animate-[float-particle_2.5s_ease-in-out_infinite_0.5s]" />
+      <div className="absolute bottom-1/3 left-1/3 w-2.5 h-2.5 bg-pink-400/30 rounded-full animate-[float-particle_3s_ease-in-out_infinite_1s]" />
+      <div className="absolute top-1/2 right-1/3 w-1 h-1 bg-blue-300/40 rounded-full animate-[float-particle_2s_ease-in-out_infinite_0.3s]" />
+    </div>
+
+    {/* Center content */}
+    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+      {/* Animated icon container */}
+      <div className="relative">
+        {/* Outer glow ring */}
+        <div className="absolute -inset-4 bg-gradient-to-r from-blue-400/20 via-purple-400/20 to-pink-400/20 rounded-full blur-xl animate-pulse" />
+
+        {/* Spinning ring */}
+        <div className="absolute -inset-2 border-2 border-dashed border-gray-300/50 rounded-full animate-[spin_8s_linear_infinite]" />
+
+        {/* Icon background */}
+        <div className="relative size-16 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg flex items-center justify-center">
+          <svg
+            className="size-8 text-gray-400 animate-pulse"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
+            />
+          </svg>
+        </div>
+      </div>
+
+      {/* Text with shimmer */}
+      <div className="relative">
+        <span className="text-sm font-medium text-gray-500">Creando tu imagen</span>
+        <span className="ml-1 inline-flex">
+          <span className="animate-[bounce_1s_ease-in-out_infinite]">.</span>
+          <span className="animate-[bounce_1s_ease-in-out_infinite_0.2s]">.</span>
+          <span className="animate-[bounce_1s_ease-in-out_infinite_0.4s]">.</span>
+        </span>
+      </div>
+    </div>
+
+    {/* Bottom shimmer bar */}
+    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-200/50 overflow-hidden">
+      <div className="h-full w-1/3 bg-gradient-to-r from-transparent via-blue-400/60 to-transparent animate-[shimmer-bar_1.5s_ease-in-out_infinite]" />
+    </div>
+  </div>
+);
+
+// Custom image component with smaller size
+// Using span instead of div to avoid hydration errors when inside <p> tags
+const ChatImage = ({ src, alt, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) => {
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+
+  if (hasError) {
+    return (
+      <span className="block w-full max-w-[280px] aspect-square rounded-2xl bg-gray-100 flex items-center justify-center">
+        <span className="text-sm text-gray-400">Error al cargar imagen</span>
+      </span>
+    );
+  }
+
+  return (
+    <span className="relative block w-full max-w-[280px]">
+      {isLoading && (
+        <span className="absolute inset-0 block rounded-2xl bg-gray-100 animate-pulse" />
+      )}
+      <img
+        src={src}
+        alt={alt || 'Imagen generada'}
+        className="w-full h-auto rounded-2xl shadow-sm border border-black/5"
+        onLoad={() => setIsLoading(false)}
+        onError={() => {
+          setIsLoading(false);
+          setHasError(true);
+        }}
+        {...props}
+      />
+    </span>
+  );
+};
+
 export type GeoCulturalAnalysisText = {
   type: 'geocultural_analysis';
   reply: string;
@@ -77,10 +171,16 @@ const CodeBlock = ({
 export function MessageBubble({ message, isStreaming = false, attachments }: MessageBubbleProps) {
   const isUser = message.role === 'user';
 
-  const { geoCulturalData, geoCulturalText, isLoadingGeoCultural } = useMemo(() => {
-    if (isUser || !message.content) return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: false };
+  const { geoCulturalData, geoCulturalText, isLoadingGeoCultural, isGeneratingImage } = useMemo(() => {
+    if (isUser || !message.content) return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: false, isGeneratingImage: false };
 
     const trimmedContent = message.content.trim();
+
+    // Check if this is an image generation loading message
+    if (trimmedContent.includes('🖼️ Generando imagen')) {
+      return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: false, isGeneratingImage: true };
+    }
+
     const looksLikeJSON = trimmedContent.startsWith('{');
 
     if (looksLikeJSON) {
@@ -91,22 +191,33 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
         if (parsed.type === 'geocultural_analysis' && 'reply' in parsed) {
           if (isStreaming && parsed.reply === '') {
             // It's the start of a geocultural stream, reply is still empty. Show skeleton.
-            return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: true };
+            return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: true, isGeneratingImage: false };
           }
-          return { geoCulturalData: null, geoCulturalText: parsed, isLoadingGeoCultural: false };
+          return { geoCulturalData: null, geoCulturalText: parsed, isLoadingGeoCultural: false, isGeneratingImage: false };
         }
 
         // Legacy format (with places and map) - no longer used but kept for compatibility
         if (parsed.reply && parsed.places && parsed.userCoords) {
-          return { geoCulturalData: parsed, geoCulturalText: null, isLoadingGeoCultural: false };
+          return { geoCulturalData: parsed, geoCulturalText: null, isLoadingGeoCultural: false, isGeneratingImage: false };
         }
       } catch {
-        return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: true };
+        return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: true, isGeneratingImage: false };
       }
     }
 
-    return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: false };
+    return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: false, isGeneratingImage: false };
   }, [message.content, isUser, isStreaming]);
+
+  // Show skeleton while generating image
+  if (isGeneratingImage) {
+    return (
+      <div className="flex justify-start">
+        <div className="inline-flex rounded-4xl border border-transparent bg-transparent text-black px-4 py-2">
+          <ImageGeneratingSkeleton />
+        </div>
+      </div>
+    );
+  }
 
   if (isLoadingGeoCultural) {
     return (
@@ -380,6 +491,7 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
                   ),
                   ul: (props) => <ul {...props} className="list-disc pl-6" />,
                   ol: (props) => <ol {...props} className="list-decimal pl-6" />,
+                  img: (props) => <ChatImage {...props} />,
                 }}
               >
                 {message.content || ' '}
@@ -387,8 +499,8 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
             </div>
           </div>
         </div>
-        {/* Speech button for assistant messages */}
-        {!isUser && !isStreaming && message.content && (
+        {/* Speech button for assistant messages (not for generated images) */}
+        {!isUser && !isStreaming && message.content && !message.content.includes('![Imagen generada]') && (
           <div className="flex justify-start pl-2">
             <SpeechButton text={message.content} />
           </div>

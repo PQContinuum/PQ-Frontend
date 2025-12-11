@@ -33,9 +33,13 @@ interface GenerateOptions {
   style?: ImageGenStyle;
 }
 
+type GenerateResult =
+  | { success: true; url: string; revisedPrompt?: string }
+  | { success: false; error: string };
+
 interface UseImageGenerationReturn extends ImageGenState {
   usage: ImageGenUsage | null;
-  generate: (prompt: string, options?: GenerateOptions) => Promise<{ url: string; revisedPrompt?: string } | null>;
+  generate: (prompt: string, options?: GenerateOptions) => Promise<GenerateResult>;
   fetchUsage: () => Promise<void>;
   reset: () => void;
   canGenerate: boolean;
@@ -51,10 +55,11 @@ export function useImageGeneration(): UseImageGenerationReturn {
 
   // Generate an image
   const generate = useCallback(
-    async (prompt: string, options: GenerateOptions = {}) => {
+    async (prompt: string, options: GenerateOptions = {}): Promise<GenerateResult> => {
       if (!prompt.trim()) {
-        setState((s) => ({ ...s, error: 'El prompt es requerido' }));
-        return null;
+        const errorMsg = 'El prompt es requerido';
+        setState((s) => ({ ...s, error: errorMsg }));
+        return { success: false, error: errorMsg };
       }
 
       setState({ isGenerating: true, error: null, image: null });
@@ -74,9 +79,10 @@ export function useImageGeneration(): UseImageGenerationReturn {
         const data = await response.json();
 
         if (!response.ok) {
+          const errorMsg = data.message || data.error || 'Error al generar imagen';
           setState({
             isGenerating: false,
-            error: data.message || data.error || 'Error al generar imagen',
+            error: errorMsg,
             image: null,
           });
 
@@ -95,7 +101,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
             );
           }
 
-          return null;
+          return { success: false, error: errorMsg };
         }
 
         const imageResult = {
@@ -126,15 +132,16 @@ export function useImageGeneration(): UseImageGenerationReturn {
           );
         }
 
-        return imageResult;
+        return { success: true, url: imageResult.url, revisedPrompt: imageResult.revisedPrompt };
       } catch (error) {
         console.error('[useImageGeneration] Error:', error);
+        const errorMsg = 'Error de conexión';
         setState({
           isGenerating: false,
-          error: 'Error de conexión',
+          error: errorMsg,
           image: null,
         });
-        return null;
+        return { success: false, error: errorMsg };
       }
     },
     []

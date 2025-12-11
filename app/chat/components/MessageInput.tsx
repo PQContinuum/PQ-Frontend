@@ -9,7 +9,7 @@ import {
   memo,
   useEffect,
 } from 'react';
-import { ArrowUp, MapPin, Paperclip, Plus, Check, Loader2, Image, X } from 'lucide-react';
+import { ArrowUp, MapPin, Paperclip, Plus, Check, Loader2, Image, X, Sparkles, Leaf } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { FileUpload } from './FileUpload';
 import {
@@ -103,6 +103,7 @@ export const MessageInput = memo(function MessageInput() {
   // Image mode state
   const [imageMode, setImageMode] = useState(false);
   const [imageSize, setImageSize] = useState<ImageGenSize>('1024x1024');
+  const [imageStyle, setImageStyle] = useState<ImageGenStyle>('vivid');
 
   const { generate: generateImage, isGenerating: isGeneratingImage, usage: imageUsage } = useImageGeneration();
 
@@ -290,7 +291,7 @@ export const MessageInput = memo(function MessageInput() {
     addMessage({
       id: userMessageId,
       role: 'user',
-      content: `🎨 Generar imagen: "${prompt}"`,
+      content: prompt,
     });
     addMessage({
       id: assistantMessageId,
@@ -301,32 +302,20 @@ export const MessageInput = memo(function MessageInput() {
     setInput('');
     setStreaming(true);
 
-    try {
-      const result = await generateImage(prompt, {
-        quality: 'standard',
-        size: imageSize,
-        style: 'vivid',
-      });
+    const result = await generateImage(prompt, {
+      quality: 'standard',
+      size: imageSize,
+      style: imageStyle,
+    });
 
-      if (result) {
-        // Update assistant message with the generated image
-        updateMessage(assistantMessageId, () =>
-          `![Imagen generada](${result.url})\n\n${result.revisedPrompt ? `*${result.revisedPrompt}*` : ''}`
-        );
-      } else {
-        updateMessage(assistantMessageId, () =>
-          '❌ No se pudo generar la imagen. Intenta con otro prompt.'
-        );
-      }
-    } catch (error) {
-      console.error('Error generating image:', error);
-      updateMessage(assistantMessageId, () =>
-        '❌ Error al generar la imagen. Por favor intenta de nuevo.'
-      );
-    } finally {
-      setStreaming(false);
+    if (result.success) {
+      updateMessage(assistantMessageId, () => `![Imagen generada](${result.url})`);
+    } else {
+      updateMessage(assistantMessageId, () => `❌ ${result.error}`);
     }
-  }, [input, imageSize, generateImage, isGeneratingImage, addMessage, updateMessage, setStreaming]);
+
+    setStreaming(false);
+  }, [input, imageSize, imageStyle, generateImage, isGeneratingImage, addMessage, updateMessage, setStreaming]);
 
   const submitMessage = useCallback(
     async (event?: FormEvent<HTMLFormElement>) => {
@@ -734,12 +723,14 @@ export const MessageInput = memo(function MessageInput() {
         >
           {/* Image mode bar - minimal design */}
           {imageMode && (
-            <div className="flex items-center gap-2 px-4 pt-3 pb-1">
+            <div className="flex items-center gap-3 px-4 pt-3 pb-1">
               <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 rounded-lg">
                 <Image className="size-3.5 text-blue-600" />
                 <span className="text-xs font-medium text-blue-600">Imagen</span>
               </div>
-              <div className="flex items-center gap-1">
+
+              {/* Size selector */}
+              <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
                 {(imageUsage?.allowedSizes || ['1024x1024']).map((size) => {
                   const sizeOption = IMAGE_SIZES.find(s => s.value === size);
                   if (!sizeOption) return null;
@@ -749,10 +740,10 @@ export const MessageInput = memo(function MessageInput() {
                       type="button"
                       onClick={() => setImageSize(size)}
                       disabled={isLoading}
-                      className={`px-2 py-1 rounded text-xs transition ${
+                      className={`px-2 py-1 rounded-md text-xs font-medium transition ${
                         imageSize === size
-                          ? 'bg-gray-900 text-white'
-                          : 'text-gray-400 hover:text-gray-600'
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-500 hover:text-gray-700'
                       } disabled:opacity-40`}
                     >
                       {sizeOption.label}
@@ -760,6 +751,39 @@ export const MessageInput = memo(function MessageInput() {
                   );
                 })}
               </div>
+
+              {/* Style selector */}
+              <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+                <button
+                  type="button"
+                  onClick={() => setImageStyle('vivid')}
+                  disabled={isLoading}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition ${
+                    imageStyle === 'vivid'
+                      ? 'bg-white text-purple-600 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  } disabled:opacity-40`}
+                  title="Estilo vívido - Más dramático y vibrante"
+                >
+                  <Sparkles className="size-3" />
+                  <span>Vívido</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setImageStyle('natural')}
+                  disabled={isLoading}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition ${
+                    imageStyle === 'natural'
+                      ? 'bg-white text-green-600 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  } disabled:opacity-40`}
+                  title="Estilo natural - Más realista y suave"
+                >
+                  <Leaf className="size-3" />
+                  <span>Natural</span>
+                </button>
+              </div>
+
               <button
                 type="button"
                 onClick={() => setImageMode(false)}
