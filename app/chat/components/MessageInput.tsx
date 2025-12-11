@@ -9,7 +9,7 @@ import {
   memo,
   useEffect,
 } from 'react';
-import { ArrowUp, MapPin, Paperclip, Plus, Check, Loader2 } from 'lucide-react';
+import { ArrowUp, MapPin, Paperclip, Plus, Check, Loader2, Image, X } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { FileUpload } from './FileUpload';
 import {
@@ -37,6 +37,8 @@ import { LocationMapConfirmDialog } from './LocationMapConfirmDialog';
 import type { GeoCulturalAnalysisText } from '@/app/chat/components/MessageBubble';
 import { shouldAutoEnableGeoCultural } from '@/lib/geocultural/auto-mode';
 import type { StructuredAddress } from '@/lib/geolocation/address-types';
+import { useImageGeneration } from '@/hooks/useImageGeneration';
+import type { ImageGenSize, ImageGenStyle } from '@/lib/memory/plan-limits';
 
 type SSEPayload = {
   delta?: string;
@@ -81,6 +83,13 @@ const parseSSEChunk = (chunk: string): SSEvent | null => {
   }
 };
 
+// Image size options - minimal labels
+const IMAGE_SIZES: { value: ImageGenSize; label: string }[] = [
+  { value: '1024x1024', label: '1:1' },
+  { value: '1024x1792', label: '9:16' },
+  { value: '1792x1024', label: '16:9' },
+];
+
 export const MessageInput = memo(function MessageInput() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [input, setInput] = useState('');
@@ -90,6 +99,12 @@ export const MessageInput = memo(function MessageInput() {
   const [attachments, setAttachments] = useState<Array<{ id: string; fileName: string; fileType: string; fileSize: number; url: string; thumbnailUrl?: string; mimeType?: string }>>([]);
   const [isCreatingConversation, setIsCreatingConversation] = useState(false);
   const queryClient = useQueryClient();
+
+  // Image mode state
+  const [imageMode, setImageMode] = useState(false);
+  const [imageSize, setImageSize] = useState<ImageGenSize>('1024x1024');
+
+  const { generate: generateImage, isGenerating: isGeneratingImage, usage: imageUsage } = useImageGeneration();
 
   const messages = useMessages();
   const geoCulturalMode = useGeoCulturalMode();
@@ -170,7 +185,6 @@ export const MessageInput = memo(function MessageInput() {
 
   const handleConfirmMapLocation = useCallback(
     (location: { lat: number; lng: number; accuracy: number; address: StructuredAddress }) => {
-      // Update store with confirmed location INCLUDING address
       setUserLocation({
         lat: location.lat,
         lng: location.lng,
@@ -245,7 +259,6 @@ export const MessageInput = memo(function MessageInput() {
   useEffect(() => {
     if (coords && address && showLocationDialog && coords.timestamp !== prevTimestampRef.current) {
       prevTimestampRef.current = coords.timestamp;
-      // Automatically open map dialog when location is obtained
       setShowLocationDialog(false);
       setShowMapDialog(true);
     }
@@ -265,13 +278,69 @@ export const MessageInput = memo(function MessageInput() {
     prevConversationIdRef.current = conversationId ?? null;
   }, [conversationId, setGeoCulturalMode, setUserLocation, setShowLocationDialog]);
 
+  // Handle image generation
+  const handleGenerateImage = useCallback(async () => {
+    const prompt = input.trim();
+    if (!prompt || isGeneratingImage) return;
+
+    // Add user message showing the prompt
+    const userMessageId = createId();
+    const assistantMessageId = createId();
+
+    addMessage({
+      id: userMessageId,
+      role: 'user',
+      content: `🎨 Generar imagen: "${prompt}"`,
+    });
+    addMessage({
+      id: assistantMessageId,
+      role: 'assistant',
+      content: '🖼️ Generando imagen...',
+    });
+
+    setInput('');
+    setStreaming(true);
+
+    try {
+      const result = await generateImage(prompt, {
+        quality: 'standard',
+        size: imageSize,
+        style: 'vivid',
+      });
+
+      if (result) {
+        // Update assistant message with the generated image
+        updateMessage(assistantMessageId, () =>
+          `![Imagen generada](${result.url})\n\n${result.revisedPrompt ? `*${result.revisedPrompt}*` : ''}`
+        );
+      } else {
+        updateMessage(assistantMessageId, () =>
+          '❌ No se pudo generar la imagen. Intenta con otro prompt.'
+        );
+      }
+    } catch (error) {
+      console.error('Error generating image:', error);
+      updateMessage(assistantMessageId, () =>
+        '❌ Error al generar la imagen. Por favor intenta de nuevo.'
+      );
+    } finally {
+      setStreaming(false);
+    }
+  }, [input, imageSize, generateImage, isGeneratingImage, addMessage, updateMessage, setStreaming]);
+
   const submitMessage = useCallback(
     async (event?: FormEvent<HTMLFormElement>) => {
       event?.preventDefault();
+
+      // If in image mode, generate image instead
+      if (imageMode) {
+        handleGenerateImage();
+        return;
+      }
+
       const value = input.trim();
       if (isStreaming) return;
 
-      // Validar que haya texto si hay archivos adjuntos
       if (attachments.length > 0 && !value) {
         alert('Por favor escribe un mensaje para enviar junto con los archivos adjuntos');
         return;
@@ -306,13 +375,11 @@ export const MessageInput = memo(function MessageInput() {
       let geoCulturalContent: (GeoCulturalAnalysisText & Record<string, unknown>) | null = null;
 
       try {
-        // Si no hay conversación activa, crear una nueva
         if (!currentConversationId) {
           try {
             const title =
               value.length > 50 ? value.substring(0, 50).trim() + '...' : value;
 
-            // Usar TanStack Query mutation
             const conversation = await createConversationMutation.mutateAsync({
               title,
             });
@@ -324,7 +391,6 @@ export const MessageInput = memo(function MessageInput() {
           }
         }
 
-        // ✅ FIX: Guardar mensaje del usuario en Supabase Y esperar confirmación
         if (currentConversationId) {
           try {
             const response = await fetch(`/api/conversations/${currentConversationId}/messages`, {
@@ -338,7 +404,6 @@ export const MessageInput = memo(function MessageInput() {
             });
 
             if (response.ok) {
-              // Si hay attachments, actualizar su messageId
               if (attachments.length > 0) {
                 try {
                   await fetch(`/api/conversations/${currentConversationId}/attachments/link`, {
@@ -354,11 +419,9 @@ export const MessageInput = memo(function MessageInput() {
                 }
               }
 
-              // ✅ Invalidar cache para que TanStack Query recargue datos frescos
               queryClient.invalidateQueries({
                 queryKey: conversationKeys.detail(currentConversationId),
               });
-              // También invalidar la lista de conversaciones (para actualizar timestamp)
               queryClient.invalidateQueries({
                 queryKey: conversationKeys.lists(),
               });
@@ -368,7 +431,6 @@ export const MessageInput = memo(function MessageInput() {
           }
         }
 
-        // Update timestamp to current time for each message (keep coords/address same)
         const freshGeoCulturalContext = geoCulturalMode && userLocation
           ? { ...userLocation, timestamp: Date.now() }
           : null;
@@ -384,7 +446,6 @@ export const MessageInput = memo(function MessageInput() {
           }),
         });
 
-        // Clear attachments after sending
         setAttachments([]);
         setShowFileUpload(false);
 
@@ -427,7 +488,7 @@ export const MessageInput = memo(function MessageInput() {
                   const delta = event.data?.delta ?? '';
                   updateMessage(assistantMessageId, (prev) => {
                     const newContent = prev + delta;
-                    assistantContent = newContent; // Update final content
+                    assistantContent = newContent;
                     return newContent;
                   });
                 }
@@ -450,10 +511,8 @@ export const MessageInput = memo(function MessageInput() {
           buffer += decoder.decode();
           processBuffer();
         } catch (streamError) {
-          // Handle stream interruption (e.g., when app goes to background on mobile)
           console.warn('[Stream] Connection interrupted, preserving partial content:', streamError);
 
-          // Process any remaining buffer before handling error
           if (buffer) {
             try {
               buffer += decoder.decode();
@@ -463,17 +522,13 @@ export const MessageInput = memo(function MessageInput() {
             }
           }
 
-          // If we have partial content, keep it and add a note about interruption
           if (assistantContent) {
             console.log('[Stream] Preserved partial content:', assistantContent.substring(0, 100));
-            // Don't throw - we want to save the partial content
           } else {
-            // Only throw if we have no content at all
             throw streamError;
           }
         }
 
-        // ✅ FIX: Guardar mensaje del asistente en Supabase Y confirmar
         if (currentConversationId && assistantContent) {
           try {
             await fetch(`/api/conversations/${currentConversationId}/messages`, {
@@ -486,13 +541,11 @@ export const MessageInput = memo(function MessageInput() {
               }),
             });
 
-            // ✅ Invalidar cache y extraer hechos
             queryClient.invalidateQueries({ queryKey: conversationKeys.detail(currentConversationId) });
             queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
             fetch(`/api/conversations/${currentConversationId}/extract-facts`, { method: 'POST' })
               .catch(err => console.debug('Background fact extraction:', err.message));
 
-            // ✅ Guardar contexto geocultural en la conversación (persiste para futuras sesiones)
             if (freshGeoCulturalContext) {
               fetch(`/api/conversations/${currentConversationId}`, {
                 method: 'PATCH',
@@ -510,13 +563,9 @@ export const MessageInput = memo(function MessageInput() {
       } catch (err) {
         console.error('[Chat] Error during message submission:', err);
 
-        // Check if we already have partial content from streaming
         if (assistantContent && assistantContent.length > 0) {
-          // We have partial content - keep it and don't overwrite with error
           console.log('[Chat] Keeping partial content despite error');
-          // The content is already in the message, just end streaming
 
-          // Try to save partial content to database
           if (currentConversationId) {
             try {
               await fetch(`/api/conversations/${currentConversationId}/messages`, {
@@ -537,7 +586,6 @@ export const MessageInput = memo(function MessageInput() {
             }
           }
         } else {
-          // No content received, show error message
           const message =
             err instanceof Error
               ? err.message
@@ -565,6 +613,8 @@ export const MessageInput = memo(function MessageInput() {
       attachments,
       setAttachments,
       setShowFileUpload,
+      imageMode,
+      handleGenerateImage,
     ],
   );
 
@@ -574,6 +624,15 @@ export const MessageInput = memo(function MessageInput() {
       submitMessage();
     }
   };
+
+  const toggleImageMode = useCallback(() => {
+    setImageMode((prev) => !prev);
+    setShowFileUpload(false);
+    // Focus textarea when toggling
+    setTimeout(() => textareaRef.current?.focus(), 100);
+  }, []);
+
+  const isLoading = isStreaming || isGeneratingImage;
 
   return (
     <>
@@ -671,91 +730,154 @@ export const MessageInput = memo(function MessageInput() {
 
         <form
           onSubmit={submitMessage}
-          className="flex flex-row items-center justify-between gap-3 rounded-[2rem] border border-black/5 bg-white px-4 py-3 shadow-[0_20px_50px_rgba(0,0,0,0.08)]"
+          className="rounded-[2rem] border border-black/5 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.08)]"
         >
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+          {/* Image mode bar - minimal design */}
+          {imageMode && (
+            <div className="flex items-center gap-2 px-4 pt-3 pb-1">
+              <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 rounded-lg">
+                <Image className="size-3.5 text-blue-600" />
+                <span className="text-xs font-medium text-blue-600">Imagen</span>
+              </div>
+              <div className="flex items-center gap-1">
+                {(imageUsage?.allowedSizes || ['1024x1024']).map((size) => {
+                  const sizeOption = IMAGE_SIZES.find(s => s.value === size);
+                  if (!sizeOption) return null;
+                  return (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => setImageSize(size)}
+                      disabled={isLoading}
+                      className={`px-2 py-1 rounded text-xs transition ${
+                        imageSize === size
+                          ? 'bg-gray-900 text-white'
+                          : 'text-gray-400 hover:text-gray-600'
+                      } disabled:opacity-40`}
+                    >
+                      {sizeOption.label}
+                    </button>
+                  );
+                })}
+              </div>
               <button
                 type="button"
-                disabled={isStreaming}
-                className={`relative flex shrink-0 items-center justify-center rounded-full p-2 transition ${
-                  geoCulturalMode || showFileUpload || attachments.length > 0
-                    ? 'bg-[#00552b] text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                } disabled:opacity-40 disabled:cursor-not-allowed`}
+                onClick={() => setImageMode(false)}
+                className="ml-auto p-1 text-gray-400 hover:text-gray-600 rounded transition"
               >
-                <Plus className="size-5" />
-                {attachments.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium">
-                    {attachments.length}
-                  </span>
-                )}
+                <X className="size-4" />
               </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56">
-              <DropdownMenuItem
-                onClick={handleLocationToggle}
-                disabled={isStreaming}
-                className="cursor-pointer"
-              >
-                <MapPin className="mr-2 size-4" />
-                <span className="flex-1">Modo GeoCultural</span>
-                {geoCulturalMode && <Check className="size-4 text-[#00552b]" />}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={async () => {
-                  // Si no hay conversación, crear una
-                  if (!conversationId && !isCreatingConversation) {
-                    setIsCreatingConversation(true);
-                    try {
-                      const conversation = await createConversationMutation.mutateAsync({
-                        title: 'Nueva conversación',
-                      });
-                      setConversationId(conversation.id);
-                      setShowFileUpload(true);
-                    } catch (error) {
-                      console.error('Error creating conversation:', error);
-                    } finally {
-                      setIsCreatingConversation(false);
-                    }
-                  } else if (conversationId) {
-                    setShowFileUpload(!showFileUpload);
-                  }
-                }}
-                disabled={isStreaming || isCreatingConversation}
-                className="cursor-pointer"
-              >
-                <Paperclip className="mr-2 size-4" />
-                <span className="flex-1">Adjuntar archivos</span>
-                {attachments.length > 0 && (
-                  <span className="ml-auto text-xs font-medium text-[#00552b]">
-                    {attachments.length}
-                  </span>
-                )}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </div>
+          )}
 
-          <textarea
-            ref={textareaRef}
-            autoFocus
-            value={input}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-            rows={1}
-            placeholder={geoCulturalMode ? "Pregunta sobre lugares culturales..." : "Empieza con una idea..."}
-            disabled={isStreaming}
-            className="w-full min-h-[20px] max-h-[200px] resize-none overflow-y-auto bg-transparent text-base leading-5 text-[#111111] outline-none placeholder:text-[#111111]/40 disabled:opacity-60 scrollbar-thin"
-          />
-          <button
-            type="submit"
-            disabled={(!input.trim() && attachments.length === 0) || isStreaming}
-            className="flex shrink-0 items-center justify-center rounded-full bg-[#00552b] p-2 text-white transition hover:bg-[#00552b]/80 disabled:cursor-not-allowed disabled:bg-[#00552b]/40"
-            title={attachments.length > 0 && !input.trim() ? 'Escribe un mensaje para enviar con los archivos' : ''}
-          >
-            <ArrowUp className="size-5" />
-          </button>
+          {/* Main input row */}
+          <div className="flex flex-row items-center gap-3 px-4 py-3">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  disabled={isLoading}
+                  className={`relative flex shrink-0 items-center justify-center rounded-full p-2 transition ${
+                    geoCulturalMode || showFileUpload || attachments.length > 0 || imageMode
+                      ? imageMode
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-[#00552b] text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  } disabled:opacity-40 disabled:cursor-not-allowed`}
+                >
+                  <Plus className="size-5" />
+                  {attachments.length > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium">
+                      {attachments.length}
+                    </span>
+                  )}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-48">
+                <DropdownMenuItem
+                  onClick={toggleImageMode}
+                  disabled={isLoading}
+                  className="cursor-pointer"
+                >
+                  <Image className="mr-2 size-4" />
+                  <span className="flex-1">Generar imagen</span>
+                  {imageMode && <Check className="size-4 text-blue-600" />}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={handleLocationToggle}
+                  disabled={isLoading}
+                  className="cursor-pointer"
+                >
+                  <MapPin className="mr-2 size-4" />
+                  <span className="flex-1">GeoCultural</span>
+                  {geoCulturalMode && <Check className="size-4 text-[#00552b]" />}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={async () => {
+                    if (!conversationId && !isCreatingConversation) {
+                      setIsCreatingConversation(true);
+                      try {
+                        const conversation = await createConversationMutation.mutateAsync({
+                          title: 'Nueva conversación',
+                        });
+                        setConversationId(conversation.id);
+                        setShowFileUpload(true);
+                      } catch (error) {
+                        console.error('Error creating conversation:', error);
+                      } finally {
+                        setIsCreatingConversation(false);
+                      }
+                    } else if (conversationId) {
+                      setShowFileUpload(!showFileUpload);
+                    }
+                  }}
+                  disabled={isLoading || isCreatingConversation}
+                  className="cursor-pointer"
+                >
+                  <Paperclip className="mr-2 size-4" />
+                  <span className="flex-1">Archivos</span>
+                  {attachments.length > 0 && (
+                    <span className="text-xs text-gray-400">{attachments.length}</span>
+                  )}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <textarea
+              ref={textareaRef}
+              autoFocus
+              value={input}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              rows={1}
+              placeholder={
+                imageMode
+                  ? 'Describe la imagen...'
+                  : geoCulturalMode
+                  ? 'Pregunta sobre lugares...'
+                  : 'Mensaje...'
+              }
+              disabled={isLoading}
+              className="flex-1 min-h-[20px] max-h-[200px] resize-none overflow-y-auto bg-transparent text-base leading-5 text-[#111111] outline-none placeholder:text-[#111111]/40 disabled:opacity-60 scrollbar-thin"
+            />
+
+            <button
+              type="submit"
+              disabled={!input.trim() || isLoading}
+              className={`flex shrink-0 items-center justify-center rounded-full p-2 text-white transition disabled:cursor-not-allowed ${
+                imageMode
+                  ? 'bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300'
+                  : 'bg-[#00552b] hover:bg-[#00552b]/80 disabled:bg-[#00552b]/40'
+              }`}
+            >
+              {isGeneratingImage ? (
+                <Loader2 className="size-5 animate-spin" />
+              ) : (
+                <ArrowUp className="size-5" />
+              )}
+            </button>
+          </div>
         </form>
       </div>
     </>

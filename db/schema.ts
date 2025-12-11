@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, pgEnum, varchar, integer, boolean } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, pgEnum, varchar, integer, boolean, numeric } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 // Enum para el rol de los mensajes
@@ -152,6 +152,36 @@ export const ttsUsage = pgTable("tts_usage", {
     .defaultNow(),
 });
 
+// Tabla de uso de generación de imágenes (DALL-E)
+// Registra cada imagen generada para control de límites por plan
+export const imageGenUsage = pgTable("image_gen_usage", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull(), // Referencia a auth.users
+
+  // Información de la imagen generada
+  prompt: text("prompt").notNull(),
+  revisedPrompt: text("revised_prompt"), // El prompt que DALL-E realmente usó
+  model: varchar("model", { length: 50 }).notNull().default("dall-e-3"),
+  quality: varchar("quality", { length: 20 }).notNull().default("standard"), // 'standard' | 'hd'
+  size: varchar("size", { length: 20 }).notNull().default("1024x1024"), // '1024x1024' | '1024x1792' | '1792x1024'
+  style: varchar("style", { length: 20 }).default("vivid"), // 'vivid' | 'natural'
+
+  // Almacenamiento
+  storagePath: text("storage_path"), // Path en Supabase Storage
+  originalUrl: text("original_url"), // URL temporal de OpenAI (expira en 1 hora)
+
+  // Costos
+  costUsd: numeric("cost_usd", { precision: 10, scale: 6 }).notNull(), // Costo exacto de esta imagen
+
+  // Metadata
+  generationTimeMs: integer("generation_time_ms"), // Tiempo que tardó en generar
+
+  // Timestamp
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 // Tabla de attachments de conversaciones
 export const conversationAttachments = pgTable("conversation_attachments", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -240,3 +270,5 @@ export type UserContext = typeof userContext.$inferSelect;
 export type NewUserContext = typeof userContext.$inferInsert;
 export type ConversationAttachment = typeof conversationAttachments.$inferSelect;
 export type NewConversationAttachment = typeof conversationAttachments.$inferInsert;
+export type ImageGenUsage = typeof imageGenUsage.$inferSelect;
+export type NewImageGenUsage = typeof imageGenUsage.$inferInsert;

@@ -1,9 +1,12 @@
 /**
- * CONFIGURACIÓN DE LÍMITES DE MEMORIA POR PLAN
- * ============================================
+ * CONFIGURACIÓN DE LÍMITES POR PLAN
+ * ==================================
  *
- * Este archivo define los límites de la funcionalidad de memoria compartida
- * según el plan de suscripción del usuario.
+ * Este archivo define los límites de todas las funcionalidades
+ * según el plan de suscripción del usuario:
+ * - TTS (Text-to-Speech)
+ * - Generación de Imágenes (DALL-E)
+ * - Memoria compartida
  *
  * INSTRUCCIONES PARA AJUSTAR:
  * - Modifica los valores numéricos según tu estrategia de negocio
@@ -70,6 +73,128 @@ export function getTTSLimits(planName: PlanName | null | undefined): TTSPlanLimi
     return TTS_LIMITS.Free;
   }
   return TTS_LIMITS[planName];
+}
+
+// ============================================================================
+// IMAGE GENERATION (DALL-E) LIMITS
+// ============================================================================
+
+export type ImageGenQuality = 'standard' | 'hd';
+export type ImageGenSize = '1024x1024' | '1024x1792' | '1792x1024';
+export type ImageGenStyle = 'vivid' | 'natural';
+
+export type ImageGenPlanLimits = {
+  // Máximo de imágenes por día
+  maxImagesPerDay: number;
+  // Máximo de imágenes por mes
+  maxImagesPerMonth: number;
+  // Si tiene acceso a generación de imágenes
+  imageGenEnabled: boolean;
+  // Modelos permitidos
+  allowedModels: ('dall-e-2' | 'dall-e-3')[];
+  // Calidades permitidas
+  allowedQualities: ImageGenQuality[];
+  // Resolución máxima permitida
+  maxResolution: ImageGenSize;
+  // Estilos permitidos
+  allowedStyles: ImageGenStyle[];
+  // Costo estimado máximo USD/mes
+  estimatedMaxCostUSD: number;
+};
+
+/**
+ * LÍMITES DE GENERACIÓN DE IMÁGENES POR PLAN
+ * ==========================================
+ * Basado en análisis financiero:
+ * - Costo DALL-E 3 Standard 1024x1024: $0.04 USD por imagen
+ * - Costo DALL-E 3 Standard 1024x1792: $0.08 USD por imagen
+ * - Costo DALL-E 3 HD 1024x1024: $0.08 USD por imagen
+ * - Costo DALL-E 3 HD 1024x1792: $0.12 USD por imagen
+ * - Objetivo: mantener costo imágenes ≤ 20% del precio del plan
+ */
+export const IMAGE_GEN_LIMITS: Record<PlanName, ImageGenPlanLimits> = {
+  Free: {
+    maxImagesPerDay: 2,
+    maxImagesPerMonth: 10,
+    imageGenEnabled: true,
+    allowedModels: ['dall-e-3'],
+    allowedQualities: ['standard'],
+    maxResolution: '1024x1024',
+    allowedStyles: ['vivid', 'natural'],
+    estimatedMaxCostUSD: 0.40,
+  },
+  Basic: {
+    maxImagesPerDay: 5,
+    maxImagesPerMonth: 75,
+    imageGenEnabled: true,
+    allowedModels: ['dall-e-3'],
+    allowedQualities: ['standard'],
+    maxResolution: '1024x1024',
+    allowedStyles: ['vivid', 'natural'],
+    estimatedMaxCostUSD: 3.00,
+  },
+  Professional: {
+    maxImagesPerDay: 15,
+    maxImagesPerMonth: 300,
+    imageGenEnabled: true,
+    allowedModels: ['dall-e-3'],
+    allowedQualities: ['standard', 'hd'],
+    maxResolution: '1024x1792',
+    allowedStyles: ['vivid', 'natural'],
+    estimatedMaxCostUSD: 12.00,
+  },
+  Enterprise: {
+    maxImagesPerDay: 50,
+    maxImagesPerMonth: 1000,
+    imageGenEnabled: true,
+    allowedModels: ['dall-e-3'],
+    allowedQualities: ['standard', 'hd'],
+    maxResolution: '1024x1792',
+    allowedStyles: ['vivid', 'natural'],
+    estimatedMaxCostUSD: 40.00,
+  },
+};
+
+/**
+ * Obtiene los límites de generación de imágenes del plan
+ */
+export function getImageGenLimits(planName: PlanName | null | undefined): ImageGenPlanLimits {
+  if (!planName || !(planName in IMAGE_GEN_LIMITS)) {
+    return IMAGE_GEN_LIMITS.Free;
+  }
+  return IMAGE_GEN_LIMITS[planName];
+}
+
+/**
+ * Calcula el costo de una imagen según sus parámetros
+ */
+export function calculateImageCost(
+  quality: ImageGenQuality,
+  size: ImageGenSize
+): number {
+  const COSTS: Record<ImageGenQuality, Record<ImageGenSize, number>> = {
+    'standard': {
+      '1024x1024': 0.04,
+      '1024x1792': 0.08,
+      '1792x1024': 0.08,
+    },
+    'hd': {
+      '1024x1024': 0.08,
+      '1024x1792': 0.12,
+      '1792x1024': 0.12,
+    },
+  };
+  return COSTS[quality][size];
+}
+
+/**
+ * Obtiene los tamaños permitidos según la resolución máxima del plan
+ */
+export function getAllowedSizes(maxResolution: ImageGenSize): ImageGenSize[] {
+  if (maxResolution === '1024x1792' || maxResolution === '1792x1024') {
+    return ['1024x1024', '1024x1792', '1792x1024'];
+  }
+  return ['1024x1024'];
 }
 
 // ============================================================================

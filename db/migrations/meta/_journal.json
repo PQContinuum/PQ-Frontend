@@ -43,6 +43,13 @@
       "when": 1765404014655,
       "tag": "0005_reflective_rumiko_fujikawa",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1765480288822,
+      "tag": "0006_chubby_excalibur",
+      "breakpoints": true
     }
   ]
 }
