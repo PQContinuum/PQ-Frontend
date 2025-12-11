@@ -9,7 +9,7 @@ import {
   memo,
   useEffect,
 } from 'react';
-import { ArrowUp, MapPin, Paperclip, Plus, Check, Loader2, Image, X, Sparkles, Leaf } from 'lucide-react';
+import { ArrowUp, MapPin, Paperclip, Plus, Check, Loader2, Image, X, ChevronDown, Lock, Zap } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { FileUpload } from './FileUpload';
 import {
@@ -38,7 +38,8 @@ import type { GeoCulturalAnalysisText } from '@/app/chat/components/MessageBubbl
 import { shouldAutoEnableGeoCultural } from '@/lib/geocultural/auto-mode';
 import type { StructuredAddress } from '@/lib/geolocation/address-types';
 import { useImageGeneration } from '@/hooks/useImageGeneration';
-import type { ImageGenSize, ImageGenStyle } from '@/lib/memory/plan-limits';
+import type { ImageGenSize, ImageGenQuality } from '@/lib/memory/plan-limits';
+import { IMAGE_STYLE_PRESETS, getAvailablePresets } from '@/lib/image-gen/style-presets';
 
 type SSEPayload = {
   delta?: string;
@@ -83,11 +84,18 @@ const parseSSEChunk = (chunk: string): SSEvent | null => {
   }
 };
 
-// Image size options - minimal labels
-const IMAGE_SIZES: { value: ImageGenSize; label: string }[] = [
-  { value: '1024x1024', label: '1:1' },
-  { value: '1024x1792', label: '9:16' },
-  { value: '1792x1024', label: '16:9' },
+// Size options with aspect ratio labels
+const SIZE_OPTIONS: { value: ImageGenSize; label: string; icon: string }[] = [
+  { value: '1024x1024', label: '1:1', icon: '⬜' },
+  { value: '1024x1536', label: '2:3', icon: '📱' },
+  { value: '1536x1024', label: '3:2', icon: '🖼️' },
+];
+
+// Quality options
+const QUALITY_OPTIONS: { value: ImageGenQuality; label: string; description: string }[] = [
+  { value: 'low', label: 'Rápida', description: 'Generación rápida' },
+  { value: 'medium', label: 'Balanceada', description: 'Balance velocidad/calidad' },
+  { value: 'high', label: 'Alta', description: 'Máxima calidad' },
 ];
 
 export const MessageInput = memo(function MessageInput() {
@@ -103,9 +111,16 @@ export const MessageInput = memo(function MessageInput() {
   // Image mode state
   const [imageMode, setImageMode] = useState(false);
   const [imageSize, setImageSize] = useState<ImageGenSize>('1024x1024');
-  const [imageStyle, setImageStyle] = useState<ImageGenStyle>('vivid');
+  const [imageQuality, setImageQuality] = useState<ImageGenQuality>('low');
+  const [imageStylePreset, setImageStylePreset] = useState<string>('auto');
+  const [showStylePicker, setShowStylePicker] = useState(false);
 
-  const { generate: generateImage, isGenerating: isGeneratingImage, usage: imageUsage } = useImageGeneration();
+  const {
+    generate: generateImage,
+    generateWithStreaming,
+    isGenerating: isGeneratingImage,
+    usage: imageUsage,
+  } = useImageGeneration();
 
   const messages = useMessages();
   const geoCulturalMode = useGeoCulturalMode();
@@ -279,6 +294,10 @@ export const MessageInput = memo(function MessageInput() {
     prevConversationIdRef.current = conversationId ?? null;
   }, [conversationId, setGeoCulturalMode, setUserLocation, setShowLocationDialog]);
 
+  // Get available presets based on plan
+  const availablePresets = getAvailablePresets(imageUsage?.premiumStyles || false);
+  const selectedPreset = IMAGE_STYLE_PRESETS.find(p => p.id === imageStylePreset) || IMAGE_STYLE_PRESETS[0];
+
   // Handle image generation
   const handleGenerateImage = useCallback(async () => {
     const prompt = input.trim();
@@ -291,7 +310,7 @@ export const MessageInput = memo(function MessageInput() {
     addMessage({
       id: userMessageId,
       role: 'user',
-      content: prompt,
+      content: `🖼️ ${prompt}`,
     });
     addMessage({
       id: assistantMessageId,
@@ -302,11 +321,27 @@ export const MessageInput = memo(function MessageInput() {
     setInput('');
     setStreaming(true);
 
-    const result = await generateImage(prompt, {
-      quality: 'standard',
-      size: imageSize,
-      style: imageStyle,
-    });
+    // Use streaming if available
+    const useStreaming = imageUsage?.streamingEnabled && imageUsage?.partialImages > 0;
+
+    const result = useStreaming
+      ? await generateWithStreaming(
+          prompt,
+          {
+            quality: imageQuality,
+            size: imageSize,
+            stylePreset: imageStylePreset,
+          },
+          // Handle partial images
+          (partialImg) => {
+            updateMessage(assistantMessageId, () => `![Generando...](${partialImg})`);
+          }
+        )
+      : await generateImage(prompt, {
+          quality: imageQuality,
+          size: imageSize,
+          stylePreset: imageStylePreset,
+        });
 
     if (result.success) {
       updateMessage(assistantMessageId, () => `![Imagen generada](${result.url})`);
@@ -315,7 +350,7 @@ export const MessageInput = memo(function MessageInput() {
     }
 
     setStreaming(false);
-  }, [input, imageSize, imageStyle, generateImage, isGeneratingImage, addMessage, updateMessage, setStreaming]);
+  }, [input, imageSize, imageQuality, imageStylePreset, generateImage, generateWithStreaming, isGeneratingImage, addMessage, updateMessage, setStreaming, imageUsage]);
 
   const submitMessage = useCallback(
     async (event?: FormEvent<HTMLFormElement>) => {
@@ -617,11 +652,67 @@ export const MessageInput = memo(function MessageInput() {
   const toggleImageMode = useCallback(() => {
     setImageMode((prev) => !prev);
     setShowFileUpload(false);
+    setShowStylePicker(false);
     // Focus textarea when toggling
     setTimeout(() => textareaRef.current?.focus(), 100);
   }, []);
 
   const isLoading = isStreaming || isGeneratingImage;
+
+  // Style preset picker component
+  const StylePresetPicker = () => (
+    <div className="absolute bottom-full left-0 mb-2 w-[340px] bg-white rounded-2xl border border-gray-100 shadow-xl p-3 z-50">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-sm font-semibold text-gray-700">Estilo de imagen</span>
+        <button
+          onClick={() => setShowStylePicker(false)}
+          className="p-1 hover:bg-gray-100 rounded-lg transition"
+        >
+          <X className="size-4 text-gray-400" />
+        </button>
+      </div>
+      <div className="grid grid-cols-4 gap-2">
+        {availablePresets.map((preset) => (
+          <button
+            key={preset.id}
+            onClick={() => {
+              setImageStylePreset(preset.id);
+              setShowStylePicker(false);
+            }}
+            className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${
+              imageStylePreset === preset.id
+                ? `${preset.bgColor} ${preset.borderColor} border-2 shadow-sm`
+                : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
+            }`}
+          >
+            <span className="text-xl">{preset.icon}</span>
+            <span className={`text-xs font-medium ${
+              imageStylePreset === preset.id ? preset.color : 'text-gray-600'
+            }`}>
+              {preset.name}
+            </span>
+          </button>
+        ))}
+        {/* Show locked presets */}
+        {IMAGE_STYLE_PRESETS.filter(p => p.premium && !imageUsage?.premiumStyles).map((preset) => (
+          <button
+            key={preset.id}
+            disabled
+            className="flex flex-col items-center gap-1 p-2 rounded-xl bg-gray-50 opacity-50 cursor-not-allowed relative"
+          >
+            <span className="text-xl grayscale">{preset.icon}</span>
+            <span className="text-xs font-medium text-gray-400">{preset.name}</span>
+            <Lock className="absolute top-1 right-1 size-3 text-gray-400" />
+          </button>
+        ))}
+      </div>
+      <p className="text-xs text-gray-400 mt-3 text-center">
+        {imageUsage?.premiumStyles
+          ? 'Todos los estilos disponibles'
+          : 'Actualiza tu plan para más estilos'}
+      </p>
+    </div>
+  );
 
   return (
     <>
@@ -719,78 +810,93 @@ export const MessageInput = memo(function MessageInput() {
 
         <form
           onSubmit={submitMessage}
-          className="rounded-[2rem] border border-black/5 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.08)]"
+          className="rounded-[2rem] border border-black/5 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.08)] relative"
         >
-          {/* Image mode bar - minimal design */}
+          {/* Image mode controls - Beautiful redesign */}
           {imageMode && (
-            <div className="flex items-center gap-3 px-4 pt-3 pb-1">
-              <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 rounded-lg">
-                <Image className="size-3.5 text-blue-600" />
-                <span className="text-xs font-medium text-blue-600">Imagen</span>
-              </div>
+            <div className="px-4 pt-3 pb-2 border-b border-gray-100">
+              <div className="flex items-center gap-3 flex-wrap">
+                {/* Style preset selector button */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowStylePicker(!showStylePicker)}
+                    disabled={isLoading}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all ${
+                      showStylePicker
+                        ? `${selectedPreset.bgColor} ${selectedPreset.borderColor} border`
+                        : 'bg-gray-100 hover:bg-gray-200'
+                    } disabled:opacity-40`}
+                  >
+                    <span className="text-base">{selectedPreset.icon}</span>
+                    <span className={`text-sm font-medium ${showStylePicker ? selectedPreset.color : 'text-gray-700'}`}>
+                      {selectedPreset.name}
+                    </span>
+                    <ChevronDown className={`size-3.5 transition-transform ${showStylePicker ? 'rotate-180' : ''} ${
+                      showStylePicker ? selectedPreset.color : 'text-gray-400'
+                    }`} />
+                  </button>
+                  {showStylePicker && <StylePresetPicker />}
+                </div>
 
-              {/* Size selector */}
-              <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
-                {(imageUsage?.allowedSizes || ['1024x1024']).map((size) => {
-                  const sizeOption = IMAGE_SIZES.find(s => s.value === size);
-                  if (!sizeOption) return null;
-                  return (
+                {/* Size selector */}
+                <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+                  {SIZE_OPTIONS.filter(s => imageUsage?.allowedSizes?.includes(s.value) || s.value === '1024x1024').map((size) => (
                     <button
-                      key={size}
+                      key={size.value}
                       type="button"
-                      onClick={() => setImageSize(size)}
+                      onClick={() => setImageSize(size.value)}
                       disabled={isLoading}
-                      className={`px-2 py-1 rounded-md text-xs font-medium transition ${
-                        imageSize === size
+                      className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition ${
+                        imageSize === size.value
                           ? 'bg-white text-gray-900 shadow-sm'
                           : 'text-gray-500 hover:text-gray-700'
                       } disabled:opacity-40`}
                     >
-                      {sizeOption.label}
+                      <span>{size.icon}</span>
+                      <span>{size.label}</span>
                     </button>
-                  );
-                })}
-              </div>
+                  ))}
+                </div>
 
-              {/* Style selector */}
-              <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+                {/* Quality selector */}
+                <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+                  {QUALITY_OPTIONS.filter(q => imageUsage?.allowedQualities?.includes(q.value) || q.value === 'low').map((q) => (
+                    <button
+                      key={q.value}
+                      type="button"
+                      onClick={() => setImageQuality(q.value)}
+                      disabled={isLoading}
+                      className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition ${
+                        imageQuality === q.value
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-500 hover:text-gray-700'
+                      } disabled:opacity-40`}
+                      title={q.description}
+                    >
+                      {q.value === 'high' && <Zap className="size-3 text-amber-500" />}
+                      <span>{q.label}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Close button */}
                 <button
                   type="button"
-                  onClick={() => setImageStyle('vivid')}
-                  disabled={isLoading}
-                  className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition ${
-                    imageStyle === 'vivid'
-                      ? 'bg-white text-purple-600 shadow-sm'
-                      : 'text-gray-500 hover:text-gray-700'
-                  } disabled:opacity-40`}
-                  title="Estilo vívido - Más dramático y vibrante"
+                  onClick={() => setImageMode(false)}
+                  className="ml-auto p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition"
                 >
-                  <Sparkles className="size-3" />
-                  <span>Vívido</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setImageStyle('natural')}
-                  disabled={isLoading}
-                  className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition ${
-                    imageStyle === 'natural'
-                      ? 'bg-white text-green-600 shadow-sm'
-                      : 'text-gray-500 hover:text-gray-700'
-                  } disabled:opacity-40`}
-                  title="Estilo natural - Más realista y suave"
-                >
-                  <Leaf className="size-3" />
-                  <span>Natural</span>
+                  <X className="size-4" />
                 </button>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setImageMode(false)}
-                className="ml-auto p-1 text-gray-400 hover:text-gray-600 rounded transition"
-              >
-                <X className="size-4" />
-              </button>
+              {/* Streaming indicator */}
+              {imageUsage?.streamingEnabled && (
+                <div className="flex items-center gap-1.5 mt-2 text-xs text-gray-400">
+                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                  <span>Vista previa en tiempo real activada</span>
+                </div>
+              )}
             </div>
           )}
 
@@ -804,7 +910,7 @@ export const MessageInput = memo(function MessageInput() {
                   className={`relative flex shrink-0 items-center justify-center rounded-full p-2 transition ${
                     geoCulturalMode || showFileUpload || attachments.length > 0 || imageMode
                       ? imageMode
-                        ? 'bg-blue-600 text-white'
+                        ? 'bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white'
                         : 'bg-[#00552b] text-white'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   } disabled:opacity-40 disabled:cursor-not-allowed`}
@@ -825,7 +931,7 @@ export const MessageInput = memo(function MessageInput() {
                 >
                   <Image className="mr-2 size-4" />
                   <span className="flex-1">Generar imagen</span>
-                  {imageMode && <Check className="size-4 text-blue-600" />}
+                  {imageMode && <Check className="size-4 text-violet-600" />}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -877,7 +983,7 @@ export const MessageInput = memo(function MessageInput() {
               rows={1}
               placeholder={
                 imageMode
-                  ? 'Describe la imagen...'
+                  ? `Describe tu imagen en estilo ${selectedPreset.name}...`
                   : geoCulturalMode
                   ? 'Pregunta sobre lugares...'
                   : 'Mensaje...'
@@ -891,7 +997,7 @@ export const MessageInput = memo(function MessageInput() {
               disabled={!input.trim() || isLoading}
               className={`flex shrink-0 items-center justify-center rounded-full p-2 text-white transition disabled:cursor-not-allowed ${
                 imageMode
-                  ? 'bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300'
+                  ? 'bg-gradient-to-br from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 disabled:from-violet-300 disabled:to-fuchsia-300'
                   : 'bg-[#00552b] hover:bg-[#00552b]/80 disabled:bg-[#00552b]/40'
               }`}
             >

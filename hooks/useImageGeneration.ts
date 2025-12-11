@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import type { ImageGenQuality, ImageGenSize, ImageGenStyle } from '@/lib/memory/plan-limits';
+import type { ImageGenQuality, ImageGenSize } from '@/lib/memory/plan-limits';
 
 interface ImageGenState {
   isGenerating: boolean;
@@ -11,7 +11,11 @@ interface ImageGenState {
     revisedPrompt?: string;
     size: string;
     quality: string;
+    stylePreset?: string;
   } | null;
+  // Streaming state
+  partialImage: string | null;
+  partialIndex: number;
 }
 
 interface ImageGenUsage {
@@ -25,12 +29,17 @@ interface ImageGenUsage {
   allowedSizes: ImageGenSize[];
   maxResolution: string;
   planName: string;
+  // gpt-image-1 specific
+  streamingEnabled: boolean;
+  partialImages: number;
+  premiumStyles: boolean;
 }
 
 interface GenerateOptions {
   quality?: ImageGenQuality;
   size?: ImageGenSize;
-  style?: ImageGenStyle;
+  stylePreset?: string;
+  stream?: boolean;
 }
 
 type GenerateResult =
@@ -40,6 +49,11 @@ type GenerateResult =
 interface UseImageGenerationReturn extends ImageGenState {
   usage: ImageGenUsage | null;
   generate: (prompt: string, options?: GenerateOptions) => Promise<GenerateResult>;
+  generateWithStreaming: (
+    prompt: string,
+    options?: GenerateOptions,
+    onPartialImage?: (image: string, index: number) => void
+  ) => Promise<GenerateResult>;
   fetchUsage: () => Promise<void>;
   reset: () => void;
   canGenerate: boolean;
@@ -50,10 +64,12 @@ export function useImageGeneration(): UseImageGenerationReturn {
     isGenerating: false,
     error: null,
     image: null,
+    partialImage: null,
+    partialIndex: -1,
   });
   const [usage, setUsage] = useState<ImageGenUsage | null>(null);
 
-  // Generate an image
+  // Generate an image (non-streaming)
   const generate = useCallback(
     async (prompt: string, options: GenerateOptions = {}): Promise<GenerateResult> => {
       if (!prompt.trim()) {
@@ -62,7 +78,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
         return { success: false, error: errorMsg };
       }
 
-      setState({ isGenerating: true, error: null, image: null });
+      setState({ isGenerating: true, error: null, image: null, partialImage: null, partialIndex: -1 });
 
       try {
         const response = await fetch('/api/image-gen', {
@@ -70,9 +86,10 @@ export function useImageGeneration(): UseImageGenerationReturn {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             prompt: prompt.trim(),
-            quality: options.quality || 'standard',
+            quality: options.quality || 'low',
             size: options.size || '1024x1024',
-            style: options.style || 'vivid',
+            stylePreset: options.stylePreset || 'auto',
+            stream: false,
           }),
         });
 
@@ -84,9 +101,10 @@ export function useImageGeneration(): UseImageGenerationReturn {
             isGenerating: false,
             error: errorMsg,
             image: null,
+            partialImage: null,
+            partialIndex: -1,
           });
 
-          // Update usage if provided in error response
           if (data.usage) {
             setUsage((prev) =>
               prev
@@ -109,15 +127,17 @@ export function useImageGeneration(): UseImageGenerationReturn {
           revisedPrompt: data.image.revisedPrompt,
           size: data.image.size,
           quality: data.image.quality,
+          stylePreset: data.image.stylePreset,
         };
 
         setState({
           isGenerating: false,
           error: null,
           image: imageResult,
+          partialImage: null,
+          partialIndex: -1,
         });
 
-        // Update usage from response
         if (data.usage) {
           setUsage((prev) =>
             prev
@@ -140,6 +160,179 @@ export function useImageGeneration(): UseImageGenerationReturn {
           isGenerating: false,
           error: errorMsg,
           image: null,
+          partialImage: null,
+          partialIndex: -1,
+        });
+        return { success: false, error: errorMsg };
+      }
+    },
+    []
+  );
+
+  // Generate with streaming (partial images)
+  const generateWithStreaming = useCallback(
+    async (
+      prompt: string,
+      options: GenerateOptions = {},
+      onPartialImage?: (image: string, index: number) => void
+    ): Promise<GenerateResult> => {
+      if (!prompt.trim()) {
+        const errorMsg = 'El prompt es requerido';
+        setState((s) => ({ ...s, error: errorMsg }));
+        return { success: false, error: errorMsg };
+      }
+
+      setState({ isGenerating: true, error: null, image: null, partialImage: null, partialIndex: -1 });
+
+      try {
+        const response = await fetch('/api/image-gen', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: prompt.trim(),
+            quality: options.quality || 'low',
+            size: options.size || '1024x1024',
+            stylePreset: options.stylePreset || 'auto',
+            stream: true,
+          }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          const errorMsg = data.message || data.error || 'Error al generar imagen';
+          setState({
+            isGenerating: false,
+            error: errorMsg,
+            image: null,
+            partialImage: null,
+            partialIndex: -1,
+          });
+          return { success: false, error: errorMsg };
+        }
+
+        // Check if it's a streaming response
+        const contentType = response.headers.get('content-type');
+        if (!contentType?.includes('text/event-stream')) {
+          // Non-streaming fallback (plan doesn't support streaming)
+          const data = await response.json();
+          const imageResult = {
+            url: data.image.url,
+            revisedPrompt: data.image.revisedPrompt,
+            size: data.image.size,
+            quality: data.image.quality,
+            stylePreset: data.image.stylePreset,
+          };
+
+          setState({
+            isGenerating: false,
+            error: null,
+            image: imageResult,
+            partialImage: null,
+            partialIndex: -1,
+          });
+
+          return { success: true, url: imageResult.url, revisedPrompt: imageResult.revisedPrompt };
+        }
+
+        // Process streaming response
+        const reader = response.body?.getReader();
+        if (!reader) {
+          throw new Error('No response body');
+        }
+
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let finalResult: GenerateResult | null = null;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') continue;
+
+              try {
+                const parsed = JSON.parse(data);
+
+                if (parsed.event === 'partial' && parsed.image) {
+                  // Update partial image state
+                  setState((s) => ({
+                    ...s,
+                    partialImage: parsed.image,
+                    partialIndex: parsed.index,
+                  }));
+                  // Callback for external handling
+                  onPartialImage?.(parsed.image, parsed.index);
+                }
+
+                if (parsed.event === 'complete' && parsed.image) {
+                  const imageResult = {
+                    url: parsed.image.url,
+                    revisedPrompt: parsed.image.revisedPrompt,
+                    size: parsed.image.size,
+                    quality: parsed.image.quality,
+                    stylePreset: parsed.image.stylePreset,
+                  };
+
+                  setState({
+                    isGenerating: false,
+                    error: null,
+                    image: imageResult,
+                    partialImage: null,
+                    partialIndex: -1,
+                  });
+
+                  if (parsed.usage) {
+                    setUsage((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            remainingToday: parsed.usage.remainingToday,
+                            remainingMonth: parsed.usage.remainingMonth,
+                            todayCount: prev.dailyLimit - parsed.usage.remainingToday,
+                            monthCount: prev.monthlyLimit - parsed.usage.remainingMonth,
+                          }
+                        : null
+                    );
+                  }
+
+                  finalResult = { success: true, url: imageResult.url, revisedPrompt: imageResult.revisedPrompt };
+                }
+
+                if (parsed.event === 'error') {
+                  const errorMsg = parsed.error || 'Error al generar imagen';
+                  setState({
+                    isGenerating: false,
+                    error: errorMsg,
+                    image: null,
+                    partialImage: null,
+                    partialIndex: -1,
+                  });
+                  finalResult = { success: false, error: errorMsg };
+                }
+              } catch {
+                // Ignore parse errors
+              }
+            }
+          }
+        }
+
+        return finalResult || { success: false, error: 'No se recibió respuesta' };
+      } catch (error) {
+        console.error('[useImageGeneration] Streaming error:', error);
+        const errorMsg = 'Error de conexión';
+        setState({
+          isGenerating: false,
+          error: errorMsg,
+          image: null,
+          partialImage: null,
+          partialIndex: -1,
         });
         return { success: false, error: errorMsg };
       }
@@ -162,7 +355,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
 
   // Reset state
   const reset = useCallback(() => {
-    setState({ isGenerating: false, error: null, image: null });
+    setState({ isGenerating: false, error: null, image: null, partialImage: null, partialIndex: -1 });
   }, []);
 
   // Fetch usage on mount
@@ -177,6 +370,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
     ...state,
     usage,
     generate,
+    generateWithStreaming,
     fetchUsage,
     reset,
     canGenerate,
@@ -195,7 +389,12 @@ export function formatImageGenUsage(usage: ImageGenUsage | null): string {
  * Get quality label in Spanish
  */
 export function getQualityLabel(quality: ImageGenQuality): string {
-  return quality === 'hd' ? 'Alta Definición' : 'Estándar';
+  switch (quality) {
+    case 'low': return 'Rápida';
+    case 'medium': return 'Balanceada';
+    case 'high': return 'Alta Calidad';
+    default: return quality;
+  }
 }
 
 /**
@@ -204,19 +403,14 @@ export function getQualityLabel(quality: ImageGenQuality): string {
 export function getSizeLabel(size: ImageGenSize): string {
   switch (size) {
     case '1024x1024':
-      return 'Cuadrada (1024×1024)';
-    case '1024x1792':
-      return 'Vertical (1024×1792)';
-    case '1792x1024':
-      return 'Horizontal (1792×1024)';
+      return 'Cuadrada (1:1)';
+    case '1024x1536':
+      return 'Vertical (2:3)';
+    case '1536x1024':
+      return 'Horizontal (3:2)';
+    case 'auto':
+      return 'Automático';
     default:
       return size;
   }
-}
-
-/**
- * Get style label in Spanish
- */
-export function getStyleLabel(style: ImageGenStyle): string {
-  return style === 'vivid' ? 'Vívido' : 'Natural';
 }

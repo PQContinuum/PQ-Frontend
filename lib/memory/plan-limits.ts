@@ -76,11 +76,20 @@ export function getTTSLimits(planName: PlanName | null | undefined): TTSPlanLimi
 }
 
 // ============================================================================
-// IMAGE GENERATION (DALL-E) LIMITS
+// IMAGE GENERATION (gpt-image-1) LIMITS
 // ============================================================================
 
-export type ImageGenQuality = 'standard' | 'hd';
-export type ImageGenSize = '1024x1024' | '1024x1792' | '1792x1024';
+// gpt-image-1 quality levels: low (~$0.02), medium (~$0.07), high (~$0.19)
+export type ImageGenQuality = 'low' | 'medium' | 'high';
+
+// gpt-image-1 sizes: 1024x1024, 1024x1536 (portrait), 1536x1024 (landscape), auto
+export type ImageGenSize = '1024x1024' | '1024x1536' | '1536x1024' | 'auto';
+
+// Style presets are managed in lib/image-gen/style-presets.ts
+// These are prompt modifiers, not API parameters
+export type ImageStylePresetId = 'auto' | 'ghibli' | 'pixar' | 'photo' | 'anime' | 'cinematic' | 'watercolor' | 'oil' | 'minimalist' | 'retro' | 'comic' | 'concept';
+
+// Legacy type for backwards compatibility
 export type ImageGenStyle = 'vivid' | 'natural';
 
 export type ImageGenPlanLimits = {
@@ -90,14 +99,18 @@ export type ImageGenPlanLimits = {
   maxImagesPerMonth: number;
   // Si tiene acceso a generación de imágenes
   imageGenEnabled: boolean;
-  // Modelos permitidos
-  allowedModels: ('dall-e-2' | 'dall-e-3')[];
-  // Calidades permitidas
+  // Modelo usado (gpt-image-1 es el único soportado ahora)
+  allowedModels: ('gpt-image-1')[];
+  // Calidades permitidas (low, medium, high)
   allowedQualities: ImageGenQuality[];
   // Resolución máxima permitida
   maxResolution: ImageGenSize;
-  // Estilos permitidos
-  allowedStyles: ImageGenStyle[];
+  // Si tiene acceso a streaming de imágenes parciales
+  streamingEnabled: boolean;
+  // Número de imágenes parciales en streaming (0-3)
+  partialImages: number;
+  // Presets de estilo premium disponibles
+  premiumStyles: boolean;
   // Costo estimado máximo USD/mes
   estimatedMaxCostUSD: number;
 };
@@ -105,53 +118,60 @@ export type ImageGenPlanLimits = {
 /**
  * LÍMITES DE GENERACIÓN DE IMÁGENES POR PLAN
  * ==========================================
- * Basado en análisis financiero:
- * - Costo DALL-E 3 Standard 1024x1024: $0.04 USD por imagen
- * - Costo DALL-E 3 Standard 1024x1792: $0.08 USD por imagen
- * - Costo DALL-E 3 HD 1024x1024: $0.08 USD por imagen
- * - Costo DALL-E 3 HD 1024x1792: $0.12 USD por imagen
+ * Basado en análisis financiero gpt-image-1:
+ * - Costo low quality 1024x1024: ~$0.02 USD por imagen
+ * - Costo medium quality 1024x1024: ~$0.07 USD por imagen
+ * - Costo high quality 1024x1024: ~$0.19 USD por imagen
  * - Objetivo: mantener costo imágenes ≤ 20% del precio del plan
  */
 export const IMAGE_GEN_LIMITS: Record<PlanName, ImageGenPlanLimits> = {
   Free: {
-    maxImagesPerDay: 2,
-    maxImagesPerMonth: 10,
+    maxImagesPerDay: 3,
+    maxImagesPerMonth: 15,
     imageGenEnabled: true,
-    allowedModels: ['dall-e-3'],
-    allowedQualities: ['standard'],
+    allowedModels: ['gpt-image-1'],
+    allowedQualities: ['low'],
     maxResolution: '1024x1024',
-    allowedStyles: ['vivid', 'natural'],
-    estimatedMaxCostUSD: 0.40,
+    streamingEnabled: false,
+    partialImages: 0,
+    premiumStyles: false,
+    estimatedMaxCostUSD: 0.30,
   },
   Basic: {
-    maxImagesPerDay: 5,
-    maxImagesPerMonth: 75,
+    maxImagesPerDay: 10,
+    maxImagesPerMonth: 100,
     imageGenEnabled: true,
-    allowedModels: ['dall-e-3'],
-    allowedQualities: ['standard'],
+    allowedModels: ['gpt-image-1'],
+    allowedQualities: ['low', 'medium'],
     maxResolution: '1024x1024',
-    allowedStyles: ['vivid', 'natural'],
-    estimatedMaxCostUSD: 3.00,
+    streamingEnabled: true,
+    partialImages: 1,
+    premiumStyles: false,
+    estimatedMaxCostUSD: 7.00,
   },
   Professional: {
-    maxImagesPerDay: 15,
-    maxImagesPerMonth: 300,
+    maxImagesPerDay: 25,
+    maxImagesPerMonth: 400,
     imageGenEnabled: true,
-    allowedModels: ['dall-e-3'],
-    allowedQualities: ['standard', 'hd'],
-    maxResolution: '1024x1792',
-    allowedStyles: ['vivid', 'natural'],
-    estimatedMaxCostUSD: 12.00,
+    allowedModels: ['gpt-image-1'],
+    allowedQualities: ['low', 'medium', 'high'],
+    maxResolution: '1536x1024',
+    streamingEnabled: true,
+    partialImages: 2,
+    premiumStyles: true,
+    estimatedMaxCostUSD: 28.00,
   },
   Enterprise: {
-    maxImagesPerDay: 50,
-    maxImagesPerMonth: 1000,
+    maxImagesPerDay: 100,
+    maxImagesPerMonth: 2000,
     imageGenEnabled: true,
-    allowedModels: ['dall-e-3'],
-    allowedQualities: ['standard', 'hd'],
-    maxResolution: '1024x1792',
-    allowedStyles: ['vivid', 'natural'],
-    estimatedMaxCostUSD: 40.00,
+    allowedModels: ['gpt-image-1'],
+    allowedQualities: ['low', 'medium', 'high'],
+    maxResolution: '1536x1024',
+    streamingEnabled: true,
+    partialImages: 3,
+    premiumStyles: true,
+    estimatedMaxCostUSD: 140.00,
   },
 };
 
@@ -166,35 +186,66 @@ export function getImageGenLimits(planName: PlanName | null | undefined): ImageG
 }
 
 /**
- * Calcula el costo de una imagen según sus parámetros
+ * Calcula el costo de una imagen según sus parámetros (gpt-image-1)
+ * Precios aproximados basados en la documentación de OpenAI 2025
  */
 export function calculateImageCost(
   quality: ImageGenQuality,
   size: ImageGenSize
 ): number {
-  const COSTS: Record<ImageGenQuality, Record<ImageGenSize, number>> = {
-    'standard': {
-      '1024x1024': 0.04,
-      '1024x1792': 0.08,
-      '1792x1024': 0.08,
-    },
-    'hd': {
-      '1024x1024': 0.08,
-      '1024x1792': 0.12,
-      '1792x1024': 0.12,
-    },
+  // gpt-image-1 pricing (approximate USD per image)
+  const BASE_COSTS: Record<ImageGenQuality, number> = {
+    'low': 0.02,
+    'medium': 0.07,
+    'high': 0.19,
   };
-  return COSTS[quality][size];
+
+  // Size multiplier (larger sizes cost more)
+  const SIZE_MULTIPLIER: Record<ImageGenSize, number> = {
+    '1024x1024': 1.0,
+    '1024x1536': 1.3,
+    '1536x1024': 1.3,
+    'auto': 1.0, // Default to square cost
+  };
+
+  return BASE_COSTS[quality] * SIZE_MULTIPLIER[size];
 }
 
 /**
  * Obtiene los tamaños permitidos según la resolución máxima del plan
  */
 export function getAllowedSizes(maxResolution: ImageGenSize): ImageGenSize[] {
-  if (maxResolution === '1024x1792' || maxResolution === '1792x1024') {
-    return ['1024x1024', '1024x1792', '1792x1024'];
+  if (maxResolution === '1536x1024' || maxResolution === '1024x1536') {
+    return ['1024x1024', '1024x1536', '1536x1024'];
+  }
+  if (maxResolution === 'auto') {
+    return ['1024x1024', '1024x1536', '1536x1024', 'auto'];
   }
   return ['1024x1024'];
+}
+
+/**
+ * Obtiene la etiqueta de calidad en español
+ */
+export function getQualityLabel(quality: ImageGenQuality): string {
+  switch (quality) {
+    case 'low': return 'Rápida';
+    case 'medium': return 'Balanceada';
+    case 'high': return 'Alta Calidad';
+    default: return quality;
+  }
+}
+
+/**
+ * Obtiene la descripción de calidad
+ */
+export function getQualityDescription(quality: ImageGenQuality): string {
+  switch (quality) {
+    case 'low': return 'Generación rápida, ideal para borradores';
+    case 'medium': return 'Balance entre velocidad y calidad';
+    case 'high': return 'Máxima calidad y detalle';
+    default: return '';
+  }
 }
 
 // ============================================================================

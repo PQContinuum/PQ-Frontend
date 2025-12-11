@@ -9,13 +9,13 @@ import {
   type PlanName,
   type ImageGenQuality,
   type ImageGenSize,
-  type ImageGenStyle,
 } from "./memory/plan-limits";
 
 /**
  * Image Generation Usage Tracking Library
  * =======================================
  * Tracks and enforces image generation limits per plan.
+ * Updated for gpt-image-1 model (2025)
  */
 
 export interface ImageGenUsageInfo {
@@ -30,6 +30,10 @@ export interface ImageGenUsageInfo {
   allowedQualities: ImageGenQuality[];
   allowedSizes: ImageGenSize[];
   maxResolution: ImageGenSize;
+  // gpt-image-1 specific features
+  streamingEnabled: boolean;
+  partialImages: number;
+  premiumStyles: boolean;
 }
 
 /**
@@ -99,6 +103,10 @@ export async function getImageGenUsage(userId: string): Promise<ImageGenUsageInf
       allowedQualities: limits.allowedQualities,
       allowedSizes: getAllowedSizes(limits.maxResolution),
       maxResolution: limits.maxResolution,
+      // gpt-image-1 specific features
+      streamingEnabled: limits.streamingEnabled,
+      partialImages: limits.partialImages,
+      premiumStyles: limits.premiumStyles,
     };
   } catch (error) {
     console.error("[ImageGen Usage] Error getting usage:", error);
@@ -106,15 +114,18 @@ export async function getImageGenUsage(userId: string): Promise<ImageGenUsageInf
     return {
       todayCount: 0,
       monthCount: 0,
-      dailyLimit: 2,
-      monthlyLimit: 10,
+      dailyLimit: 3,
+      monthlyLimit: 15,
       canGenerate: true,
-      remainingToday: 2,
-      remainingMonth: 10,
+      remainingToday: 3,
+      remainingMonth: 15,
       planName: "Free",
-      allowedQualities: ['standard'],
+      allowedQualities: ['low'],
       allowedSizes: ['1024x1024'],
       maxResolution: '1024x1024',
+      streamingEnabled: false,
+      partialImages: 0,
+      premiumStyles: false,
     };
   }
 }
@@ -191,7 +202,7 @@ export async function recordImageGenUsage(
     model?: string;
     quality: ImageGenQuality;
     size: ImageGenSize;
-    style?: ImageGenStyle;
+    stylePreset?: string; // Style preset ID (e.g., 'ghibli', 'pixar')
     storagePath?: string;
     originalUrl?: string;
     generationTimeMs?: number;
@@ -204,10 +215,10 @@ export async function recordImageGenUsage(
       userId,
       prompt: data.prompt,
       revisedPrompt: data.revisedPrompt,
-      model: data.model || 'dall-e-3',
+      model: data.model || 'gpt-image-1',
       quality: data.quality,
       size: data.size,
-      style: data.style || 'vivid',
+      style: data.stylePreset || 'auto', // Now stores style preset ID
       storagePath: data.storagePath,
       originalUrl: data.originalUrl,
       costUsd: costUsd.toString(),
