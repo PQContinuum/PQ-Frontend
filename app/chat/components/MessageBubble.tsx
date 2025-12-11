@@ -165,9 +165,12 @@ const ChatImage = ({ src, alt, ...props }: React.ImgHTMLAttributes<HTMLImageElem
 
         {/* Hover overlay with gradient and actions */}
         {!isLoading && (
-          <span className="absolute inset-0 rounded-2xl overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <span
+            className="absolute inset-0 rounded-2xl overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+            onClick={() => setShowLightbox(true)}
+          >
             {/* Bottom gradient for visibility */}
-            <span className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+            <span className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 via-black/20 to-transparent pointer-events-none" />
 
             {/* Action buttons */}
             <span className="absolute inset-x-0 bottom-0 flex items-center justify-between p-3">
@@ -176,7 +179,7 @@ const ChatImage = ({ src, alt, ...props }: React.ImgHTMLAttributes<HTMLImageElem
                 <TooltipTrigger asChild>
                   <button
                     type="button"
-                    onClick={handleDownload}
+                    onClick={(e) => { e.stopPropagation(); handleDownload(e); }}
                     className="p-2 text-white hover:scale-110 transition-transform duration-150"
                   >
                     <svg className="size-5 drop-shadow-lg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
