@@ -577,25 +577,32 @@ export const MessageInput = memo(function MessageInput() {
       duration: videoDuration,
       aspectRatio: videoAspectRatio,
       generateAudio: true,
+      conversationId: currentConversationId || undefined,
+      messageId: assistantMessageId,
     });
 
     clearInterval(progressInterval);
 
     let assistantContent: string;
     if (result.success) {
-      // Display video with HTML5 video tag format
-      assistantContent = `<video controls src="${result.url}" style="max-width:100%;border-radius:12px;"></video>`;
+      // Job created successfully - video is being generated in background
+      // Show a processing message with jobId for recovery
+      assistantContent = `🎬 Video en proceso de generación. Puedes cerrar esta ventana y regresar más tarde.`;
       updateMessage(assistantMessageId, () => assistantContent);
-      // Marcar generación como completada
-      updateMessageGenerationState(assistantMessageId, { type: 'video', status: 'completed' });
+      // Keep generating state - will be updated when job completes via polling
+      updateMessageGenerationState(assistantMessageId, {
+        type: 'video',
+        status: 'generating',
+        jobId: result.jobId,
+      });
     } else {
       assistantContent = `❌ ${result.error}`;
       updateMessage(assistantMessageId, () => assistantContent);
-      // Marcar generación como error
+      // Mark as error
       updateMessageGenerationState(assistantMessageId, { type: 'video', status: 'error' });
     }
 
-    // Save assistant message to database with metadata
+    // Save assistant message to database with metadata including jobId
     if (currentConversationId) {
       try {
         await fetch(`/api/conversations/${currentConversationId}/messages`, {
@@ -605,9 +612,13 @@ export const MessageInput = memo(function MessageInput() {
             id: assistantMessageId,
             role: 'assistant',
             content: assistantContent,
-            // Guardar estado de generación en metadata para persistencia
+            // Store jobId in metadata for recovery when user returns
             metadata: {
-              generationState: { type: 'video', status: result.success ? 'completed' : 'error' }
+              generationState: {
+                type: 'video',
+                status: result.success ? 'generating' : 'error',
+                jobId: result.success ? result.jobId : undefined,
+              }
             },
           }),
         });
@@ -618,6 +629,11 @@ export const MessageInput = memo(function MessageInput() {
       }
     }
 
+    // Note: We don't call setStreaming(false) or stopGeneration() immediately
+    // because the video is still generating in background. The useVideoGeneration
+    // hook will update the state when the job completes via polling.
+    // However, for now we'll stop the local generating state since the job
+    // system handles it independently.
     setStreaming(false);
     stopGeneration();
   }, [input, videoModeType, videoImageUrl, videoDuration, videoAspectRatio, generateVideo, isGeneratingVideo, addMessage, updateMessage, updateMessageGenerationState, setStreaming, startGeneration, stopGeneration, conversationId, createConversationMutation, setConversationId, queryClient]);

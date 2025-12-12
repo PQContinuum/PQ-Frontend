@@ -119,7 +119,8 @@ export function VideoImageUpload({
 
       onImageUploaded(data.url);
     } catch (err) {
-      console.error('[VideoImageUpload] Error:', err);
+      console.error('[VideoImageUpload] Error completo:', err);
+      console.error('[VideoImageUpload] Tipo de archivo:', file.type, 'Nombre:', file.name);
       setError(err instanceof Error ? err.message : 'Error al subir');
       setPreviewUrl(null);
     } finally {

@@ -4,18 +4,22 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 import {
   canGenerateVideo,
   validateVideoParams,
-  recordVideoGenUsage,
   getVideoGenUsage,
 } from '@/lib/video-gen-usage';
 import { getUserPlanName } from '@/lib/subscription';
 import { getVideoGenLimits } from '@/lib/memory/plan-limits';
+import {
+  createGenerationJob,
+  updateGenerationJob,
+} from '@/db/queries/generation-jobs';
 import type {
   VideoGenDuration,
   VideoGenAspectRatio,
   VideoGenMode,
 } from '@/lib/memory/plan-limits';
 
-export const maxDuration = 300; // 5 minutes - video generation takes time
+// Shorter timeout - we just submit to queue and return
+export const maxDuration = 30;
 
 // Configure fal client
 fal.config({
@@ -42,22 +46,12 @@ interface ImageToVideoInput {
   tail_image_url?: string;
 }
 
-interface FalVideoResult {
-  video: {
-    url: string;
-    file_size?: number;
-    file_name?: string;
-    content_type?: string;
-  };
-}
-
 /**
  * POST /api/video-gen
  * Generate a video using Kling V2.6 Pro via Fal.ai
+ * Now uses background job system with webhooks
  */
 export async function POST(request: NextRequest) {
-  const startTime = Date.now();
-
   try {
     // 1. Authentication
     const supabase = await createSupabaseServerClient();
@@ -76,6 +70,8 @@ export async function POST(request: NextRequest) {
       duration = '5',
       aspectRatio = '16:9',
       generateAudio,
+      conversationId,
+      messageId,
     } = body as {
       prompt: string;
       mode?: VideoGenMode;
@@ -83,6 +79,8 @@ export async function POST(request: NextRequest) {
       duration?: VideoGenDuration;
       aspectRatio?: VideoGenAspectRatio;
       generateAudio?: boolean;
+      conversationId?: string;
+      messageId?: string;
     };
 
     // 3. Validate input
@@ -132,13 +130,36 @@ export async function POST(request: NextRequest) {
     const shouldGenerateAudio = generateAudio ?? planLimits.audioEnabled;
     const finalAudioEnabled = shouldGenerateAudio && planLimits.audioEnabled;
 
-    // 7. Select endpoint based on mode
+    // 7. Create job in database FIRST
+    const inputParams = {
+      prompt: prompt.trim(),
+      mode,
+      duration,
+      aspectRatio,
+      imageUrl,
+      generateAudio: finalAudioEnabled,
+    };
+
+    const job = await createGenerationJob({
+      userId: user.id,
+      conversationId: conversationId || null,
+      messageId: messageId || null,
+      jobType: 'video',
+      status: 'pending',
+      inputParams: JSON.stringify(inputParams),
+      provider: 'fal-ai',
+      progressMessage: 'Iniciando generación...',
+    });
+
+    console.log(`[VideoGen] Created job ${job.id} for user ${user.id}`);
+
+    // 8. Select endpoint based on mode
     const endpoint = mode === 'image-to-video'
       ? 'fal-ai/kling-video/v2.6/pro/image-to-video'
       : 'fal-ai/kling-video/v2.6/pro/text-to-video';
 
-    // 8. Build input based on mode
-    const input: TextToVideoInput | ImageToVideoInput = mode === 'image-to-video'
+    // 9. Build input based on mode
+    const falInput: TextToVideoInput | ImageToVideoInput = mode === 'image-to-video'
       ? {
           prompt: prompt.trim(),
           image_url: imageUrl!,
@@ -156,107 +177,56 @@ export async function POST(request: NextRequest) {
           generate_audio: finalAudioEnabled,
         };
 
-    console.log(`[VideoGen] Starting ${mode} generation for user ${user.id}`);
-    console.log(`[VideoGen] Endpoint: ${endpoint}`);
-    console.log(`[VideoGen] Audio: ${finalAudioEnabled}, Duration: ${duration}s`);
+    // 10. Get webhook URL
+    const webhookUrl = process.env.FAL_WEBHOOK_URL ||
+      `${process.env.NEXT_PUBLIC_APP_URL || 'https://continuumai.app'}/api/webhooks/fal-ai`;
 
-    // 9. Call Fal.ai API with queue (video generation is long-running)
-    const result = await fal.subscribe(endpoint, {
-      input,
-      logs: true,
-      onQueueUpdate: (update) => {
-        if (update.status === 'IN_PROGRESS' && update.logs) {
-          update.logs.forEach((log) => {
-            console.log(`[VideoGen] Progress: ${log.message}`);
-          });
-        }
-      },
-    }) as { data: FalVideoResult; requestId: string };
+    console.log(`[VideoGen] Submitting to Fal.ai queue with webhook: ${webhookUrl}`);
 
-    const generationTime = Date.now() - startTime;
-    console.log(`[VideoGen] Completed in ${generationTime}ms`);
-
-    if (!result.data?.video?.url) {
-      console.error('[VideoGen] No video URL in response:', result);
-      return NextResponse.json(
-        { error: 'No se pudo generar el video' },
-        { status: 500 }
-      );
-    }
-
-    // 10. Download and save video to Supabase Storage
-    const videoUrl = result.data.video.url;
-    let savedVideoUrl = videoUrl;
-    let storagePath: string | undefined;
-
+    // 11. Submit to Fal.ai queue (non-blocking)
     try {
-      const videoResponse = await fetch(videoUrl);
-      if (videoResponse.ok) {
-        const videoBuffer = await videoResponse.arrayBuffer();
-        const fileName = `video-${Date.now()}.mp4`;
-        storagePath = `${user.id}/${fileName}`;
+      const queueResult = await fal.queue.submit(endpoint, {
+        input: falInput,
+        webhookUrl,
+      });
 
-        const { error: uploadError } = await supabase.storage
-          .from('generated-videos')
-          .upload(storagePath, videoBuffer, {
-            contentType: 'video/mp4',
-            upsert: false,
-          });
+      const requestId = queueResult.request_id;
+      console.log(`[VideoGen] Submitted to queue, request_id: ${requestId}`);
 
-        if (!uploadError) {
-          // Get signed URL (valid for 7 days)
-          const { data: signedData } = await supabase.storage
-            .from('generated-videos')
-            .createSignedUrl(storagePath, 60 * 60 * 24 * 7);
-          if (signedData?.signedUrl) {
-            savedVideoUrl = signedData.signedUrl;
-          }
-          console.log(`[VideoGen] Saved to storage: ${storagePath}`);
-        } else {
-          console.warn('[VideoGen] Failed to save to storage:', uploadError);
-        }
-      }
-    } catch (saveError) {
-      console.warn('[VideoGen] Error saving video:', saveError);
-      // Continue with original URL if save fails
+      // 12. Update job with provider request ID
+      await updateGenerationJob(job.id, user.id, {
+        status: 'queued',
+        providerRequestId: requestId,
+        startedAt: new Date(),
+        progressMessage: 'En cola de generación...',
+      });
+
+      // 13. Return job info immediately
+      return NextResponse.json({
+        success: true,
+        jobId: job.id,
+        status: 'queued',
+        message: 'Video en proceso de generación. Puedes cerrar esta página y regresar más tarde.',
+        usage: {
+          remainingToday: Math.max(0, (usage?.remainingToday || 1) - 1),
+          remainingMonth: Math.max(0, (usage?.remainingMonth || 1) - 1),
+          dailyLimit: usage?.dailyLimit,
+          monthlyLimit: usage?.monthlyLimit,
+        },
+      });
+
+    } catch (falError) {
+      console.error('[VideoGen] Fal.ai queue submission failed:', falError);
+
+      // Update job as failed
+      await updateGenerationJob(job.id, user.id, {
+        status: 'failed',
+        errorMessage: falError instanceof Error ? falError.message : 'Error al enviar a Fal.ai',
+        completedAt: new Date(),
+      });
+
+      throw falError;
     }
-
-    // 11. Record usage
-    recordVideoGenUsage(user.id, {
-      prompt: prompt.trim(),
-      mode,
-      duration,
-      aspectRatio,
-      audioEnabled: finalAudioEnabled,
-      sourceImageUrl: imageUrl,
-      storagePath,
-      originalUrl: videoUrl,
-      requestId: result.requestId,
-      generationTimeMs: generationTime,
-    }).catch((err) => {
-      console.error('[VideoGen] Failed to record usage:', err);
-    });
-
-    // 12. Return result with updated usage
-    return NextResponse.json({
-      success: true,
-      video: {
-        url: savedVideoUrl,
-        originalUrl: videoUrl,
-        duration,
-        aspectRatio,
-        mode,
-        audioEnabled: finalAudioEnabled,
-        generationTimeMs: generationTime,
-      },
-      usage: {
-        remainingToday: Math.max(0, (usage?.remainingToday || 1) - 1),
-        remainingMonth: Math.max(0, (usage?.remainingMonth || 1) - 1),
-        dailyLimit: usage?.dailyLimit,
-        monthlyLimit: usage?.monthlyLimit,
-      },
-      requestId: result.requestId,
-    });
 
   } catch (error) {
     console.error('[VideoGen] Error:', error);

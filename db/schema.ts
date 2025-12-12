@@ -217,6 +217,81 @@ export const videoGenUsage = pgTable("video_gen_usage", {
     .defaultNow(),
 });
 
+// Enum para el tipo de job de generación
+export const generationJobTypeEnum = pgEnum("generation_job_type", [
+  "video",
+  "image",
+  "chat"
+]);
+
+// Enum para el estado del job de generación
+export const generationJobStatusEnum = pgEnum("generation_job_status", [
+  "pending",     // Job creado, no iniciado
+  "queued",      // Enviado al provider (Fal.ai/OpenAI)
+  "processing",  // Provider está generando
+  "uploading",   // Descargando resultado y subiendo a storage
+  "completed",   // Finalizado exitosamente
+  "failed",      // Falló con error
+  "cancelled"    // Usuario canceló
+]);
+
+// Tabla de jobs de generación (video, imagen, chat)
+// Permite que las generaciones continúen aunque el usuario cierre la app
+export const generationJobs = pgTable("generation_jobs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull(), // Referencia a auth.users
+  conversationId: uuid("conversation_id").references(() => conversations.id, { onDelete: "set null" }),
+  messageId: uuid("message_id").references(() => messages.id, { onDelete: "set null" }),
+
+  // Tipo y estado del job
+  jobType: generationJobTypeEnum("job_type").notNull(),
+  status: generationJobStatusEnum("status").notNull().default("pending"),
+
+  // Parámetros de entrada (JSON)
+  // Video: { prompt, mode, duration, aspectRatio, imageUrl, generateAudio }
+  // Image: { prompt, quality, size, stylePreset }
+  // Chat: { prompt, geoCultural, systemPrompt }
+  inputParams: text("input_params").notNull(),
+
+  // Tracking del provider
+  provider: varchar("provider", { length: 50 }), // 'fal-ai', 'openai'
+  providerRequestId: varchar("provider_request_id", { length: 255 }), // ID de la solicitud
+  providerStatus: varchar("provider_status", { length: 50 }), // Estado raw del provider
+
+  // Resultado
+  resultUrl: text("result_url"), // URL del resultado del provider
+  resultContent: text("result_content"), // Para chat: contenido de la respuesta
+  storagePath: text("storage_path"), // Path en Supabase Storage
+  publicUrl: text("public_url"), // URL pública firmada
+  publicUrlExpiresAt: timestamp("public_url_expires_at", { withTimezone: true }),
+
+  // Errores y reintentos
+  errorMessage: text("error_message"),
+  errorCode: varchar("error_code", { length: 50 }),
+  retryCount: integer("retry_count").notNull().default(0),
+  maxRetries: integer("max_retries").notNull().default(3),
+
+  // Progreso
+  progressPercent: integer("progress_percent"), // 0-100
+  progressMessage: text("progress_message"), // "Generando video..."
+
+  // Tiempos
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  generationTimeMs: integer("generation_time_ms"),
+
+  // Costo
+  costUsd: numeric("cost_usd", { precision: 10, scale: 6 }),
+
+  // Timestamps
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 // Tabla de attachments de conversaciones
 export const conversationAttachments = pgTable("conversation_attachments", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -292,6 +367,17 @@ export const conversationAttachmentsRelations = relations(conversationAttachment
   }),
 }));
 
+export const generationJobsRelations = relations(generationJobs, ({ one }) => ({
+  conversation: one(conversations, {
+    fields: [generationJobs.conversationId],
+    references: [conversations.id],
+  }),
+  message: one(messages, {
+    fields: [generationJobs.messageId],
+    references: [messages.id],
+  }),
+}));
+
 // Tipos TypeScript inferidos del esquema
 export type Conversation = typeof conversations.$inferSelect;
 export type NewConversation = typeof conversations.$inferInsert;
@@ -309,3 +395,5 @@ export type ImageGenUsage = typeof imageGenUsage.$inferSelect;
 export type NewImageGenUsage = typeof imageGenUsage.$inferInsert;
 export type VideoGenUsage = typeof videoGenUsage.$inferSelect;
 export type NewVideoGenUsage = typeof videoGenUsage.$inferInsert;
+export type GenerationJob = typeof generationJobs.$inferSelect;
+export type NewGenerationJob = typeof generationJobs.$inferInsert;

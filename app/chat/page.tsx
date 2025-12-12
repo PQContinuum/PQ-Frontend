@@ -51,6 +51,7 @@ import { MessageInput } from './components/MessageInput';
 import { ConversationHistory } from './components/ConversationHistory';
 import { SettingsDialog } from './components/SettingsDialog';
 import { TTSSettingsModal } from './components/TTSSettingsModal';
+import { PendingJobsBanner } from './components/PendingJobsBanner';
 import { useMessages, useReplaceMessages, useSetConversationId } from './store';
 import { createSupabaseBrowserClient } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
@@ -137,6 +138,9 @@ export default function ChatPage() {
 
   return (
     <SidebarProvider>
+      {/* Banner de jobs pendientes - se muestra cuando hay generaciones en progreso */}
+      <PendingJobsBanner />
+
       <Sidebar collapsible="icon" className="border-r border-black/5">
         <SidebarHeader className="space-y-2 bg-[#f6f6f6]">
           <Link

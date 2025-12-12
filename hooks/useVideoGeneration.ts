@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { useGenerationJob, getJobStatusMessage, type GenerationJob } from './useGenerationJobs';
 import type {
   VideoGenDuration,
   VideoGenAspectRatio,
@@ -16,6 +17,7 @@ interface VideoGenState {
   isGenerating: boolean;
   error: string | null;
   progress: string | null;
+  jobId: string | null;
   video: {
     url: string;
     originalUrl?: string;
@@ -46,10 +48,12 @@ interface GenerateOptions {
   duration?: VideoGenDuration;
   aspectRatio?: VideoGenAspectRatio;
   generateAudio?: boolean;
+  conversationId?: string;
+  messageId?: string;
 }
 
 type GenerateResult =
-  | { success: true; url: string }
+  | { success: true; jobId: string }
   | { success: false; error: string };
 
 interface UseVideoGenerationReturn extends VideoGenState {
@@ -58,6 +62,7 @@ interface UseVideoGenerationReturn extends VideoGenState {
   fetchUsage: () => Promise<void>;
   reset: () => void;
   canGenerate: boolean;
+  job: GenerationJob | null;
 }
 
 export function useVideoGeneration(): UseVideoGenerationReturn {
@@ -65,9 +70,68 @@ export function useVideoGeneration(): UseVideoGenerationReturn {
     isGenerating: false,
     error: null,
     progress: null,
+    jobId: null,
     video: null,
   });
   const [usage, setUsage] = useState<VideoGenUsage | null>(null);
+  const lastCompletedJobIdRef = useRef<string | null>(null);
+
+  // Use the job polling hook
+  const { data: job } = useGenerationJob(state.jobId);
+
+  // Update state based on job status
+  useEffect(() => {
+    if (!job) return;
+
+    // Avoid processing the same completed job multiple times
+    if (job.status === 'completed' && lastCompletedJobIdRef.current === job.id) {
+      return;
+    }
+
+    const progress = getJobStatusMessage(job);
+
+    if (job.status === 'completed') {
+      lastCompletedJobIdRef.current = job.id;
+
+      // Parse input params to get video metadata
+      let inputParams: { mode?: VideoGenMode; duration?: VideoGenDuration; aspectRatio?: VideoGenAspectRatio } = {};
+      try {
+        inputParams = JSON.parse(job.inputParams);
+      } catch {
+        // ignore parse error
+      }
+
+      setState({
+        isGenerating: false,
+        error: null,
+        progress: null,
+        jobId: job.id,
+        video: {
+          url: job.publicUrl || job.resultUrl || '',
+          originalUrl: job.resultUrl || undefined,
+          duration: (inputParams.duration || '5') as VideoGenDuration,
+          aspectRatio: (inputParams.aspectRatio || '16:9') as VideoGenAspectRatio,
+          mode: (inputParams.mode || 'text-to-video') as VideoGenMode,
+          generationTimeMs: job.generationTimeMs || undefined,
+        },
+      });
+    } else if (job.status === 'failed' || job.status === 'cancelled') {
+      setState({
+        isGenerating: false,
+        error: job.errorMessage || 'Error al generar video',
+        progress: null,
+        jobId: job.id,
+        video: null,
+      });
+    } else {
+      // Still processing
+      setState((s) => ({
+        ...s,
+        progress,
+        isGenerating: true,
+      }));
+    }
+  }, [job]);
 
   const generate = useCallback(
     async (prompt: string, options: GenerateOptions = {}): Promise<GenerateResult> => {
@@ -98,17 +162,18 @@ export function useVideoGeneration(): UseVideoGenerationReturn {
         return { success: false, error: errorMsg };
       }
 
+      // Reset last completed job ref for new generation
+      lastCompletedJobIdRef.current = null;
+
       setState({
         isGenerating: true,
         error: null,
         progress: 'Iniciando generación...',
+        jobId: null,
         video: null,
       });
 
       try {
-        // Update progress
-        setState((s) => ({ ...s, progress: 'Enviando solicitud a Continuum Video Pro...' }));
-
         const response = await fetch('/api/video-gen', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -119,11 +184,10 @@ export function useVideoGeneration(): UseVideoGenerationReturn {
             duration: options.duration || '5',
             aspectRatio: options.aspectRatio || '16:9',
             generateAudio: options.generateAudio ?? (usage?.audioEnabled ?? true),
+            conversationId: options.conversationId,
+            messageId: options.messageId,
           }),
         });
-
-        // Update progress during generation
-        setState((s) => ({ ...s, progress: 'Generando video (puede tomar 1-3 minutos)...' }));
 
         const data = await response.json();
 
@@ -133,6 +197,7 @@ export function useVideoGeneration(): UseVideoGenerationReturn {
             isGenerating: false,
             error: errorMsg,
             progress: null,
+            jobId: null,
             video: null,
           });
 
@@ -154,20 +219,14 @@ export function useVideoGeneration(): UseVideoGenerationReturn {
           return { success: false, error: errorMsg };
         }
 
-        const videoResult = {
-          url: data.video.url,
-          originalUrl: data.video.originalUrl,
-          duration: data.video.duration as VideoGenDuration,
-          aspectRatio: data.video.aspectRatio as VideoGenAspectRatio,
-          mode: data.video.mode as VideoGenMode,
-          generationTimeMs: data.video.generationTimeMs,
-        };
-
+        // Job created successfully - update state with jobId
+        // The useEffect above will handle polling and state updates
         setState({
-          isGenerating: false,
+          isGenerating: true,
           error: null,
-          progress: null,
-          video: videoResult,
+          progress: data.message || 'Video en proceso de generación...',
+          jobId: data.jobId,
+          video: null,
         });
 
         // Update usage if returned
@@ -185,7 +244,7 @@ export function useVideoGeneration(): UseVideoGenerationReturn {
           );
         }
 
-        return { success: true, url: videoResult.url };
+        return { success: true, jobId: data.jobId };
 
       } catch (error) {
         console.error('[useVideoGeneration] Error:', error);
@@ -194,6 +253,7 @@ export function useVideoGeneration(): UseVideoGenerationReturn {
           isGenerating: false,
           error: errorMsg,
           progress: null,
+          jobId: null,
           video: null,
         });
         return { success: false, error: errorMsg };
@@ -218,10 +278,12 @@ export function useVideoGeneration(): UseVideoGenerationReturn {
   }, []);
 
   const reset = useCallback(() => {
+    lastCompletedJobIdRef.current = null;
     setState({
       isGenerating: false,
       error: null,
       progress: null,
+      jobId: null,
       video: null,
     });
   }, []);
@@ -241,6 +303,7 @@ export function useVideoGeneration(): UseVideoGenerationReturn {
     fetchUsage,
     reset,
     canGenerate,
+    job: job || null,
   };
 }
 

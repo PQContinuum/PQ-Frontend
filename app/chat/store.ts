@@ -13,6 +13,7 @@ export type GenerationMode = 'none' | 'image' | 'video' | 'geocultural';
 export type MessageGenerationState = {
   type: 'image' | 'video' | 'geocultural';
   status: 'generating' | 'completed' | 'error';
+  jobId?: string; // ID del job de generación para recuperación
 };
 
 export type ChatMessage = {

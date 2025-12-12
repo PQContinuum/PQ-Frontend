@@ -2,6 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactNode, useState } from 'react';
+import { JobRecoveryProvider } from './job-recovery-provider';
 
 type QueryProviderProps = {
   children: ReactNode;
@@ -29,7 +30,9 @@ export function QueryProvider({ children }: QueryProviderProps) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {children}
+      <JobRecoveryProvider>
+        {children}
+      </JobRecoveryProvider>
     </QueryClientProvider>
   );
 }
