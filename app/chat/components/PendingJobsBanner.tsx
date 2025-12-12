@@ -1,8 +1,9 @@
 "use client";
 
 import { usePendingJobs, getJobStatusMessage, type GenerationJob } from "@/hooks/useGenerationJobs";
-import { Loader2, Video, Image, MessageSquare, Check, X } from "lucide-react";
+import { Loader2, Video, Image, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
 
 interface PendingJobsBannerProps {
   className?: string;
@@ -12,134 +13,116 @@ interface PendingJobsBannerProps {
 function getJobIcon(jobType: string) {
   switch (jobType) {
     case "video":
-      return <Video className="h-4 w-4" />;
+      return <Video className="h-3.5 w-3.5" />;
     case "image":
-      return <Image className="h-4 w-4" />;
-    case "chat":
-      return <MessageSquare className="h-4 w-4" />;
+      return <Image className="h-3.5 w-3.5" />;
     default:
-      return <Loader2 className="h-4 w-4" />;
+      return <Loader2 className="h-3.5 w-3.5" />;
   }
 }
 
 function getJobTypeLabel(jobType: string): string {
   switch (jobType) {
     case "video":
-      return "video";
+      return "Video";
     case "image":
-      return "imagen";
-    case "chat":
-      return "mensaje";
+      return "Imagen";
     default:
-      return "proceso";
+      return "Proceso";
   }
 }
 
-function JobItem({ job, onClick }: { job: GenerationJob; onClick?: (job: GenerationJob) => void }) {
-  const statusMessage = getJobStatusMessage(job);
-  const isActive = ["pending", "queued", "processing", "uploading"].includes(job.status);
-
-  return (
-    <button
-      onClick={() => onClick?.(job)}
-      className={cn(
-        "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors",
-        "bg-white/10 hover:bg-white/20",
-        onClick && "cursor-pointer"
-      )}
-    >
-      <span className="flex items-center gap-1.5">
-        {isActive ? (
-          <Loader2 className="h-3 w-3 animate-spin text-blue-400" />
-        ) : job.status === "completed" ? (
-          <Check className="h-3 w-3 text-green-400" />
-        ) : (
-          <X className="h-3 w-3 text-red-400" />
-        )}
-        {getJobIcon(job.jobType)}
-      </span>
-      <span className="text-white/80">{statusMessage}</span>
-    </button>
-  );
-}
-
-export function PendingJobsBanner({ className, onJobClick }: PendingJobsBannerProps) {
+export function PendingJobsBanner({ className }: PendingJobsBannerProps) {
   const { data: pendingJobs, isLoading } = usePendingJobs();
+  const [isDismissed, setIsDismissed] = useState(false);
 
-  // Don't show if loading or no jobs
-  if (isLoading || !pendingJobs || pendingJobs.length === 0) {
+  // Don't show if loading, no jobs, or dismissed
+  if (isLoading || !pendingJobs || pendingJobs.length === 0 || isDismissed) {
     return null;
   }
 
   const jobCount = pendingJobs.length;
-  const hasMultiple = jobCount > 1;
-
-  // Group by type for summary
-  const videoJobs = pendingJobs.filter((j) => j.jobType === "video");
-  const imageJobs = pendingJobs.filter((j) => j.jobType === "image");
-  const chatJobs = pendingJobs.filter((j) => j.jobType === "chat");
+  const firstJob = pendingJobs[0];
+  const statusMessage = getJobStatusMessage(firstJob);
 
   return (
     <div
       className={cn(
-        "fixed top-4 left-1/2 -translate-x-1/2 z-50",
-        "bg-gradient-to-r from-blue-600/90 to-purple-600/90 backdrop-blur-sm",
-        "rounded-xl shadow-lg border border-white/20",
-        "px-4 py-3 max-w-md w-full mx-4",
-        "animate-in fade-in slide-in-from-top-2 duration-300",
+        // Positioning - bottom on mobile, top on desktop
+        "fixed z-50",
+        "bottom-24 left-4 right-4 md:bottom-auto md:top-4 md:left-1/2 md:-translate-x-1/2",
+        // Container
+        "md:w-auto md:min-w-[280px] md:max-w-[360px]",
+        // Animation
+        "animate-in fade-in slide-in-from-bottom-2 md:slide-in-from-top-2 duration-300",
         className
       )}
     >
-      {/* Header */}
-      <div className="flex items-center gap-2 mb-2">
-        <Loader2 className="h-4 w-4 animate-spin text-white" />
-        <span className="text-white font-medium">
-          {hasMultiple
-            ? `${jobCount} procesos en progreso`
-            : `1 ${getJobTypeLabel(pendingJobs[0].jobType)} en progreso`}
-        </span>
+      <div
+        className={cn(
+          // Background - subtle glass effect
+          "bg-[#111111]/95 backdrop-blur-md",
+          "rounded-xl shadow-xl",
+          "border border-white/10",
+          // Padding
+          "px-4 py-3"
+        )}
+      >
+        {/* Main content */}
+        <div className="flex items-center gap-3">
+          {/* Animated icon */}
+          <div className="relative flex-shrink-0">
+            <div className="absolute inset-0 bg-[#00552b]/20 rounded-full animate-ping" />
+            <div className="relative flex items-center justify-center h-8 w-8 bg-[#00552b]/20 rounded-full">
+              {getJobIcon(firstJob.jobType)}
+            </div>
+          </div>
+
+          {/* Text content */}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-white truncate">
+              {jobCount > 1
+                ? `${jobCount} procesos activos`
+                : `${getJobTypeLabel(firstJob.jobType)} generándose`
+              }
+            </p>
+            <p className="text-xs text-white/50 truncate">
+              {jobCount > 1
+                ? "Puedes seguir navegando"
+                : statusMessage
+              }
+            </p>
+          </div>
+
+          {/* Progress indicator */}
+          <div className="flex-shrink-0">
+            <Loader2 className="h-4 w-4 animate-spin text-[#00552b]" />
+          </div>
+
+          {/* Dismiss button */}
+          <button
+            onClick={() => setIsDismissed(true)}
+            className="flex-shrink-0 p-1 rounded-md hover:bg-white/10 transition-colors"
+            aria-label="Cerrar"
+          >
+            <X className="h-4 w-4 text-white/40 hover:text-white/60" />
+          </button>
+        </div>
+
+        {/* Progress bar */}
+        <div className="mt-3 h-1 bg-white/10 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-[#00552b] to-[#00aa56] rounded-full animate-pulse"
+            style={{ width: "60%" }}
+          />
+        </div>
       </div>
-
-      {/* Summary or individual jobs */}
-      {hasMultiple ? (
-        <div className="flex flex-wrap gap-2 text-sm text-white/80">
-          {videoJobs.length > 0 && (
-            <span className="flex items-center gap-1">
-              <Video className="h-3 w-3" />
-              {videoJobs.length} video{videoJobs.length > 1 ? "s" : ""}
-            </span>
-          )}
-          {imageJobs.length > 0 && (
-            <span className="flex items-center gap-1">
-              <Image className="h-3 w-3" />
-              {imageJobs.length} imagen{imageJobs.length > 1 ? "es" : ""}
-            </span>
-          )}
-          {chatJobs.length > 0 && (
-            <span className="flex items-center gap-1">
-              <MessageSquare className="h-3 w-3" />
-              {chatJobs.length} mensaje{chatJobs.length > 1 ? "s" : ""}
-            </span>
-          )}
-        </div>
-      ) : (
-        <div className="flex flex-wrap gap-2">
-          {pendingJobs.map((job) => (
-            <JobItem key={job.id} job={job} onClick={onJobClick} />
-          ))}
-        </div>
-      )}
-
-      {/* Info message */}
-      <p className="text-xs text-white/60 mt-2">
-        Puedes cerrar esta ventana. Te notificaremos cuando terminen.
-      </p>
     </div>
   );
 }
 
 /**
- * Compact version for embedding in chat header or sidebar
+ * Compact pill indicator for header/sidebar
  */
 export function PendingJobsIndicator({ onClick }: { onClick?: () => void }) {
   const { data: pendingJobs, isLoading } = usePendingJobs();
@@ -152,11 +135,18 @@ export function PendingJobsIndicator({ onClick }: { onClick?: () => void }) {
     <button
       onClick={onClick}
       className={cn(
-        "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs",
-        "bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-colors"
+        "inline-flex items-center gap-1.5",
+        "px-2.5 py-1 rounded-full",
+        "bg-[#00552b]/15 text-[#00552b]",
+        "text-xs font-medium",
+        "hover:bg-[#00552b]/25 transition-colors",
+        "animate-in fade-in duration-200"
       )}
     >
-      <Loader2 className="h-3 w-3 animate-spin" />
+      <span className="relative flex h-2 w-2">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00552b] opacity-75" />
+        <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00552b]" />
+      </span>
       <span>{pendingJobs.length} en proceso</span>
     </button>
   );

@@ -248,12 +248,14 @@ export function useVideoGeneration(): UseVideoGenerationReturn {
 
       } catch (error) {
         console.error('[useVideoGeneration] Error:', error);
-        const errorMsg = 'Error de conexión';
+        // Network error - but the job might have been created on the server
+        // We return a more graceful message that indicates we should check pending jobs
+        const errorMsg = 'Error de conexión. Tu video puede estar generándose en segundo plano.';
         setState({
           isGenerating: false,
           error: errorMsg,
           progress: null,
-          jobId: null,
+          jobId: null, // We don't have jobId because request failed
           video: null,
         });
         return { success: false, error: errorMsg };

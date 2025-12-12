@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type ComponentPropsWithoutRef, useMemo } from 'react';
+import { useState, type ComponentPropsWithoutRef, useMemo, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
 import remarkGfm from 'remark-gfm';
@@ -10,6 +10,7 @@ import { GeoCulturalResponse } from './GeoCulturalResponse';
 import { AttachmentsPreview } from './AttachmentsPreview';
 import { SpeechButton } from './SpeechButton';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { useGenerationJob, getJobStatusMessage } from '@/hooks/useGenerationJobs';
 
 import 'highlight.js/styles/github.css';
 
@@ -564,9 +565,58 @@ const CodeBlock = ({
 export function MessageBubble({ message, isStreaming = false, attachments }: MessageBubbleProps) {
   const isUser = message.role === 'user';
 
-  // Estado de generación desde el mensaje - fuente de verdad para mostrar skeletons
+  // Estado de generación desde el mensaje
   const generationState = message.generationState;
-  const isGeneratingMedia = generationState?.status === 'generating';
+
+  // Extract jobId from generationState for job recovery
+  const jobId = generationState?.jobId || null;
+
+  // Poll the job if we have a jobId - this is KEY for recovery after app close
+  const { data: job, isLoading: isJobLoading } = useGenerationJob(jobId);
+
+  // Determine the actual generation status based on job polling
+  // This overrides the local generationState when we have job data
+  const effectiveStatus = useMemo(() => {
+    if (!jobId) {
+      // No job tracking, use local state
+      return generationState?.status || null;
+    }
+
+    if (isJobLoading && !job) {
+      // Still loading job data, assume generating
+      return 'generating';
+    }
+
+    if (job) {
+      // Job data available - use job status as source of truth
+      switch (job.status) {
+        case 'completed':
+          return 'completed';
+        case 'failed':
+        case 'cancelled':
+          return 'error';
+        case 'pending':
+        case 'queued':
+        case 'processing':
+        case 'uploading':
+        default:
+          return 'generating';
+      }
+    }
+
+    // Fallback to local state
+    return generationState?.status || null;
+  }, [jobId, job, isJobLoading, generationState?.status]);
+
+  // Check if we're generating media (either from local state or job polling)
+  const isGeneratingMedia = effectiveStatus === 'generating';
+
+  // Get the video URL from completed job or from message content
+  const jobVideoUrl = job?.status === 'completed' && job.jobType === 'video' ? job.publicUrl : null;
+  const jobImageUrl = job?.status === 'completed' && job.jobType === 'image' ? job.publicUrl : null;
+
+  // Get progress message from job
+  const jobProgressMessage = job ? getJobStatusMessage(job) : null;
 
   const { geoCulturalData, geoCulturalText, isLoadingGeoCultural, videoUrl } = useMemo(() => {
     if (isUser || !message.content) return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: false, videoUrl: null };
@@ -610,29 +660,68 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
     return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: false, videoUrl: null };
   }, [message.content, isUser, generationState, isGeneratingMedia]);
 
-  // Show skeleton while generating image
+  // PRIORITY 1: If job completed with video, show the video (recovery case)
+  if (jobVideoUrl) {
+    return (
+      <div className="flex justify-start">
+        <div className="inline-flex rounded-4xl border border-transparent bg-transparent text-black px-4 py-2">
+          <ChatVideo src={jobVideoUrl} />
+        </div>
+      </div>
+    );
+  }
+
+  // PRIORITY 2: If job completed with image, show the image (recovery case)
+  if (jobImageUrl) {
+    return (
+      <div className="flex justify-start w-full">
+        <div className="w-full max-w-[380px] px-2 sm:px-4 py-2">
+          <ChatImage src={jobImageUrl} alt="Imagen generada" />
+        </div>
+      </div>
+    );
+  }
+
+  // PRIORITY 3: Show skeleton while generating image (with progress from job)
   if (isGeneratingMedia && generationState?.type === 'image') {
     return (
       <div className="flex justify-start w-full">
         <div className="w-full max-w-[380px] px-2 sm:px-4 py-2">
           <ImageGeneratingSkeleton />
+          {jobProgressMessage && (
+            <p className="text-xs text-gray-500 mt-2 text-center">{jobProgressMessage}</p>
+          )}
         </div>
       </div>
     );
   }
 
-  // Show skeleton while generating video
+  // PRIORITY 4: Show skeleton while generating video (with progress from job)
   if (isGeneratingMedia && generationState?.type === 'video') {
     return (
       <div className="flex justify-start w-full">
         <div className="w-full max-w-[600px] px-2 sm:px-4 py-2">
           <VideoGeneratingSkeleton />
+          {jobProgressMessage && (
+            <p className="text-xs text-gray-500 mt-2 text-center">{jobProgressMessage}</p>
+          )}
         </div>
       </div>
     );
   }
 
-  // Render generated video
+  // PRIORITY 5: Job failed - show error from job
+  if (effectiveStatus === 'error' && job?.errorMessage) {
+    return (
+      <div className="flex justify-start">
+        <div className="inline-flex rounded-4xl border border-red-200 bg-red-50 text-red-700 px-4 py-2">
+          <p className="text-sm">❌ {job.errorMessage}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // PRIORITY 6: Render generated video from content (legacy/fallback)
   if (videoUrl) {
     return (
       <div className="flex justify-start">
