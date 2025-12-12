@@ -404,3 +404,54 @@
 .voice-waveform-bar:nth-child(4) { animation-delay: 0.3s; }
 .voice-waveform-bar:nth-child(5) { animation-delay: 0.15s; }
 
+/* Video mode animated glow effect (violet) */
+.video-mode-glow {
+  animation: video-mode-activate 0.6s ease-out forwards, video-mode-pulse 2s ease-in-out infinite 0.6s;
+  box-shadow:
+    0 0 0 1px rgba(139, 92, 246, 0.3),
+    0 0 15px -3px rgba(139, 92, 246, 0.4),
+    0 0 30px -5px rgba(124, 58, 237, 0.2),
+    inset 0 0 20px -10px rgba(139, 92, 246, 0.1);
+}
+
+/* Video mode activation animation */
+@keyframes video-mode-activate {
+  0% {
+    box-shadow:
+      0 0 0 0 rgba(139, 92, 246, 0),
+      0 0 0 0 rgba(139, 92, 246, 0);
+    border-color: rgba(139, 92, 246, 0);
+  }
+  50% {
+    box-shadow:
+      0 0 0 4px rgba(139, 92, 246, 0.3),
+      0 0 40px -5px rgba(124, 58, 237, 0.5);
+  }
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(139, 92, 246, 0.3),
+      0 0 15px -3px rgba(139, 92, 246, 0.4),
+      0 0 30px -5px rgba(124, 58, 237, 0.2),
+      inset 0 0 20px -10px rgba(139, 92, 246, 0.1);
+    border-color: rgba(139, 92, 246, 0.6);
+  }
+}
+
+/* Video mode subtle pulse effect */
+@keyframes video-mode-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px rgba(139, 92, 246, 0.3),
+      0 0 15px -3px rgba(139, 92, 246, 0.4),
+      0 0 30px -5px rgba(124, 58, 237, 0.2),
+      inset 0 0 20px -10px rgba(139, 92, 246, 0.1);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(139, 92, 246, 0.5),
+      0 0 20px -3px rgba(139, 92, 246, 0.5),
+      0 0 40px -5px rgba(124, 58, 237, 0.3),
+      inset 0 0 25px -10px rgba(139, 92, 246, 0.15);
+  }
+}
+

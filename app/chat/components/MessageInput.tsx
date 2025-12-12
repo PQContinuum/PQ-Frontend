@@ -9,7 +9,7 @@ import {
   memo,
   useEffect,
 } from 'react';
-import { ArrowUp, MapPin, Paperclip, Plus, Check, Loader2, Image, X, ChevronDown, Lock, Mic, Square, Sparkles } from 'lucide-react';
+import { ArrowUp, MapPin, Paperclip, Plus, Check, Loader2, Image, X, ChevronDown, Lock, Mic, Square, Sparkles, Video, ImagePlus } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { FileUpload } from './FileUpload';
 import {
@@ -41,6 +41,15 @@ import { useImageGeneration } from '@/hooks/useImageGeneration';
 import type { ImageGenSize, ImageGenQuality } from '@/lib/memory/plan-limits';
 import { IMAGE_STYLE_PRESETS, getAvailablePresets } from '@/lib/image-gen/style-presets';
 import { useVoiceInput, formatDuration } from '@/hooks/useVoiceInput';
+import {
+  useVideoGeneration,
+  VIDEO_ASPECT_RATIOS,
+  VIDEO_DURATIONS,
+  VIDEO_MODES,
+  type VideoAspectRatio,
+  type VideoDuration,
+  type VideoMode,
+} from '@/hooks/useVideoGeneration';
 
 /**
  * FEATURE FLAGS - Control de acceso a funcionalidades
@@ -55,6 +64,7 @@ import { useVoiceInput, formatDuration } from '@/hooks/useVoiceInput';
  */
 const FEATURE_FLAGS = {
   imageGeneration: false,  // Generar imagen - DESHABILITADO
+  videoGeneration: true,   // Generar video - Kling V2.6
   geoCultural: true,       // GeoCultural mode
   fileUpload: true,        // Subir archivos
   voiceInput: true,        // Dictado por voz
@@ -145,6 +155,20 @@ export const MessageInput = memo(function MessageInput() {
     isGenerating: isGeneratingImage,
     usage: imageUsage,
   } = useImageGeneration();
+
+  // Video mode state
+  const [videoMode, setVideoMode] = useState(false);
+  const [videoAspectRatio, setVideoAspectRatio] = useState<VideoAspectRatio>('16:9');
+  const [videoDuration, setVideoDuration] = useState<VideoDuration>('5');
+  const [videoModeType, setVideoModeType] = useState<VideoMode>('text-to-video');
+  const [videoImageUrl, setVideoImageUrl] = useState<string>('');
+
+  const {
+    generate: generateVideo,
+    isGenerating: isGeneratingVideo,
+    progress: videoProgress,
+    usage: videoUsage,
+  } = useVideoGeneration();
 
   // Voice input hook
   const {
@@ -403,9 +427,72 @@ export const MessageInput = memo(function MessageInput() {
     setStreaming(false);
   }, [input, imageSize, imageQuality, imageStylePreset, generateImage, generateWithStreaming, isGeneratingImage, addMessage, updateMessage, setStreaming, imageUsage]);
 
+  // Handle video generation
+  const handleGenerateVideo = useCallback(async () => {
+    const prompt = input.trim();
+    if (!prompt || isGeneratingVideo) return;
+
+    // Validate image-to-video mode
+    if (videoModeType === 'image-to-video' && !videoImageUrl) {
+      alert('Por favor sube una imagen para animar');
+      return;
+    }
+
+    const userMessageId = createId();
+    const assistantMessageId = createId();
+
+    addMessage({
+      id: userMessageId,
+      role: 'user',
+      content: `🎬 ${prompt}`,
+    });
+    addMessage({
+      id: assistantMessageId,
+      role: 'assistant',
+      content: '🎬 Generando video con Kling V2.6...',
+    });
+
+    setInput('');
+    setStreaming(true);
+
+    // Update message with progress
+    const progressInterval = setInterval(() => {
+      if (videoProgress) {
+        updateMessage(assistantMessageId, () => `🎬 ${videoProgress}`);
+      }
+    }, 1000);
+
+    const result = await generateVideo(prompt, {
+      mode: videoModeType,
+      imageUrl: videoModeType === 'image-to-video' ? videoImageUrl : undefined,
+      duration: videoDuration,
+      aspectRatio: videoAspectRatio,
+      generateAudio: true,
+    });
+
+    clearInterval(progressInterval);
+
+    if (result.success) {
+      // Display video with HTML5 video tag format
+      updateMessage(assistantMessageId, () =>
+        `<video controls src="${result.url}" style="max-width:100%;border-radius:12px;"></video>`
+      );
+    } else {
+      updateMessage(assistantMessageId, () => `❌ ${result.error}`);
+    }
+
+    setStreaming(false);
+  }, [input, videoModeType, videoImageUrl, videoDuration, videoAspectRatio, generateVideo, isGeneratingVideo, videoProgress, addMessage, updateMessage, setStreaming]);
+
   const submitMessage = useCallback(
     async (event?: FormEvent<HTMLFormElement>) => {
       event?.preventDefault();
+
+      // If in video mode, generate video instead
+      if (videoMode) {
+        handleGenerateVideo();
+        return;
+      }
 
       // If in image mode, generate image instead
       if (imageMode) {
@@ -702,13 +789,21 @@ export const MessageInput = memo(function MessageInput() {
 
   const toggleImageMode = useCallback(() => {
     setImageMode((prev) => !prev);
+    setVideoMode(false);
     setShowFileUpload(false);
     setShowStylePicker(false);
-    // Focus textarea when toggling
     setTimeout(() => textareaRef.current?.focus(), 100);
   }, []);
 
-  const isLoading = isStreaming || isGeneratingImage || isTranscribing;
+  const toggleVideoMode = useCallback(() => {
+    setVideoMode((prev) => !prev);
+    setImageMode(false);
+    setShowFileUpload(false);
+    setShowStylePicker(false);
+    setTimeout(() => textareaRef.current?.focus(), 100);
+  }, []);
+
+  const isLoading = isStreaming || isGeneratingImage || isGeneratingVideo || isTranscribing;
 
   // Style preset picker component
   const StylePresetPicker = () => (
@@ -864,6 +959,8 @@ export const MessageInput = memo(function MessageInput() {
           className={`rounded-[2rem] bg-white shadow-[0_20px_50px_rgba(0,0,0,0.08)] relative transition-all duration-500 ${
             imageMode
               ? 'border-2 border-sky-400/60 image-mode-glow'
+              : videoMode
+              ? 'border-2 border-violet-400/60 video-mode-glow'
               : 'border border-black/5'
           }`}
         >
@@ -956,6 +1053,132 @@ export const MessageInput = memo(function MessageInput() {
             </div>
           )}
 
+          {/* Video mode controls */}
+          {videoMode && (
+            <div className="px-4 pt-3 pb-2 border-b border-gray-100">
+              <div className="flex items-center gap-3 flex-wrap">
+                {/* Mode selector: Text or Image */}
+                <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+                  {VIDEO_MODES.filter(mode =>
+                    videoUsage?.allowedModes?.includes(mode.value) || mode.value === 'text-to-video'
+                  ).map((mode) => (
+                    <button
+                      key={mode.value}
+                      type="button"
+                      onClick={() => setVideoModeType(mode.value)}
+                      disabled={isLoading}
+                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition ${
+                        videoModeType === mode.value
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-500 hover:text-gray-700'
+                      } disabled:opacity-40`}
+                      title={mode.description}
+                    >
+                      <span>{mode.icon}</span>
+                      <span>{mode.label}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Image URL input for image-to-video mode */}
+                {videoModeType === 'image-to-video' && (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="url"
+                      value={videoImageUrl}
+                      onChange={(e) => setVideoImageUrl(e.target.value)}
+                      placeholder="URL de imagen..."
+                      className="px-3 py-1 text-xs bg-gray-50 border border-gray-200 rounded-lg w-40 focus:outline-none focus:ring-1 focus:ring-violet-400"
+                    />
+                    {videoImageUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setVideoImageUrl('')}
+                        className="p-1 text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="size-3" />
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Aspect ratio selector */}
+                <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+                  {VIDEO_ASPECT_RATIOS.filter(ratio =>
+                    videoUsage?.allowedAspectRatios?.includes(ratio.value) || ratio.value === '16:9'
+                  ).map((ratio) => (
+                    <button
+                      key={ratio.value}
+                      type="button"
+                      onClick={() => setVideoAspectRatio(ratio.value)}
+                      disabled={isLoading}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition ${
+                        videoAspectRatio === ratio.value
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-500 hover:text-gray-700'
+                      } disabled:opacity-40`}
+                      title={ratio.label}
+                    >
+                      {ratio.value}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Duration selector */}
+                <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+                  {VIDEO_DURATIONS.filter(dur =>
+                    videoUsage?.allowedDurations?.includes(dur.value) || dur.value === '5'
+                  ).map((dur) => (
+                    <button
+                      key={dur.value}
+                      type="button"
+                      onClick={() => setVideoDuration(dur.value)}
+                      disabled={isLoading}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition ${
+                        videoDuration === dur.value
+                          ? 'bg-white text-violet-600 shadow-sm'
+                          : 'text-gray-500 hover:text-gray-700'
+                      } disabled:opacity-40`}
+                      title={dur.description}
+                    >
+                      {dur.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Close button */}
+                <button
+                  type="button"
+                  onClick={() => setVideoMode(false)}
+                  className="ml-auto p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+
+              {/* Progress indicator */}
+              {isGeneratingVideo && videoProgress && (
+                <div className="flex items-center gap-2 mt-2 text-xs text-violet-600">
+                  <Loader2 className="size-3 animate-spin" />
+                  <span>{videoProgress}</span>
+                </div>
+              )}
+
+              {/* Usage and info */}
+              <div className="flex items-center justify-between mt-2">
+                <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                  <Video className="size-3" />
+                  <span>Kling V2.6 Pro{videoUsage?.audioEnabled ? ' + Audio' : ''}</span>
+                </div>
+                {videoUsage && (
+                  <span className="text-xs text-gray-400">
+                    {videoUsage.remainingToday}/{videoUsage.dailyLimit} hoy
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Main input row */}
           <div className="flex flex-row items-center gap-3 px-4 py-3">
             <DropdownMenu>
@@ -964,7 +1187,7 @@ export const MessageInput = memo(function MessageInput() {
                   type="button"
                   disabled={isLoading}
                   className={`relative flex shrink-0 items-center justify-center rounded-full p-2 transition ${
-                    geoCulturalMode || showFileUpload || attachments.length > 0 || imageMode
+                    geoCulturalMode || showFileUpload || attachments.length > 0 || imageMode || videoMode
                       ? 'bg-[#00552b] text-white'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   } disabled:opacity-40 disabled:cursor-not-allowed`}
@@ -996,6 +1219,25 @@ export const MessageInput = memo(function MessageInput() {
                   <Image className="mr-2 size-4" />
                   <span className="flex-1">Generar imagen</span>
                   {imageMode && FEATURE_FLAGS.imageGeneration && <Check className="size-4 text-[#00552b]" />}
+                </DropdownMenuItem>
+
+                {/* Generar video - Kling V2.6 */}
+                <DropdownMenuItem
+                  onClick={FEATURE_FLAGS.videoGeneration ? toggleVideoMode : undefined}
+                  disabled={isLoading || !FEATURE_FLAGS.videoGeneration}
+                  className={`relative cursor-pointer ${!FEATURE_FLAGS.videoGeneration ? 'opacity-100' : ''}`}
+                >
+                  {!FEATURE_FLAGS.videoGeneration && (
+                    <div className="absolute -inset-x-2 -inset-y-1 bg-gradient-to-r from-white/90 via-white/70 to-white/90 backdrop-blur-[1px] rounded-sm flex items-center justify-end pr-2 z-10">
+                      <div className="flex items-center gap-1.5 bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-[10px] font-medium shadow-sm">
+                        <Sparkles className="size-3" />
+                        <span>Próximamente</span>
+                      </div>
+                    </div>
+                  )}
+                  <Video className="mr-2 size-4" />
+                  <span className="flex-1">Generar video</span>
+                  {videoMode && FEATURE_FLAGS.videoGeneration && <Check className="size-4 text-[#00552b]" />}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -1050,6 +1292,10 @@ export const MessageInput = memo(function MessageInput() {
                   ? 'Escuchando...'
                   : isTranscribing
                   ? 'Transcribiendo...'
+                  : videoMode
+                  ? videoModeType === 'image-to-video'
+                    ? 'Describe cómo quieres animar la imagen...'
+                    : 'Describe tu video (escena, acción, estilo)...'
                   : imageMode
                   ? `Describe tu imagen en estilo ${selectedPreset.name}...`
                   : geoCulturalMode
