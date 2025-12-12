@@ -22,11 +22,60 @@ export function VideoImageUpload({
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Convertir imagen a JPEG usando Canvas (útil para HEIC y otros formatos)
+  const convertToJpeg = useCallback(async (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          URL.revokeObjectURL(url);
+          reject(new Error('No se pudo crear contexto de canvas'));
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0);
+        URL.revokeObjectURL(url);
+
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              const newFile = new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), {
+                type: 'image/jpeg',
+              });
+              resolve(newFile);
+            } else {
+              reject(new Error('Error al convertir imagen'));
+            }
+          },
+          'image/jpeg',
+          0.92
+        );
+      };
+
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error('Error al cargar imagen'));
+      };
+
+      img.src = url;
+    });
+  }, []);
+
   const handleUpload = useCallback(async (file: File) => {
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-    if (!allowedTypes.includes(file.type)) {
-      setError('Solo JPG, PNG, WebP o GIF');
+    // Validate file type - incluir HEIC
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif'];
+    const isHeic = file.type === 'image/heic' || file.type === 'image/heif' ||
+                   file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif');
+
+    if (!allowedTypes.includes(file.type) && !isHeic) {
+      setError('Solo JPG, PNG, WebP, GIF o HEIC');
       return;
     }
 
@@ -39,16 +88,23 @@ export function VideoImageUpload({
     setError(null);
     setIsUploading(true);
 
-    // Create preview
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setPreviewUrl(e.target?.result as string);
-    };
-    reader.readAsDataURL(file);
-
     try {
+      // Convertir HEIC u otros formatos a JPEG
+      let fileToUpload = file;
+      if (isHeic || !['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) {
+        console.log('[VideoImageUpload] Convirtiendo imagen a JPEG...');
+        fileToUpload = await convertToJpeg(file);
+      }
+
+      // Create preview from converted file
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPreviewUrl(e.target?.result as string);
+      };
+      reader.readAsDataURL(fileToUpload);
+
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', fileToUpload);
 
       const response = await fetch('/api/video-gen/upload-image', {
         method: 'POST',
@@ -69,7 +125,7 @@ export function VideoImageUpload({
     } finally {
       setIsUploading(false);
     }
-  }, [onImageUploaded]);
+  }, [onImageUploaded, convertToJpeg]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -166,7 +222,7 @@ export function VideoImageUpload({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/gif"
+        accept="image/*"
         onChange={handleFileChange}
         className="hidden"
         disabled={disabled || isUploading}

@@ -522,14 +522,12 @@ export const MessageInput = memo(function MessageInput() {
       content: userContent,
     });
     // Crear mensaje con estado de generación para mostrar skeleton
-    const newMessage = {
+    addMessage({
       id: assistantMessageId,
-      role: 'assistant' as const,
+      role: 'assistant',
       content: '',
-      generationState: { type: 'video' as const, status: 'generating' as const },
-    };
-    console.log('[MessageInput] Creating video message with generationState:', newMessage);
-    addMessage(newMessage);
+      generationState: { type: 'video', status: 'generating' },
+    });
 
     setInput('');
     setStreaming(true);

@@ -20,18 +20,19 @@ interface MediaGeneratingSkeletonProps {
 }
 
 const MediaGeneratingSkeleton = ({ type, aspectRatio = 'square' }: MediaGeneratingSkeletonProps) => {
-  // Determine dimensions based on type and aspect ratio
+  // Determine dimensions based on type and aspect ratio - RESPONSIVE
   const getDimensions = () => {
     if (type === 'image') {
-      return 'w-[340px] h-[340px]'; // Square for images
+      // Responsive: full width on mobile, fixed on desktop
+      return 'w-full max-w-[340px] aspect-square';
     }
-    // Video dimensions based on aspect ratio - usar dimensiones fijas
+    // Video dimensions based on aspect ratio - responsive
     switch (aspectRatio) {
       case 'portrait':
-        return 'w-[320px] h-[568px]'; // 9:16
+        return 'w-full max-w-[280px] sm:max-w-[320px] aspect-[9/16]'; // 9:16
       case 'landscape':
       default:
-        return 'w-[560px] h-[315px]'; // 16:9 con dimensiones fijas
+        return 'w-full max-w-[400px] sm:max-w-[560px] aspect-video'; // 16:9
     }
   };
 
@@ -567,9 +568,6 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
   const generationState = message.generationState;
   const isGeneratingMedia = generationState?.status === 'generating';
 
-  // DEBUG: Ver el estado de generación
-  console.log('[MessageBubble] message.id:', message.id, 'generationState:', generationState, 'isGeneratingMedia:', isGeneratingMedia, 'type:', generationState?.type);
-
   const { geoCulturalData, geoCulturalText, isLoadingGeoCultural, videoUrl } = useMemo(() => {
     if (isUser || !message.content) return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: false, videoUrl: null };
 
@@ -615,8 +613,8 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
   // Show skeleton while generating image
   if (isGeneratingMedia && generationState?.type === 'image') {
     return (
-      <div className="flex justify-start">
-        <div className="inline-flex rounded-4xl border border-transparent bg-transparent text-black px-4 py-2">
+      <div className="flex justify-start w-full">
+        <div className="w-full max-w-[380px] px-2 sm:px-4 py-2">
           <ImageGeneratingSkeleton />
         </div>
       </div>
@@ -625,10 +623,9 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
 
   // Show skeleton while generating video
   if (isGeneratingMedia && generationState?.type === 'video') {
-    console.log('[MessageBubble] ✅ RENDERING VIDEO SKELETON for message:', message.id);
     return (
-      <div className="flex justify-start">
-        <div className="inline-flex rounded-4xl border border-transparent bg-transparent text-black px-4 py-2">
+      <div className="flex justify-start w-full">
+        <div className="w-full max-w-[600px] px-2 sm:px-4 py-2">
           <VideoGeneratingSkeleton />
         </div>
       </div>
