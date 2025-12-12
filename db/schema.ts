@@ -67,6 +67,8 @@ export const messages = pgTable("messages", {
     .references(() => conversations.id, { onDelete: "cascade" }),
   role: messageRoleEnum("role").notNull(),
   content: text("content").notNull(),
+  // Metadata JSON: { generationState?: { type: 'image'|'video'|'geocultural', status: 'generating'|'completed'|'error' } }
+  metadata: text("metadata"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

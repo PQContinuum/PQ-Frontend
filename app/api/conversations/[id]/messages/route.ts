@@ -37,20 +37,24 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { id, role, content } = body;
+    const { id, role, content, metadata } = body;
 
-    if (!role || !content) {
+    if (!role || content === undefined) {
       return NextResponse.json(
         { error: "Message role and content are required" },
         { status: 400 }
       );
     }
 
+    // Serializar metadata a JSON string si viene como objeto
+    const metadataStr = metadata ? (typeof metadata === 'string' ? metadata : JSON.stringify(metadata)) : null;
+
     const message = await createMessage({
       id,
       conversationId,
       role,
       content,
+      metadata: metadataStr,
     });
 
     // ✅ FIX: Actualizar timestamp de la conversación para ordenamiento correcto
@@ -84,16 +88,28 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { messageId, content } = body;
+    const { messageId, content, metadata } = body;
 
-    if (!messageId || !content) {
+    if (!messageId) {
       return NextResponse.json(
-        { error: "Message ID and content are required" },
+        { error: "Message ID is required" },
         { status: 400 }
       );
     }
 
-    const message = await updateMessage(messageId, content);
+    // Permitir actualizar solo content, solo metadata, o ambos
+    if (content === undefined && metadata === undefined) {
+      return NextResponse.json(
+        { error: "Either content or metadata is required" },
+        { status: 400 }
+      );
+    }
+
+    const metadataStr = metadata !== undefined
+      ? (typeof metadata === 'string' ? metadata : JSON.stringify(metadata))
+      : undefined;
+
+    const message = await updateMessage(messageId, content, metadataStr);
 
     if (!message) {
       return NextResponse.json(

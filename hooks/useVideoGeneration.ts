@@ -107,7 +107,7 @@ export function useVideoGeneration(): UseVideoGenerationReturn {
 
       try {
         // Update progress
-        setState((s) => ({ ...s, progress: 'Enviando solicitud a Kling V2.6...' }));
+        setState((s) => ({ ...s, progress: 'Enviando solicitud a Continuum Video Pro...' }));
 
         const response = await fetch('/api/video-gen', {
           method: 'POST',

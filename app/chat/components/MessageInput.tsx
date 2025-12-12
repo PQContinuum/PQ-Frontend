@@ -227,14 +227,17 @@ export const MessageInput = memo(function MessageInput() {
     textarea.style.height = `${newHeight}px`;
   }, []);
 
-  const { addMessage, updateMessage, setStreaming, setConversationId, setGeoCulturalMode, setUserLocation } = useChatStore(
+  const { addMessage, updateMessage, updateMessageGenerationState, setStreaming, setConversationId, setGeoCulturalMode, setUserLocation, startGeneration, stopGeneration } = useChatStore(
     useShallow((state) => ({
       addMessage: state.addMessage,
       updateMessage: state.updateMessage,
+      updateMessageGenerationState: state.updateMessageGenerationState,
       setStreaming: state.setStreaming,
       setConversationId: state.setConversationId,
       setGeoCulturalMode: state.setGeoCulturalMode,
       setUserLocation: state.setUserLocation,
+      startGeneration: state.startGeneration,
+      stopGeneration: state.stopGeneration,
     }))
   );
   const isStreaming = useIsStreaming();
@@ -395,14 +398,17 @@ export const MessageInput = memo(function MessageInput() {
       role: 'user',
       content: userContent,
     });
+    // Crear mensaje con estado de generación para mostrar skeleton
     addMessage({
       id: assistantMessageId,
       role: 'assistant',
-      content: '🖼️ Generando imagen...',
+      content: '',
+      generationState: { type: 'image', status: 'generating' },
     });
 
     setInput('');
     setStreaming(true);
+    startGeneration('image', assistantMessageId);
 
     // Create conversation if needed
     let currentConversationId = conversationId;
@@ -460,12 +466,16 @@ export const MessageInput = memo(function MessageInput() {
     if (result.success) {
       assistantContent = `![Imagen generada](${result.url})`;
       updateMessage(assistantMessageId, () => assistantContent);
+      // Marcar generación como completada
+      updateMessageGenerationState(assistantMessageId, { type: 'image', status: 'completed' });
     } else {
       assistantContent = `❌ ${result.error}`;
       updateMessage(assistantMessageId, () => assistantContent);
+      // Marcar generación como error
+      updateMessageGenerationState(assistantMessageId, { type: 'image', status: 'error' });
     }
 
-    // Save assistant message to database
+    // Save assistant message to database with metadata
     if (currentConversationId) {
       try {
         await fetch(`/api/conversations/${currentConversationId}/messages`, {
@@ -475,6 +485,10 @@ export const MessageInput = memo(function MessageInput() {
             id: assistantMessageId,
             role: 'assistant',
             content: assistantContent,
+            // Guardar estado de generación en metadata para persistencia
+            metadata: {
+              generationState: { type: 'image', status: result.success ? 'completed' : 'error' }
+            },
           }),
         });
         queryClient.invalidateQueries({ queryKey: conversationKeys.detail(currentConversationId) });
@@ -485,7 +499,8 @@ export const MessageInput = memo(function MessageInput() {
     }
 
     setStreaming(false);
-  }, [input, imageSize, imageQuality, imageStylePreset, generateImage, generateWithStreaming, isGeneratingImage, addMessage, updateMessage, setStreaming, imageUsage, conversationId, createConversationMutation, setConversationId, queryClient]);
+    stopGeneration();
+  }, [input, imageSize, imageQuality, imageStylePreset, generateImage, generateWithStreaming, isGeneratingImage, addMessage, updateMessage, updateMessageGenerationState, setStreaming, startGeneration, stopGeneration, imageUsage, conversationId, createConversationMutation, setConversationId, queryClient]);
 
   // Handle video generation
   const handleGenerateVideo = useCallback(async () => {
@@ -506,14 +521,17 @@ export const MessageInput = memo(function MessageInput() {
       role: 'user',
       content: userContent,
     });
+    // Crear mensaje con estado de generación para mostrar skeleton
     addMessage({
       id: assistantMessageId,
       role: 'assistant',
-      content: '🎬 Generando video con Kling V2.6...',
+      content: '',
+      generationState: { type: 'video', status: 'generating' },
     });
 
     setInput('');
     setStreaming(true);
+    startGeneration('video', assistantMessageId);
 
     // Create conversation if needed
     let currentConversationId = conversationId;
@@ -568,12 +586,16 @@ export const MessageInput = memo(function MessageInput() {
       // Display video with HTML5 video tag format
       assistantContent = `<video controls src="${result.url}" style="max-width:100%;border-radius:12px;"></video>`;
       updateMessage(assistantMessageId, () => assistantContent);
+      // Marcar generación como completada
+      updateMessageGenerationState(assistantMessageId, { type: 'video', status: 'completed' });
     } else {
       assistantContent = `❌ ${result.error}`;
       updateMessage(assistantMessageId, () => assistantContent);
+      // Marcar generación como error
+      updateMessageGenerationState(assistantMessageId, { type: 'video', status: 'error' });
     }
 
-    // Save assistant message to database
+    // Save assistant message to database with metadata
     if (currentConversationId) {
       try {
         await fetch(`/api/conversations/${currentConversationId}/messages`, {
@@ -583,6 +605,10 @@ export const MessageInput = memo(function MessageInput() {
             id: assistantMessageId,
             role: 'assistant',
             content: assistantContent,
+            // Guardar estado de generación en metadata para persistencia
+            metadata: {
+              generationState: { type: 'video', status: result.success ? 'completed' : 'error' }
+            },
           }),
         });
         queryClient.invalidateQueries({ queryKey: conversationKeys.detail(currentConversationId) });
@@ -593,7 +619,8 @@ export const MessageInput = memo(function MessageInput() {
     }
 
     setStreaming(false);
-  }, [input, videoModeType, videoImageUrl, videoDuration, videoAspectRatio, generateVideo, isGeneratingVideo, videoProgress, addMessage, updateMessage, setStreaming, conversationId, createConversationMutation, setConversationId, queryClient]);
+    stopGeneration();
+  }, [input, videoModeType, videoImageUrl, videoDuration, videoAspectRatio, generateVideo, isGeneratingVideo, addMessage, updateMessage, updateMessageGenerationState, setStreaming, startGeneration, stopGeneration, conversationId, createConversationMutation, setConversationId, queryClient]);
 
   const submitMessage = useCallback(
     async (event?: FormEvent<HTMLFormElement>) => {

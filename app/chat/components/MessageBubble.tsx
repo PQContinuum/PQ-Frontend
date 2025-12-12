@@ -13,192 +13,99 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip
 
 import 'highlight.js/styles/github.css';
 
-// Skeleton component for image generation - creative animated preview
-const ImageGeneratingSkeleton = () => (
-  <div className="w-[340px] h-[340px] rounded-2xl overflow-hidden relative bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50">
-    {/* Animated gradient background */}
-    <div className="absolute inset-0 bg-gradient-to-r from-blue-100/50 via-purple-100/50 to-pink-100/50 animate-[gradient-shift_3s_ease-in-out_infinite]" />
+// Minimalist media generation skeleton - works for both image and video
+interface MediaGeneratingSkeletonProps {
+  type: 'image' | 'video';
+  aspectRatio?: 'square' | 'landscape' | 'portrait';
+}
 
-    {/* Floating particles effect */}
-    <div className="absolute inset-0 overflow-hidden">
-      <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-blue-400/30 rounded-full animate-[float-particle_2s_ease-in-out_infinite]" />
-      <div className="absolute top-1/3 right-1/4 w-1.5 h-1.5 bg-purple-400/30 rounded-full animate-[float-particle_2.5s_ease-in-out_infinite_0.5s]" />
-      <div className="absolute bottom-1/3 left-1/3 w-2.5 h-2.5 bg-pink-400/30 rounded-full animate-[float-particle_3s_ease-in-out_infinite_1s]" />
-      <div className="absolute top-1/2 right-1/3 w-1 h-1 bg-blue-300/40 rounded-full animate-[float-particle_2s_ease-in-out_infinite_0.3s]" />
-    </div>
+const MediaGeneratingSkeleton = ({ type, aspectRatio = 'square' }: MediaGeneratingSkeletonProps) => {
+  // Determine dimensions based on type and aspect ratio
+  const getDimensions = () => {
+    if (type === 'image') {
+      return 'w-[340px] h-[340px]'; // Square for images
+    }
+    // Video dimensions based on aspect ratio
+    switch (aspectRatio) {
+      case 'portrait':
+        return 'w-[320px] h-[568px]'; // 9:16
+      case 'landscape':
+      default:
+        return 'w-full max-w-[560px] aspect-video'; // 16:9
+    }
+  };
 
-    {/* Center content */}
-    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-      {/* Animated icon container */}
-      <div className="relative">
-        {/* Outer glow ring */}
-        <div className="absolute -inset-4 bg-gradient-to-r from-blue-400/20 via-purple-400/20 to-pink-400/20 rounded-full blur-xl animate-pulse" />
+  const isVideo = type === 'video';
 
-        {/* Spinning ring */}
-        <div className="absolute -inset-2 border-2 border-dashed border-gray-300/50 rounded-full animate-[spin_8s_linear_infinite]" />
-
-        {/* Icon background */}
-        <div className="relative size-16 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg flex items-center justify-center">
+  return (
+    <div className={`${getDimensions()} rounded-2xl overflow-hidden relative bg-[#f5f5f5]`}>
+      {/* Center content */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        {/* Circular loader with icon */}
+        <div className="relative">
+          {/* Spinning arc - the main loading indicator */}
           <svg
-            className="size-8 text-gray-400 animate-pulse"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+            className="size-24 animate-[spin_1.5s_linear_infinite]"
+            viewBox="0 0 100 100"
           >
-            <path
+            {/* Background circle */}
+            <circle
+              cx="50"
+              cy="50"
+              r="42"
+              fill="none"
+              stroke="#e5e5e5"
+              strokeWidth="3"
+            />
+            {/* Animated arc */}
+            <circle
+              cx="50"
+              cy="50"
+              r="42"
+              fill="none"
+              stroke="#1a1a1a"
+              strokeWidth="3"
               strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.5}
-              d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
+              strokeDasharray="66 198"
+              className="origin-center"
             />
           </svg>
-        </div>
-      </div>
 
-      {/* Text with shimmer */}
-      <div className="relative">
-        <span className="text-sm font-medium text-gray-500">Creando tu imagen</span>
-        <span className="ml-1 inline-flex">
-          <span className="animate-[bounce_1s_ease-in-out_infinite]">.</span>
-          <span className="animate-[bounce_1s_ease-in-out_infinite_0.2s]">.</span>
-          <span className="animate-[bounce_1s_ease-in-out_infinite_0.4s]">.</span>
-        </span>
-      </div>
-    </div>
-
-    {/* Bottom shimmer bar */}
-    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-200/50 overflow-hidden">
-      <div className="h-full w-1/3 bg-gradient-to-r from-transparent via-blue-400/60 to-transparent animate-[shimmer-bar_1.5s_ease-in-out_infinite]" />
-    </div>
-  </div>
-);
-
-// Skeleton component for video generation - cinematic animated preview
-const VideoGeneratingSkeleton = () => (
-  <div className="w-full max-w-[560px] aspect-video rounded-2xl overflow-hidden relative bg-gradient-to-br from-gray-900 via-violet-950 to-gray-900">
-    {/* Cinematic letterbox bars */}
-    <div className="absolute top-0 left-0 right-0 h-6 bg-black z-10" />
-    <div className="absolute bottom-0 left-0 right-0 h-6 bg-black z-10" />
-
-    {/* Animated aurora background */}
-    <div className="absolute inset-0 overflow-hidden">
-      <div className="absolute -inset-[100%] bg-gradient-conic from-violet-500/20 via-fuchsia-500/20 via-purple-500/20 to-violet-500/20 animate-[spin_20s_linear_infinite]" />
-      <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-transparent to-gray-900/80" />
-    </div>
-
-    {/* Animated film frames strip - simulating frames being created */}
-    <div className="absolute top-8 left-0 right-0 flex justify-center gap-2 animate-[slideInFromLeft_0.8s_ease-out]">
-      {[...Array(5)].map((_, i) => (
-        <div
-          key={i}
-          className="w-12 h-8 rounded border border-violet-400/30 bg-violet-900/30 backdrop-blur-sm overflow-hidden"
-          style={{ animationDelay: `${i * 0.15}s` }}
-        >
-          {/* Shimmer effect inside each frame */}
-          <div
-            className="w-full h-full bg-gradient-to-r from-transparent via-violet-400/20 to-transparent animate-[shimmer_2s_ease-in-out_infinite]"
-            style={{ animationDelay: `${i * 0.3}s` }}
-          />
-        </div>
-      ))}
-    </div>
-
-    {/* Center content - Clapperboard style */}
-    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-      {/* Main icon with multiple rings */}
-      <div className="relative">
-        {/* Outer pulsing glow */}
-        <div className="absolute -inset-8 bg-violet-500/10 rounded-full blur-2xl animate-pulse" />
-
-        {/* Rotating outer ring */}
-        <div className="absolute -inset-6 border border-violet-400/20 rounded-full animate-[spin_12s_linear_infinite]">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-violet-400 rounded-full" />
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-fuchsia-400 rounded-full" />
-        </div>
-
-        {/* Counter-rotating middle ring */}
-        <div className="absolute -inset-4 border border-dashed border-purple-400/30 rounded-full animate-[spin_8s_linear_infinite_reverse]" />
-
-        {/* Icon container */}
-        <div className="relative size-20 bg-gradient-to-br from-violet-600 to-purple-700 rounded-2xl shadow-2xl shadow-violet-500/30 flex items-center justify-center">
-          {/* Animated play icon */}
-          <div className="relative">
-            <svg
-              className="size-10 text-white drop-shadow-lg"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path d="M8 5v14l11-7z" />
-            </svg>
-            {/* Pulse ring around play */}
-            <div className="absolute inset-0 border-2 border-white/30 rounded-full animate-ping" style={{ animationDuration: '2s' }} />
+          {/* Center icon */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="size-16 bg-white rounded-full shadow-sm flex items-center justify-center">
+              {isVideo ? (
+                // Video/Play icon
+                <svg
+                  className="size-7 text-[#1a1a1a]"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              ) : (
+                // Image/Mountain icon
+                <svg
+                  className="size-7 text-[#1a1a1a]"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2zm0-2V5h14v14H5z" />
+                  <path d="M12 9a2 2 0 100-4 2 2 0 000 4z" />
+                  <path d="M5 19l4-6 3 4 4-5 4 7H5z" />
+                </svg>
+              )}
+            </div>
           </div>
         </div>
       </div>
-
-      {/* Status text */}
-      <div className="text-center space-y-1 mt-2">
-        <div className="flex items-center justify-center gap-2">
-          <div className="w-2 h-2 bg-violet-400 rounded-full animate-pulse" />
-          <span className="text-base font-semibold text-white">Creando tu video</span>
-          <span className="inline-flex text-white">
-            <span className="animate-[bounce_1s_ease-in-out_infinite]">.</span>
-            <span className="animate-[bounce_1s_ease-in-out_infinite_0.2s]">.</span>
-            <span className="animate-[bounce_1s_ease-in-out_infinite_0.4s]">.</span>
-          </span>
-        </div>
-        <p className="text-xs text-violet-300/80">La IA está generando cada frame de tu video</p>
-      </div>
-
-      {/* Process steps indicator */}
-      <div className="flex items-center gap-3 mt-2">
-        {['Analizando', 'Renderizando', 'Finalizando'].map((step, i) => (
-          <div key={step} className="flex items-center gap-1.5">
-            <div
-              className={`w-1.5 h-1.5 rounded-full ${i === 0 ? 'bg-green-400 animate-pulse' : i === 1 ? 'bg-violet-400/50' : 'bg-gray-600'}`}
-            />
-            <span className={`text-[10px] ${i === 0 ? 'text-green-400' : i === 1 ? 'text-violet-400/50' : 'text-gray-600'}`}>
-              {step}
-            </span>
-          </div>
-        ))}
-      </div>
     </div>
+  );
+};
 
-    {/* Bottom timeline progress */}
-    <div className="absolute bottom-8 left-6 right-6 z-20">
-      {/* Timeline track */}
-      <div className="relative h-1 bg-gray-800 rounded-full overflow-hidden">
-        {/* Animated progress */}
-        <div className="absolute inset-y-0 left-0 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-purple-500 rounded-full animate-[video-progress_4s_ease-in-out_infinite]" />
-        {/* Glow effect */}
-        <div className="absolute inset-y-0 left-0 bg-gradient-to-r from-violet-400 via-fuchsia-400 to-purple-400 rounded-full blur-sm animate-[video-progress_4s_ease-in-out_infinite]" />
-      </div>
-
-      {/* Time markers */}
-      <div className="flex justify-between mt-1.5">
-        <span className="text-[9px] text-violet-400/60 font-mono">00:00</span>
-        <span className="text-[9px] text-violet-400/60 font-mono">~1-3 min</span>
-      </div>
-    </div>
-
-    {/* Floating sparkles */}
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {[...Array(6)].map((_, i) => (
-        <div
-          key={i}
-          className="absolute w-1 h-1 bg-white rounded-full animate-[float-particle_3s_ease-in-out_infinite]"
-          style={{
-            left: `${15 + i * 15}%`,
-            top: `${30 + (i % 3) * 20}%`,
-            animationDelay: `${i * 0.5}s`,
-            opacity: 0.4,
-          }}
-        />
-      ))}
-    </div>
-  </div>
-);
+// Wrapper components for backwards compatibility
+const ImageGeneratingSkeleton = () => <MediaGeneratingSkeleton type="image" />;
+const VideoGeneratingSkeleton = () => <MediaGeneratingSkeleton type="video" aspectRatio="landscape" />;
 
 // Custom video component with controls and download functionality
 const ChatVideo = ({ src }: { src: string }) => {
@@ -604,6 +511,9 @@ type MessageBubbleProps = {
     fileSize: number;
     mimeType?: string;
   }>;
+  // Props se mantienen para compatibilidad pero ahora message.generationState es la fuente de verdad
+  isGenerating?: boolean;
+  generationMode?: 'none' | 'image' | 'video' | 'geocultural';
 };
 
 type MarkdownCodeProps = ComponentPropsWithoutRef<'code'> & {
@@ -653,25 +563,19 @@ const CodeBlock = ({
 export function MessageBubble({ message, isStreaming = false, attachments }: MessageBubbleProps) {
   const isUser = message.role === 'user';
 
-  const { geoCulturalData, geoCulturalText, isLoadingGeoCultural, isGeneratingImage, isGeneratingVideo, videoUrl } = useMemo(() => {
-    if (isUser || !message.content) return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: false, isGeneratingImage: false, isGeneratingVideo: false, videoUrl: null };
+  // Estado de generación desde el mensaje - fuente de verdad para mostrar skeletons
+  const generationState = message.generationState;
+  const isGeneratingMedia = generationState?.status === 'generating';
+
+  const { geoCulturalData, geoCulturalText, isLoadingGeoCultural, videoUrl } = useMemo(() => {
+    if (isUser || !message.content) return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: false, videoUrl: null };
 
     const trimmedContent = message.content.trim();
-
-    // Check if this is an image generation loading message
-    if (trimmedContent.includes('🖼️ Generando imagen')) {
-      return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: false, isGeneratingImage: true, isGeneratingVideo: false, videoUrl: null };
-    }
-
-    // Check if this is a video generation loading message
-    if (trimmedContent.includes('🎬 Generando video') || trimmedContent.includes('🎬 Enviando') || trimmedContent.includes('🎬 Iniciando')) {
-      return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: false, isGeneratingImage: false, isGeneratingVideo: true, videoUrl: null };
-    }
 
     // Check if content contains a video tag (generated video result)
     const videoMatch = trimmedContent.match(/<video[^>]*src="([^"]+)"[^>]*>/);
     if (videoMatch) {
-      return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: false, isGeneratingImage: false, isGeneratingVideo: false, videoUrl: videoMatch[1] };
+      return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: false, videoUrl: videoMatch[1] };
     }
 
     const looksLikeJSON = trimmedContent.startsWith('{');
@@ -682,27 +586,31 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
 
         // Check for new geocultural analysis format (text-only)
         if (parsed.type === 'geocultural_analysis' && 'reply' in parsed) {
-          if (isStreaming && parsed.reply === '') {
-            // It's the start of a geocultural stream, reply is still empty. Show skeleton.
-            return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: true, isGeneratingImage: false, isGeneratingVideo: false, videoUrl: null };
+          // Si está generando geocultural y reply está vacío, mostrar skeleton
+          if (generationState?.type === 'geocultural' && isGeneratingMedia && parsed.reply === '') {
+            return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: true, videoUrl: null };
           }
-          return { geoCulturalData: null, geoCulturalText: parsed, isLoadingGeoCultural: false, isGeneratingImage: false, isGeneratingVideo: false, videoUrl: null };
+          return { geoCulturalData: null, geoCulturalText: parsed, isLoadingGeoCultural: false, videoUrl: null };
         }
 
         // Legacy format (with places and map) - no longer used but kept for compatibility
         if (parsed.reply && parsed.places && parsed.userCoords) {
-          return { geoCulturalData: parsed, geoCulturalText: null, isLoadingGeoCultural: false, isGeneratingImage: false, isGeneratingVideo: false, videoUrl: null };
+          return { geoCulturalData: parsed, geoCulturalText: null, isLoadingGeoCultural: false, videoUrl: null };
         }
       } catch {
-        return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: true, isGeneratingImage: false, isGeneratingVideo: false, videoUrl: null };
+        // Si está generando geocultural, mostrar skeleton mientras parsea
+        if (generationState?.type === 'geocultural' && isGeneratingMedia) {
+          return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: true, videoUrl: null };
+        }
+        return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: false, videoUrl: null };
       }
     }
 
-    return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: false, isGeneratingImage: false, isGeneratingVideo: false, videoUrl: null };
-  }, [message.content, isUser, isStreaming]);
+    return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: false, videoUrl: null };
+  }, [message.content, isUser, generationState, isGeneratingMedia]);
 
   // Show skeleton while generating image
-  if (isGeneratingImage) {
+  if (isGeneratingMedia && generationState?.type === 'image') {
     return (
       <div className="flex justify-start">
         <div className="inline-flex rounded-4xl border border-transparent bg-transparent text-black px-4 py-2">
@@ -713,7 +621,7 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
   }
 
   // Show skeleton while generating video
-  if (isGeneratingVideo) {
+  if (isGeneratingMedia && generationState?.type === 'video') {
     return (
       <div className="flex justify-start">
         <div className="inline-flex rounded-4xl border border-transparent bg-transparent text-black px-4 py-2">
