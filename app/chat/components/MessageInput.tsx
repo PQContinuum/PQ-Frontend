@@ -9,7 +9,7 @@ import {
   memo,
   useEffect,
 } from 'react';
-import { ArrowUp, MapPin, Paperclip, Plus, Check, Loader2, Image, X, ChevronDown, Lock, Mic, Square } from 'lucide-react';
+import { ArrowUp, MapPin, Paperclip, Plus, Check, Loader2, Image, X, ChevronDown, Lock, Mic, Square, Sparkles } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { FileUpload } from './FileUpload';
 import {
@@ -41,6 +41,24 @@ import { useImageGeneration } from '@/hooks/useImageGeneration';
 import type { ImageGenSize, ImageGenQuality } from '@/lib/memory/plan-limits';
 import { IMAGE_STYLE_PRESETS, getAvailablePresets } from '@/lib/image-gen/style-presets';
 import { useVoiceInput, formatDuration } from '@/hooks/useVoiceInput';
+
+/**
+ * FEATURE FLAGS - Control de acceso a funcionalidades
+ * ====================================================
+ * Cambia a `true` para habilitar, `false` para deshabilitar
+ *
+ * Cuando una feature está deshabilitada:
+ * - Se muestra con overlay semitransparente
+ * - Icono de candado
+ * - Tooltip "Próximamente"
+ * - No es clickeable
+ */
+const FEATURE_FLAGS = {
+  imageGeneration: false,  // Generar imagen - DESHABILITADO
+  geoCultural: true,       // GeoCultural mode
+  fileUpload: true,        // Subir archivos
+  voiceInput: true,        // Dictado por voz
+} as const;
 
 type SSEPayload = {
   delta?: string;
@@ -959,15 +977,25 @@ export const MessageInput = memo(function MessageInput() {
                   )}
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-48">
+              <DropdownMenuContent align="start" className="w-52">
+                {/* Generar imagen - Con soporte para bloqueo */}
                 <DropdownMenuItem
-                  onClick={toggleImageMode}
-                  disabled={isLoading}
-                  className="cursor-pointer"
+                  onClick={FEATURE_FLAGS.imageGeneration ? toggleImageMode : undefined}
+                  disabled={isLoading || !FEATURE_FLAGS.imageGeneration}
+                  className={`relative cursor-pointer ${!FEATURE_FLAGS.imageGeneration ? 'opacity-100' : ''}`}
                 >
+                  {/* Overlay de bloqueo - cubre todo el ancho */}
+                  {!FEATURE_FLAGS.imageGeneration && (
+                    <div className="absolute -inset-x-2 -inset-y-1 bg-gradient-to-r from-white/90 via-white/70 to-white/90 backdrop-blur-[1px] rounded-sm flex items-center justify-end pr-2 z-10">
+                      <div className="flex items-center gap-1.5 bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-[10px] font-medium shadow-sm">
+                        <Sparkles className="size-3" />
+                        <span>Próximamente</span>
+                      </div>
+                    </div>
+                  )}
                   <Image className="mr-2 size-4" />
                   <span className="flex-1">Generar imagen</span>
-                  {imageMode && <Check className="size-4 text-[#00552b]" />}
+                  {imageMode && FEATURE_FLAGS.imageGeneration && <Check className="size-4 text-[#00552b]" />}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
