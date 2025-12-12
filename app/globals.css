@@ -301,4 +301,56 @@
     scrollbar-width: thin;
     scrollbar-color: #d1d5db transparent;
   }
+
+  /* Image mode animated glow effect */
+  .image-mode-glow {
+    animation: image-mode-activate 0.6s ease-out forwards, image-mode-pulse 2s ease-in-out infinite 0.6s;
+    box-shadow:
+      0 0 0 1px rgba(56, 189, 248, 0.3),
+      0 0 15px -3px rgba(56, 189, 248, 0.4),
+      0 0 30px -5px rgba(14, 165, 233, 0.2),
+      inset 0 0 20px -10px rgba(56, 189, 248, 0.1);
+  }
 }
+
+/* Image mode activation animation */
+@keyframes image-mode-activate {
+  0% {
+    box-shadow:
+      0 0 0 0 rgba(56, 189, 248, 0),
+      0 0 0 0 rgba(56, 189, 248, 0);
+    border-color: rgba(56, 189, 248, 0);
+  }
+  50% {
+    box-shadow:
+      0 0 0 4px rgba(56, 189, 248, 0.3),
+      0 0 40px -5px rgba(14, 165, 233, 0.5);
+  }
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(56, 189, 248, 0.3),
+      0 0 15px -3px rgba(56, 189, 248, 0.4),
+      0 0 30px -5px rgba(14, 165, 233, 0.2),
+      inset 0 0 20px -10px rgba(56, 189, 248, 0.1);
+    border-color: rgba(56, 189, 248, 0.6);
+  }
+}
+
+/* Subtle pulse effect */
+@keyframes image-mode-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px rgba(56, 189, 248, 0.3),
+      0 0 15px -3px rgba(56, 189, 248, 0.4),
+      0 0 30px -5px rgba(14, 165, 233, 0.2),
+      inset 0 0 20px -10px rgba(56, 189, 248, 0.1);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(56, 189, 248, 0.5),
+      0 0 20px -3px rgba(56, 189, 248, 0.5),
+      0 0 40px -5px rgba(14, 165, 233, 0.3),
+      inset 0 0 25px -10px rgba(56, 189, 248, 0.15);
+  }
+}
+

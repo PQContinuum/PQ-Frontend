@@ -815,7 +815,11 @@ export const MessageInput = memo(function MessageInput() {
 
         <form
           onSubmit={submitMessage}
-          className="rounded-[2rem] border border-black/5 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.08)] relative"
+          className={`rounded-[2rem] bg-white shadow-[0_20px_50px_rgba(0,0,0,0.08)] relative transition-all duration-500 ${
+            imageMode
+              ? 'border-2 border-sky-400/60 image-mode-glow'
+              : 'border border-black/5'
+          }`}
         >
           {/* Image mode controls - Beautiful redesign */}
           {imageMode && (
@@ -915,9 +919,7 @@ export const MessageInput = memo(function MessageInput() {
                   disabled={isLoading}
                   className={`relative flex shrink-0 items-center justify-center rounded-full p-2 transition ${
                     geoCulturalMode || showFileUpload || attachments.length > 0 || imageMode
-                      ? imageMode
-                        ? 'bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white'
-                        : 'bg-[#00552b] text-white'
+                      ? 'bg-[#00552b] text-white'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   } disabled:opacity-40 disabled:cursor-not-allowed`}
                 >
@@ -937,7 +939,7 @@ export const MessageInput = memo(function MessageInput() {
                 >
                   <Image className="mr-2 size-4" />
                   <span className="flex-1">Generar imagen</span>
-                  {imageMode && <Check className="size-4 text-violet-600" />}
+                  {imageMode && <Check className="size-4 text-[#00552b]" />}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -1001,11 +1003,7 @@ export const MessageInput = memo(function MessageInput() {
             <button
               type="submit"
               disabled={!input.trim() || isLoading}
-              className={`flex shrink-0 items-center justify-center rounded-full p-2 text-white transition disabled:cursor-not-allowed ${
-                imageMode
-                  ? 'bg-gradient-to-br from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 disabled:from-violet-300 disabled:to-fuchsia-300'
-                  : 'bg-[#00552b] hover:bg-[#00552b]/80 disabled:bg-[#00552b]/40'
-              }`}
+              className="flex shrink-0 items-center justify-center rounded-full p-2 text-white transition disabled:cursor-not-allowed bg-[#00552b] hover:bg-[#00552b]/80 disabled:bg-[#00552b]/40"
             >
               {isGeneratingImage ? (
                 <Loader2 className="size-5 animate-spin" />
