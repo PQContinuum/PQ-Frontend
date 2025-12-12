@@ -197,7 +197,7 @@ export async function POST(request: NextRequest) {
         storagePath = `${user.id}/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
-          .from('generated-images')
+          .from('generated-videos')
           .upload(storagePath, videoBuffer, {
             contentType: 'video/mp4',
             upsert: false,
@@ -206,7 +206,7 @@ export async function POST(request: NextRequest) {
         if (!uploadError) {
           // Get signed URL (valid for 7 days)
           const { data: signedData } = await supabase.storage
-            .from('generated-images')
+            .from('generated-videos')
             .createSignedUrl(storagePath, 60 * 60 * 24 * 7);
           if (signedData?.signedUrl) {
             savedVideoUrl = signedData.signedUrl;
