@@ -64,13 +64,15 @@ export async function POST(request: Request) {
       // Allow it anyway, Whisper is quite flexible
     }
 
-    // Call OpenAI Whisper API
+    // Call OpenAI Transcription API
+    // Using gpt-4o-mini-transcribe for faster + more accurate transcription
     const transcription = await openai.audio.transcriptions.create({
       file: audioFile,
-      model: 'whisper-1',
+      model: 'gpt-4o-mini-transcribe',
       language: language,
       response_format: 'json',
-      temperature: 0,
+      // Prompt helps with domain-specific vocabulary and improves accuracy
+      prompt: 'Transcripción de voz en español. El usuario puede hablar sobre tecnología, programación, negocios, o temas cotidianos.',
     });
 
     return NextResponse.json({

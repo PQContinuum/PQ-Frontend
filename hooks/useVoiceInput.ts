@@ -77,20 +77,24 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
       setDuration(0);
       audioChunksRef.current = [];
 
-      // Request microphone access
+      // Request microphone access with optimized settings for speech recognition
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          sampleRate: 16000,
+          echoCancellation: true,      // Remove echo from speakers
+          noiseSuppression: true,      // Reduce background noise
+          autoGainControl: true,       // Normalize volume levels (5-10% WER improvement)
+          sampleRate: { ideal: 24000 }, // 24kHz optimal for gpt-4o-transcribe models
+          channelCount: { ideal: 1 },  // Mono is sufficient for speech
         },
       });
 
       streamRef.current = stream;
 
-      // Determine the best supported format
+      // Determine the best supported format - prefer opus for quality/size ratio
       const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
         ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/mp4;codecs=aac')
+        ? 'audio/mp4;codecs=aac'
         : MediaRecorder.isTypeSupported('audio/webm')
         ? 'audio/webm'
         : MediaRecorder.isTypeSupported('audio/mp4')
@@ -99,7 +103,7 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
 
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType,
-        audioBitsPerSecond: 128000,
+        audioBitsPerSecond: 192000, // Higher bitrate for better clarity
       });
 
       mediaRecorderRef.current = mediaRecorder;
