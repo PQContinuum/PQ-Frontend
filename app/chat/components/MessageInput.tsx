@@ -9,7 +9,7 @@ import {
   memo,
   useEffect,
 } from 'react';
-import { ArrowUp, MapPin, Paperclip, Plus, Check, Loader2 } from 'lucide-react';
+import { ArrowUp, MapPin, Paperclip, Plus, Check, Loader2, Image, X, ChevronDown, Lock, Mic, Square, Sparkles } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { FileUpload } from './FileUpload';
 import {
@@ -37,6 +37,28 @@ import { LocationMapConfirmDialog } from './LocationMapConfirmDialog';
 import type { GeoCulturalAnalysisText } from '@/app/chat/components/MessageBubble';
 import { shouldAutoEnableGeoCultural } from '@/lib/geocultural/auto-mode';
 import type { StructuredAddress } from '@/lib/geolocation/address-types';
+import { useImageGeneration } from '@/hooks/useImageGeneration';
+import type { ImageGenSize, ImageGenQuality } from '@/lib/memory/plan-limits';
+import { IMAGE_STYLE_PRESETS, getAvailablePresets } from '@/lib/image-gen/style-presets';
+import { useVoiceInput, formatDuration } from '@/hooks/useVoiceInput';
+
+/**
+ * FEATURE FLAGS - Control de acceso a funcionalidades
+ * ====================================================
+ * Cambia a `true` para habilitar, `false` para deshabilitar
+ *
+ * Cuando una feature está deshabilitada:
+ * - Se muestra con overlay semitransparente
+ * - Icono de candado
+ * - Tooltip "Próximamente"
+ * - No es clickeable
+ */
+const FEATURE_FLAGS = {
+  imageGeneration: false,  // Generar imagen - DESHABILITADO
+  geoCultural: true,       // GeoCultural mode
+  fileUpload: true,        // Subir archivos
+  voiceInput: true,        // Dictado por voz
+} as const;
 
 type SSEPayload = {
   delta?: string;
@@ -81,6 +103,25 @@ const parseSSEChunk = (chunk: string): SSEvent | null => {
   }
 };
 
+// Size options with aspect ratio labels
+const SIZE_OPTIONS: { value: ImageGenSize; label: string }[] = [
+  { value: '1024x1024', label: '1:1' },
+  { value: '1024x1536', label: '2:3' },
+  { value: '1536x1024', label: '3:2' },
+];
+
+// Quality options with colors
+const QUALITY_OPTIONS: {
+  value: ImageGenQuality;
+  label: string;
+  description: string;
+  color: string;
+}[] = [
+  { value: 'low', label: 'Rápida', description: 'Generación rápida', color: 'text-emerald-600' },
+  { value: 'medium', label: 'Balanceada', description: 'Balance velocidad/calidad', color: 'text-blue-600' },
+  { value: 'high', label: 'Alta', description: 'Máxima calidad', color: 'text-amber-600' },
+];
+
 export const MessageInput = memo(function MessageInput() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [input, setInput] = useState('');
@@ -90,6 +131,47 @@ export const MessageInput = memo(function MessageInput() {
   const [attachments, setAttachments] = useState<Array<{ id: string; fileName: string; fileType: string; fileSize: number; url: string; thumbnailUrl?: string; mimeType?: string }>>([]);
   const [isCreatingConversation, setIsCreatingConversation] = useState(false);
   const queryClient = useQueryClient();
+
+  // Image mode state
+  const [imageMode, setImageMode] = useState(false);
+  const [imageSize, setImageSize] = useState<ImageGenSize>('1024x1024');
+  const [imageQuality, setImageQuality] = useState<ImageGenQuality>('low');
+  const [imageStylePreset, setImageStylePreset] = useState<string>('auto');
+  const [showStylePicker, setShowStylePicker] = useState(false);
+
+  const {
+    generate: generateImage,
+    generateWithStreaming,
+    isGenerating: isGeneratingImage,
+    usage: imageUsage,
+  } = useImageGeneration();
+
+  // Voice input hook
+  const {
+    isRecording,
+    isTranscribing,
+    error: voiceError,
+    duration: recordingDuration,
+    toggleRecording,
+    cancelRecording,
+    isSupported: isVoiceSupported,
+  } = useVoiceInput({
+    onTranscript: (text) => {
+      // Append transcribed text to input
+      setInput((prev) => {
+        const separator = prev.trim() ? ' ' : '';
+        return prev + separator + text;
+      });
+      // Auto-resize textarea
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.style.height = 'auto';
+          const newHeight = Math.min(textareaRef.current.scrollHeight, 200);
+          textareaRef.current.style.height = `${newHeight}px`;
+        }
+      }, 0);
+    },
+  });
 
   const messages = useMessages();
   const geoCulturalMode = useGeoCulturalMode();
@@ -170,7 +252,6 @@ export const MessageInput = memo(function MessageInput() {
 
   const handleConfirmMapLocation = useCallback(
     (location: { lat: number; lng: number; accuracy: number; address: StructuredAddress }) => {
-      // Update store with confirmed location INCLUDING address
       setUserLocation({
         lat: location.lat,
         lng: location.lng,
@@ -245,7 +326,6 @@ export const MessageInput = memo(function MessageInput() {
   useEffect(() => {
     if (coords && address && showLocationDialog && coords.timestamp !== prevTimestampRef.current) {
       prevTimestampRef.current = coords.timestamp;
-      // Automatically open map dialog when location is obtained
       setShowLocationDialog(false);
       setShowMapDialog(true);
     }
@@ -265,13 +345,77 @@ export const MessageInput = memo(function MessageInput() {
     prevConversationIdRef.current = conversationId ?? null;
   }, [conversationId, setGeoCulturalMode, setUserLocation, setShowLocationDialog]);
 
+  // Get available presets based on plan
+  const availablePresets = getAvailablePresets(imageUsage?.premiumStyles || false);
+  const selectedPreset = IMAGE_STYLE_PRESETS.find(p => p.id === imageStylePreset) || IMAGE_STYLE_PRESETS[0];
+
+  // Handle image generation
+  const handleGenerateImage = useCallback(async () => {
+    const prompt = input.trim();
+    if (!prompt || isGeneratingImage) return;
+
+    // Add user message showing the prompt
+    const userMessageId = createId();
+    const assistantMessageId = createId();
+
+    addMessage({
+      id: userMessageId,
+      role: 'user',
+      content: `🖼️ ${prompt}`,
+    });
+    addMessage({
+      id: assistantMessageId,
+      role: 'assistant',
+      content: '🖼️ Generando imagen...',
+    });
+
+    setInput('');
+    setStreaming(true);
+
+    // Use streaming if available
+    const useStreaming = imageUsage?.streamingEnabled && imageUsage?.partialImages > 0;
+
+    const result = useStreaming
+      ? await generateWithStreaming(
+          prompt,
+          {
+            quality: imageQuality,
+            size: imageSize,
+            stylePreset: imageStylePreset,
+          },
+          // Handle partial images
+          (partialImg) => {
+            updateMessage(assistantMessageId, () => `![Generando...](${partialImg})`);
+          }
+        )
+      : await generateImage(prompt, {
+          quality: imageQuality,
+          size: imageSize,
+          stylePreset: imageStylePreset,
+        });
+
+    if (result.success) {
+      updateMessage(assistantMessageId, () => `![Imagen generada](${result.url})`);
+    } else {
+      updateMessage(assistantMessageId, () => `❌ ${result.error}`);
+    }
+
+    setStreaming(false);
+  }, [input, imageSize, imageQuality, imageStylePreset, generateImage, generateWithStreaming, isGeneratingImage, addMessage, updateMessage, setStreaming, imageUsage]);
+
   const submitMessage = useCallback(
     async (event?: FormEvent<HTMLFormElement>) => {
       event?.preventDefault();
+
+      // If in image mode, generate image instead
+      if (imageMode) {
+        handleGenerateImage();
+        return;
+      }
+
       const value = input.trim();
       if (isStreaming) return;
 
-      // Validar que haya texto si hay archivos adjuntos
       if (attachments.length > 0 && !value) {
         alert('Por favor escribe un mensaje para enviar junto con los archivos adjuntos');
         return;
@@ -306,13 +450,11 @@ export const MessageInput = memo(function MessageInput() {
       let geoCulturalContent: (GeoCulturalAnalysisText & Record<string, unknown>) | null = null;
 
       try {
-        // Si no hay conversación activa, crear una nueva
         if (!currentConversationId) {
           try {
             const title =
               value.length > 50 ? value.substring(0, 50).trim() + '...' : value;
 
-            // Usar TanStack Query mutation
             const conversation = await createConversationMutation.mutateAsync({
               title,
             });
@@ -324,7 +466,6 @@ export const MessageInput = memo(function MessageInput() {
           }
         }
 
-        // ✅ FIX: Guardar mensaje del usuario en Supabase Y esperar confirmación
         if (currentConversationId) {
           try {
             const response = await fetch(`/api/conversations/${currentConversationId}/messages`, {
@@ -338,7 +479,6 @@ export const MessageInput = memo(function MessageInput() {
             });
 
             if (response.ok) {
-              // Si hay attachments, actualizar su messageId
               if (attachments.length > 0) {
                 try {
                   await fetch(`/api/conversations/${currentConversationId}/attachments/link`, {
@@ -354,11 +494,9 @@ export const MessageInput = memo(function MessageInput() {
                 }
               }
 
-              // ✅ Invalidar cache para que TanStack Query recargue datos frescos
               queryClient.invalidateQueries({
                 queryKey: conversationKeys.detail(currentConversationId),
               });
-              // También invalidar la lista de conversaciones (para actualizar timestamp)
               queryClient.invalidateQueries({
                 queryKey: conversationKeys.lists(),
               });
@@ -368,7 +506,6 @@ export const MessageInput = memo(function MessageInput() {
           }
         }
 
-        // Update timestamp to current time for each message (keep coords/address same)
         const freshGeoCulturalContext = geoCulturalMode && userLocation
           ? { ...userLocation, timestamp: Date.now() }
           : null;
@@ -384,7 +521,6 @@ export const MessageInput = memo(function MessageInput() {
           }),
         });
 
-        // Clear attachments after sending
         setAttachments([]);
         setShowFileUpload(false);
 
@@ -427,7 +563,7 @@ export const MessageInput = memo(function MessageInput() {
                   const delta = event.data?.delta ?? '';
                   updateMessage(assistantMessageId, (prev) => {
                     const newContent = prev + delta;
-                    assistantContent = newContent; // Update final content
+                    assistantContent = newContent;
                     return newContent;
                   });
                 }
@@ -450,10 +586,8 @@ export const MessageInput = memo(function MessageInput() {
           buffer += decoder.decode();
           processBuffer();
         } catch (streamError) {
-          // Handle stream interruption (e.g., when app goes to background on mobile)
           console.warn('[Stream] Connection interrupted, preserving partial content:', streamError);
 
-          // Process any remaining buffer before handling error
           if (buffer) {
             try {
               buffer += decoder.decode();
@@ -463,17 +597,13 @@ export const MessageInput = memo(function MessageInput() {
             }
           }
 
-          // If we have partial content, keep it and add a note about interruption
           if (assistantContent) {
             console.log('[Stream] Preserved partial content:', assistantContent.substring(0, 100));
-            // Don't throw - we want to save the partial content
           } else {
-            // Only throw if we have no content at all
             throw streamError;
           }
         }
 
-        // ✅ FIX: Guardar mensaje del asistente en Supabase Y confirmar
         if (currentConversationId && assistantContent) {
           try {
             await fetch(`/api/conversations/${currentConversationId}/messages`, {
@@ -486,13 +616,11 @@ export const MessageInput = memo(function MessageInput() {
               }),
             });
 
-            // ✅ Invalidar cache y extraer hechos
             queryClient.invalidateQueries({ queryKey: conversationKeys.detail(currentConversationId) });
             queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
             fetch(`/api/conversations/${currentConversationId}/extract-facts`, { method: 'POST' })
               .catch(err => console.debug('Background fact extraction:', err.message));
 
-            // ✅ Guardar contexto geocultural en la conversación (persiste para futuras sesiones)
             if (freshGeoCulturalContext) {
               fetch(`/api/conversations/${currentConversationId}`, {
                 method: 'PATCH',
@@ -510,13 +638,9 @@ export const MessageInput = memo(function MessageInput() {
       } catch (err) {
         console.error('[Chat] Error during message submission:', err);
 
-        // Check if we already have partial content from streaming
         if (assistantContent && assistantContent.length > 0) {
-          // We have partial content - keep it and don't overwrite with error
           console.log('[Chat] Keeping partial content despite error');
-          // The content is already in the message, just end streaming
 
-          // Try to save partial content to database
           if (currentConversationId) {
             try {
               await fetch(`/api/conversations/${currentConversationId}/messages`, {
@@ -537,7 +661,6 @@ export const MessageInput = memo(function MessageInput() {
             }
           }
         } else {
-          // No content received, show error message
           const message =
             err instanceof Error
               ? err.message
@@ -565,6 +688,8 @@ export const MessageInput = memo(function MessageInput() {
       attachments,
       setAttachments,
       setShowFileUpload,
+      imageMode,
+      handleGenerateImage,
     ],
   );
 
@@ -574,6 +699,71 @@ export const MessageInput = memo(function MessageInput() {
       submitMessage();
     }
   };
+
+  const toggleImageMode = useCallback(() => {
+    setImageMode((prev) => !prev);
+    setShowFileUpload(false);
+    setShowStylePicker(false);
+    // Focus textarea when toggling
+    setTimeout(() => textareaRef.current?.focus(), 100);
+  }, []);
+
+  const isLoading = isStreaming || isGeneratingImage || isTranscribing;
+
+  // Style preset picker component
+  const StylePresetPicker = () => (
+    <div className="absolute bottom-full left-0 mb-2 w-[340px] bg-white rounded-2xl border border-gray-100 shadow-xl p-3 z-50">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-sm font-semibold text-gray-700">Estilo de imagen</span>
+        <button
+          onClick={() => setShowStylePicker(false)}
+          className="p-1 hover:bg-gray-100 rounded-lg transition"
+        >
+          <X className="size-4 text-gray-400" />
+        </button>
+      </div>
+      <div className="grid grid-cols-4 gap-2">
+        {availablePresets.map((preset) => (
+          <button
+            key={preset.id}
+            onClick={() => {
+              setImageStylePreset(preset.id);
+              setShowStylePicker(false);
+            }}
+            className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${
+              imageStylePreset === preset.id
+                ? `${preset.bgColor} ${preset.borderColor} border-2 shadow-sm`
+                : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
+            }`}
+          >
+            <span className="text-xl">{preset.icon}</span>
+            <span className={`text-xs font-medium ${
+              imageStylePreset === preset.id ? preset.color : 'text-gray-600'
+            }`}>
+              {preset.name}
+            </span>
+          </button>
+        ))}
+        {/* Show locked presets */}
+        {IMAGE_STYLE_PRESETS.filter(p => p.premium && !imageUsage?.premiumStyles).map((preset) => (
+          <button
+            key={preset.id}
+            disabled
+            className="flex flex-col items-center gap-1 p-2 rounded-xl bg-gray-50 opacity-50 cursor-not-allowed relative"
+          >
+            <span className="text-xl grayscale">{preset.icon}</span>
+            <span className="text-xs font-medium text-gray-400">{preset.name}</span>
+            <Lock className="absolute top-1 right-1 size-3 text-gray-400" />
+          </button>
+        ))}
+      </div>
+      <p className="text-xs text-gray-400 mt-3 text-center">
+        {imageUsage?.premiumStyles
+          ? 'Todos los estilos disponibles'
+          : 'Actualiza tu plan para más estilos'}
+      </p>
+    </div>
+  );
 
   return (
     <>
@@ -671,91 +861,273 @@ export const MessageInput = memo(function MessageInput() {
 
         <form
           onSubmit={submitMessage}
-          className="flex flex-row items-center justify-between gap-3 rounded-[2rem] border border-black/5 bg-white px-4 py-3 shadow-[0_20px_50px_rgba(0,0,0,0.08)]"
+          className={`rounded-[2rem] bg-white shadow-[0_20px_50px_rgba(0,0,0,0.08)] relative transition-all duration-500 ${
+            imageMode
+              ? 'border-2 border-sky-400/60 image-mode-glow'
+              : 'border border-black/5'
+          }`}
         >
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                disabled={isStreaming}
-                className={`relative flex shrink-0 items-center justify-center rounded-full p-2 transition ${
-                  geoCulturalMode || showFileUpload || attachments.length > 0
-                    ? 'bg-[#00552b] text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                } disabled:opacity-40 disabled:cursor-not-allowed`}
-              >
-                <Plus className="size-5" />
-                {attachments.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium">
-                    {attachments.length}
-                  </span>
-                )}
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56">
-              <DropdownMenuItem
-                onClick={handleLocationToggle}
-                disabled={isStreaming}
-                className="cursor-pointer"
-              >
-                <MapPin className="mr-2 size-4" />
-                <span className="flex-1">Modo GeoCultural</span>
-                {geoCulturalMode && <Check className="size-4 text-[#00552b]" />}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={async () => {
-                  // Si no hay conversación, crear una
-                  if (!conversationId && !isCreatingConversation) {
-                    setIsCreatingConversation(true);
-                    try {
-                      const conversation = await createConversationMutation.mutateAsync({
-                        title: 'Nueva conversación',
-                      });
-                      setConversationId(conversation.id);
-                      setShowFileUpload(true);
-                    } catch (error) {
-                      console.error('Error creating conversation:', error);
-                    } finally {
-                      setIsCreatingConversation(false);
-                    }
-                  } else if (conversationId) {
-                    setShowFileUpload(!showFileUpload);
-                  }
-                }}
-                disabled={isStreaming || isCreatingConversation}
-                className="cursor-pointer"
-              >
-                <Paperclip className="mr-2 size-4" />
-                <span className="flex-1">Adjuntar archivos</span>
-                {attachments.length > 0 && (
-                  <span className="ml-auto text-xs font-medium text-[#00552b]">
-                    {attachments.length}
-                  </span>
-                )}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Image mode controls - Beautiful redesign */}
+          {imageMode && (
+            <div className="px-4 pt-3 pb-2 border-b border-gray-100">
+              <div className="flex items-center gap-3 flex-wrap">
+                {/* Style preset selector button */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowStylePicker(!showStylePicker)}
+                    disabled={isLoading}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all ${
+                      showStylePicker
+                        ? `${selectedPreset.bgColor} ${selectedPreset.borderColor} border`
+                        : 'bg-gray-100 hover:bg-gray-200'
+                    } disabled:opacity-40`}
+                  >
+                    <span className="text-base">{selectedPreset.icon}</span>
+                    <span className={`text-sm font-medium ${showStylePicker ? selectedPreset.color : 'text-gray-700'}`}>
+                      {selectedPreset.name}
+                    </span>
+                    <ChevronDown className={`size-3.5 transition-transform ${showStylePicker ? 'rotate-180' : ''} ${
+                      showStylePicker ? selectedPreset.color : 'text-gray-400'
+                    }`} />
+                  </button>
+                  {showStylePicker && <StylePresetPicker />}
+                </div>
 
-          <textarea
-            ref={textareaRef}
-            autoFocus
-            value={input}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-            rows={1}
-            placeholder={geoCulturalMode ? "Pregunta sobre lugares culturales..." : "Empieza con una idea..."}
-            disabled={isStreaming}
-            className="w-full min-h-[20px] max-h-[200px] resize-none overflow-y-auto bg-transparent text-base leading-5 text-[#111111] outline-none placeholder:text-[#111111]/40 disabled:opacity-60 scrollbar-thin"
-          />
-          <button
-            type="submit"
-            disabled={(!input.trim() && attachments.length === 0) || isStreaming}
-            className="flex shrink-0 items-center justify-center rounded-full bg-[#00552b] p-2 text-white transition hover:bg-[#00552b]/80 disabled:cursor-not-allowed disabled:bg-[#00552b]/40"
-            title={attachments.length > 0 && !input.trim() ? 'Escribe un mensaje para enviar con los archivos' : ''}
-          >
-            <ArrowUp className="size-5" />
-          </button>
+                {/* Size selector */}
+                <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+                  {SIZE_OPTIONS.filter(s => imageUsage?.allowedSizes?.includes(s.value) || s.value === '1024x1024').map((size) => (
+                    <button
+                      key={size.value}
+                      type="button"
+                      onClick={() => setImageSize(size.value)}
+                      disabled={isLoading}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition ${
+                        imageSize === size.value
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-500 hover:text-gray-700'
+                      } disabled:opacity-40`}
+                    >
+                      {size.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Quality selector - Same style as size selector with colors */}
+                <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+                  {QUALITY_OPTIONS.filter(q => imageUsage?.allowedQualities?.includes(q.value) || q.value === 'low').map((q) => {
+                    const isSelected = imageQuality === q.value;
+                    return (
+                      <button
+                        key={q.value}
+                        type="button"
+                        onClick={() => setImageQuality(q.value)}
+                        disabled={isLoading}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-150 ${
+                          isSelected
+                            ? `bg-white shadow-sm ${q.color}`
+                            : 'text-gray-500 hover:text-gray-700'
+                        } disabled:opacity-40`}
+                        title={q.description}
+                      >
+                        {q.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Close button */}
+                <button
+                  type="button"
+                  onClick={() => setImageMode(false)}
+                  className="ml-auto p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+
+              {/* Streaming indicator */}
+              {imageUsage?.streamingEnabled && (
+                <div className="flex items-center gap-1.5 mt-2 text-xs text-gray-400">
+                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                  <span>Vista previa en tiempo real activada</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Main input row */}
+          <div className="flex flex-row items-center gap-3 px-4 py-3">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  disabled={isLoading}
+                  className={`relative flex shrink-0 items-center justify-center rounded-full p-2 transition ${
+                    geoCulturalMode || showFileUpload || attachments.length > 0 || imageMode
+                      ? 'bg-[#00552b] text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  } disabled:opacity-40 disabled:cursor-not-allowed`}
+                >
+                  <Plus className="size-5" />
+                  {attachments.length > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium">
+                      {attachments.length}
+                    </span>
+                  )}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-52">
+                {/* Generar imagen - Con soporte para bloqueo */}
+                <DropdownMenuItem
+                  onClick={FEATURE_FLAGS.imageGeneration ? toggleImageMode : undefined}
+                  disabled={isLoading || !FEATURE_FLAGS.imageGeneration}
+                  className={`relative cursor-pointer ${!FEATURE_FLAGS.imageGeneration ? 'opacity-100' : ''}`}
+                >
+                  {/* Overlay de bloqueo - cubre todo el ancho */}
+                  {!FEATURE_FLAGS.imageGeneration && (
+                    <div className="absolute -inset-x-2 -inset-y-1 bg-gradient-to-r from-white/90 via-white/70 to-white/90 backdrop-blur-[1px] rounded-sm flex items-center justify-end pr-2 z-10">
+                      <div className="flex items-center gap-1.5 bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-[10px] font-medium shadow-sm">
+                        <Sparkles className="size-3" />
+                        <span>Próximamente</span>
+                      </div>
+                    </div>
+                  )}
+                  <Image className="mr-2 size-4" />
+                  <span className="flex-1">Generar imagen</span>
+                  {imageMode && FEATURE_FLAGS.imageGeneration && <Check className="size-4 text-[#00552b]" />}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={handleLocationToggle}
+                  disabled={isLoading}
+                  className="cursor-pointer"
+                >
+                  <MapPin className="mr-2 size-4" />
+                  <span className="flex-1">GeoCultural</span>
+                  {geoCulturalMode && <Check className="size-4 text-[#00552b]" />}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={async () => {
+                    if (!conversationId && !isCreatingConversation) {
+                      setIsCreatingConversation(true);
+                      try {
+                        const conversation = await createConversationMutation.mutateAsync({
+                          title: 'Nueva conversación',
+                        });
+                        setConversationId(conversation.id);
+                        setShowFileUpload(true);
+                      } catch (error) {
+                        console.error('Error creating conversation:', error);
+                      } finally {
+                        setIsCreatingConversation(false);
+                      }
+                    } else if (conversationId) {
+                      setShowFileUpload(!showFileUpload);
+                    }
+                  }}
+                  disabled={isLoading || isCreatingConversation}
+                  className="cursor-pointer"
+                >
+                  <Paperclip className="mr-2 size-4" />
+                  <span className="flex-1">Archivos</span>
+                  {attachments.length > 0 && (
+                    <span className="text-xs text-gray-400">{attachments.length}</span>
+                  )}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <textarea
+              ref={textareaRef}
+              autoFocus
+              value={input}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              rows={1}
+              placeholder={
+                isRecording
+                  ? 'Escuchando...'
+                  : isTranscribing
+                  ? 'Transcribiendo...'
+                  : imageMode
+                  ? `Describe tu imagen en estilo ${selectedPreset.name}...`
+                  : geoCulturalMode
+                  ? 'Pregunta sobre lugares...'
+                  : 'Mensaje...'
+              }
+              disabled={isLoading || isRecording}
+              className="flex-1 min-h-[20px] max-h-[200px] resize-none overflow-y-auto bg-transparent text-base leading-5 text-[#111111] outline-none placeholder:text-[#111111]/40 disabled:opacity-60 scrollbar-thin"
+            />
+
+            {/* Voice input button */}
+            {isVoiceSupported && (
+              <div className="relative flex items-center">
+                {/* Recording indicator with waveform */}
+                {isRecording && (
+                  <div className="flex items-center gap-2 mr-2">
+                    {/* Waveform visualization */}
+                    <div className="flex items-center gap-0.5 h-5">
+                      {[...Array(5)].map((_, i) => (
+                        <div
+                          key={i}
+                          className="voice-waveform-bar w-0.5 bg-red-500 rounded-full"
+                          style={{ height: '100%' }}
+                        />
+                      ))}
+                    </div>
+                    {/* Duration */}
+                    <span className="text-xs font-medium text-red-500 tabular-nums min-w-[40px]">
+                      {formatDuration(recordingDuration)}
+                    </span>
+                  </div>
+                )}
+
+                {/* Transcribing indicator */}
+                {isTranscribing && (
+                  <div className="flex items-center gap-2 mr-2">
+                    <Loader2 className="size-4 animate-spin text-[#00552b]" />
+                    <span className="text-xs font-medium text-[#00552b]">Transcribiendo...</span>
+                  </div>
+                )}
+
+                {/* Microphone button */}
+                <button
+                  type="button"
+                  onClick={toggleRecording}
+                  disabled={isLoading && !isRecording}
+                  className={`relative flex shrink-0 items-center justify-center rounded-full p-2 transition ${
+                    isRecording
+                      ? 'bg-red-500 text-white voice-recording-btn'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-[#00552b]'
+                  } disabled:opacity-40 disabled:cursor-not-allowed`}
+                  title={isRecording ? 'Detener grabación' : 'Dictado por voz'}
+                >
+                  {/* Animated ring when recording */}
+                  {isRecording && (
+                    <span className="absolute inset-0 rounded-full bg-red-500/30 voice-recording-ring" />
+                  )}
+                  {isRecording ? (
+                    <Square className="size-4 fill-current" />
+                  ) : (
+                    <Mic className="size-5" />
+                  )}
+                </button>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={(!input.trim() || isLoading) && !isRecording}
+              className="flex shrink-0 items-center justify-center rounded-full p-2 text-white transition disabled:cursor-not-allowed bg-[#00552b] hover:bg-[#00552b]/80 disabled:bg-[#00552b]/40"
+            >
+              {isGeneratingImage ? (
+                <Loader2 className="size-5 animate-spin" />
+              ) : (
+                <ArrowUp className="size-5" />
+              )}
+            </button>
+          </div>
         </form>
       </div>
     </>

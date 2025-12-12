@@ -9,8 +9,381 @@ import type { ChatMessage } from '@/app/chat/store';
 import { GeoCulturalResponse } from './GeoCulturalResponse';
 import { AttachmentsPreview } from './AttachmentsPreview';
 import { SpeechButton } from './SpeechButton';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 import 'highlight.js/styles/github.css';
+
+// Skeleton component for image generation - creative animated preview
+const ImageGeneratingSkeleton = () => (
+  <div className="w-[340px] h-[340px] rounded-2xl overflow-hidden relative bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50">
+    {/* Animated gradient background */}
+    <div className="absolute inset-0 bg-gradient-to-r from-blue-100/50 via-purple-100/50 to-pink-100/50 animate-[gradient-shift_3s_ease-in-out_infinite]" />
+
+    {/* Floating particles effect */}
+    <div className="absolute inset-0 overflow-hidden">
+      <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-blue-400/30 rounded-full animate-[float-particle_2s_ease-in-out_infinite]" />
+      <div className="absolute top-1/3 right-1/4 w-1.5 h-1.5 bg-purple-400/30 rounded-full animate-[float-particle_2.5s_ease-in-out_infinite_0.5s]" />
+      <div className="absolute bottom-1/3 left-1/3 w-2.5 h-2.5 bg-pink-400/30 rounded-full animate-[float-particle_3s_ease-in-out_infinite_1s]" />
+      <div className="absolute top-1/2 right-1/3 w-1 h-1 bg-blue-300/40 rounded-full animate-[float-particle_2s_ease-in-out_infinite_0.3s]" />
+    </div>
+
+    {/* Center content */}
+    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+      {/* Animated icon container */}
+      <div className="relative">
+        {/* Outer glow ring */}
+        <div className="absolute -inset-4 bg-gradient-to-r from-blue-400/20 via-purple-400/20 to-pink-400/20 rounded-full blur-xl animate-pulse" />
+
+        {/* Spinning ring */}
+        <div className="absolute -inset-2 border-2 border-dashed border-gray-300/50 rounded-full animate-[spin_8s_linear_infinite]" />
+
+        {/* Icon background */}
+        <div className="relative size-16 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg flex items-center justify-center">
+          <svg
+            className="size-8 text-gray-400 animate-pulse"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
+            />
+          </svg>
+        </div>
+      </div>
+
+      {/* Text with shimmer */}
+      <div className="relative">
+        <span className="text-sm font-medium text-gray-500">Creando tu imagen</span>
+        <span className="ml-1 inline-flex">
+          <span className="animate-[bounce_1s_ease-in-out_infinite]">.</span>
+          <span className="animate-[bounce_1s_ease-in-out_infinite_0.2s]">.</span>
+          <span className="animate-[bounce_1s_ease-in-out_infinite_0.4s]">.</span>
+        </span>
+      </div>
+    </div>
+
+    {/* Bottom shimmer bar */}
+    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-200/50 overflow-hidden">
+      <div className="h-full w-1/3 bg-gradient-to-r from-transparent via-blue-400/60 to-transparent animate-[shimmer-bar_1.5s_ease-in-out_infinite]" />
+    </div>
+  </div>
+);
+
+// Custom image component with lightbox, download, and share functionality
+const ChatImage = ({ src, alt, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) => {
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+  const [showLightbox, setShowLightbox] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const imageUrl = typeof src === 'string' ? src : '';
+
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!imageUrl) return;
+
+    try {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `imagen-generada-${Date.now()}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading image:', error);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    if (!imageUrl) return;
+    try {
+      await navigator.clipboard.writeText(imageUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      console.error('Error copying link:', error);
+    }
+  };
+
+  const handleShare = (platform: string) => {
+    if (!imageUrl) return;
+    const text = encodeURIComponent('Mira esta imagen que generé con IA ✨');
+    const url = encodeURIComponent(imageUrl);
+
+    const shareUrls: Record<string, string> = {
+      twitter: `https://twitter.com/intent/tweet?text=${text}&url=${url}`,
+      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${url}`,
+      reddit: `https://reddit.com/submit?url=${url}&title=${text}`,
+    };
+
+    if (shareUrls[platform]) {
+      window.open(shareUrls[platform], '_blank', 'width=600,height=400');
+    }
+  };
+
+  if (hasError) {
+    return (
+      <span className="block w-full max-w-[340px] aspect-square rounded-2xl bg-gray-100 flex items-center justify-center">
+        <span className="text-sm text-gray-400">Error al cargar imagen</span>
+      </span>
+    );
+  }
+
+  return (
+    <>
+      <span className="block w-full max-w-[340px]">
+        {/* Title */}
+        <span className="block text-sm font-semibold text-gray-800 mb-2">Imagen creada</span>
+
+        <span className="relative block group cursor-pointer">
+          {isLoading && (
+            <span className="absolute inset-0 block rounded-2xl bg-gray-100 animate-pulse" />
+          )}
+
+          {/* Image */}
+          <img
+            src={src}
+            alt={alt || 'Imagen generada'}
+            className="w-full h-auto rounded-2xl shadow-sm border border-black/5 transition-transform duration-200 group-hover:scale-[1.02]"
+            onClick={() => setShowLightbox(true)}
+            onLoad={() => setIsLoading(false)}
+            onError={() => {
+              setIsLoading(false);
+              setHasError(true);
+            }}
+            {...props}
+          />
+
+        {/* Hover overlay with gradient and actions */}
+        {!isLoading && (
+          <span
+            className="absolute inset-0 rounded-2xl overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+            onClick={() => setShowLightbox(true)}
+          >
+            {/* Bottom gradient for visibility */}
+            <span className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 via-black/20 to-transparent pointer-events-none" />
+
+            {/* Action buttons */}
+            <span className="absolute inset-x-0 bottom-0 flex items-center justify-between p-3">
+              {/* Download button - left */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); handleDownload(e); }}
+                    className="p-2 text-white hover:scale-110 transition-transform duration-150"
+                  >
+                    <svg className="size-5 drop-shadow-lg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">Descargar</TooltipContent>
+              </Tooltip>
+
+              {/* Share button - right */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setShowShareModal(true); }}
+                    className="p-2 text-white hover:scale-110 transition-transform duration-150"
+                  >
+                    <svg className="size-5 drop-shadow-lg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                    </svg>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">Compartir</TooltipContent>
+              </Tooltip>
+            </span>
+          </span>
+        )}
+        </span>
+      </span>
+
+      {/* Lightbox Modal */}
+      {showLightbox && (
+        <span
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm animate-[fade-in_0.2s_ease-out]"
+          onClick={() => setShowLightbox(false)}
+        >
+          {/* Close button */}
+          <button
+            type="button"
+            onClick={() => setShowLightbox(false)}
+            className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition"
+          >
+            <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
+          {/* Large image */}
+          <img
+            src={src}
+            alt={alt || 'Imagen generada'}
+            className="max-w-[90vw] max-h-[85vh] object-contain rounded-lg shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+
+          {/* Bottom actions */}
+          <span className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleDownload}
+              className="flex items-center gap-2 px-4 py-2 bg-white rounded-full text-sm font-medium text-gray-800 hover:bg-gray-100 transition shadow-lg"
+            >
+              <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Descargar
+            </button>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setShowShareModal(true); }}
+              className="flex items-center gap-2 px-4 py-2 bg-white rounded-full text-sm font-medium text-gray-800 hover:bg-gray-100 transition shadow-lg"
+            >
+              <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+              </svg>
+              Compartir
+            </button>
+          </span>
+        </span>
+      )}
+
+      {/* Share Modal */}
+      {showShareModal && (
+        <span
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-[fade-in_0.2s_ease-out]"
+          onClick={() => setShowShareModal(false)}
+        >
+          <span
+            className="bg-white rounded-3xl shadow-2xl w-full max-w-md mx-4 overflow-hidden animate-[fade-in-up_0.3s_ease-out]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <span className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <span className="text-lg font-semibold text-gray-900">Compartir imagen</span>
+              <button
+                type="button"
+                onClick={() => setShowShareModal(false)}
+                className="p-1.5 rounded-full hover:bg-gray-100 text-gray-500 transition"
+              >
+                <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </span>
+
+            {/* Image preview */}
+            <span className="block p-4 bg-gray-50">
+              <img
+                src={src}
+                alt={alt || 'Imagen generada'}
+                className="w-full max-h-48 object-contain rounded-xl"
+              />
+            </span>
+
+            {/* Share options */}
+            <span className="block p-6 space-y-3">
+              {/* Copy link */}
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition text-left"
+              >
+                <span className="flex items-center justify-center size-10 rounded-full bg-gray-200">
+                  {copied ? (
+                    <svg className="size-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : (
+                    <svg className="size-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                    </svg>
+                  )}
+                </span>
+                <span className="flex-1">
+                  <span className="block text-sm font-medium text-gray-900">
+                    {copied ? '¡Copiado!' : 'Copiar enlace'}
+                  </span>
+                  <span className="block text-xs text-gray-500">Comparte el enlace directo</span>
+                </span>
+              </button>
+
+              {/* Social share buttons */}
+              <span className="flex items-center gap-2">
+                {/* X (Twitter) */}
+                <button
+                  type="button"
+                  onClick={() => handleShare('twitter')}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-black hover:bg-gray-800 transition text-white"
+                >
+                  <svg className="size-4" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                  </svg>
+                  <span className="text-sm font-medium">X</span>
+                </button>
+
+                {/* LinkedIn */}
+                <button
+                  type="button"
+                  onClick={() => handleShare('linkedin')}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[#0A66C2] hover:bg-[#004182] transition text-white"
+                >
+                  <svg className="size-4" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+                  </svg>
+                  <span className="text-sm font-medium">LinkedIn</span>
+                </button>
+
+                {/* Reddit */}
+                <button
+                  type="button"
+                  onClick={() => handleShare('reddit')}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[#FF4500] hover:bg-[#CC3700] transition text-white"
+                >
+                  <svg className="size-4" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z" />
+                  </svg>
+                  <span className="text-sm font-medium">Reddit</span>
+                </button>
+              </span>
+
+              {/* Download */}
+              <button
+                type="button"
+                onClick={handleDownload}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition text-left"
+              >
+                <span className="flex items-center justify-center size-10 rounded-full bg-green-100">
+                  <svg className="size-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                </span>
+                <span className="flex-1">
+                  <span className="block text-sm font-medium text-gray-900">Descargar imagen</span>
+                  <span className="block text-xs text-gray-500">Guardar en tu dispositivo</span>
+                </span>
+              </button>
+            </span>
+          </span>
+        </span>
+      )}
+    </>
+  );
+};
 
 export type GeoCulturalAnalysisText = {
   type: 'geocultural_analysis';
@@ -77,10 +450,16 @@ const CodeBlock = ({
 export function MessageBubble({ message, isStreaming = false, attachments }: MessageBubbleProps) {
   const isUser = message.role === 'user';
 
-  const { geoCulturalData, geoCulturalText, isLoadingGeoCultural } = useMemo(() => {
-    if (isUser || !message.content) return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: false };
+  const { geoCulturalData, geoCulturalText, isLoadingGeoCultural, isGeneratingImage } = useMemo(() => {
+    if (isUser || !message.content) return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: false, isGeneratingImage: false };
 
     const trimmedContent = message.content.trim();
+
+    // Check if this is an image generation loading message
+    if (trimmedContent.includes('🖼️ Generando imagen')) {
+      return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: false, isGeneratingImage: true };
+    }
+
     const looksLikeJSON = trimmedContent.startsWith('{');
 
     if (looksLikeJSON) {
@@ -91,22 +470,33 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
         if (parsed.type === 'geocultural_analysis' && 'reply' in parsed) {
           if (isStreaming && parsed.reply === '') {
             // It's the start of a geocultural stream, reply is still empty. Show skeleton.
-            return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: true };
+            return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: true, isGeneratingImage: false };
           }
-          return { geoCulturalData: null, geoCulturalText: parsed, isLoadingGeoCultural: false };
+          return { geoCulturalData: null, geoCulturalText: parsed, isLoadingGeoCultural: false, isGeneratingImage: false };
         }
 
         // Legacy format (with places and map) - no longer used but kept for compatibility
         if (parsed.reply && parsed.places && parsed.userCoords) {
-          return { geoCulturalData: parsed, geoCulturalText: null, isLoadingGeoCultural: false };
+          return { geoCulturalData: parsed, geoCulturalText: null, isLoadingGeoCultural: false, isGeneratingImage: false };
         }
       } catch {
-        return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: true };
+        return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: true, isGeneratingImage: false };
       }
     }
 
-    return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: false };
+    return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: false, isGeneratingImage: false };
   }, [message.content, isUser, isStreaming]);
+
+  // Show skeleton while generating image
+  if (isGeneratingImage) {
+    return (
+      <div className="flex justify-start">
+        <div className="inline-flex rounded-4xl border border-transparent bg-transparent text-black px-4 py-2">
+          <ImageGeneratingSkeleton />
+        </div>
+      </div>
+    );
+  }
 
   if (isLoadingGeoCultural) {
     return (
@@ -380,6 +770,7 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
                   ),
                   ul: (props) => <ul {...props} className="list-disc pl-6" />,
                   ol: (props) => <ol {...props} className="list-decimal pl-6" />,
+                  img: (props) => <ChatImage {...props} />,
                 }}
               >
                 {message.content || ' '}
@@ -387,8 +778,8 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
             </div>
           </div>
         </div>
-        {/* Speech button for assistant messages */}
-        {!isUser && !isStreaming && message.content && (
+        {/* Speech button for assistant messages (not for generated images) */}
+        {!isUser && !isStreaming && message.content && !message.content.includes('![Imagen generada]') && (
           <div className="flex justify-start pl-2">
             <SpeechButton text={message.content} />
           </div>

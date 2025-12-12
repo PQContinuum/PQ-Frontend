@@ -192,6 +192,59 @@
   }
 }
 
+/* Image generation skeleton animations */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes shimmer-bar {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(400%);
+  }
+}
+
+@keyframes gradient-shift {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes float-particle {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translateY(-10px) scale(1.2);
+    opacity: 0.6;
+  }
+}
+
+@keyframes progress {
+  0% {
+    width: 0%;
+  }
+  50% {
+    width: 70%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
 @layer utilities {
   .animate-float {
     animation: float 6s ease-in-out infinite;
@@ -248,4 +301,106 @@
     scrollbar-width: thin;
     scrollbar-color: #d1d5db transparent;
   }
+
+  /* Image mode animated glow effect */
+  .image-mode-glow {
+    animation: image-mode-activate 0.6s ease-out forwards, image-mode-pulse 2s ease-in-out infinite 0.6s;
+    box-shadow:
+      0 0 0 1px rgba(56, 189, 248, 0.3),
+      0 0 15px -3px rgba(56, 189, 248, 0.4),
+      0 0 30px -5px rgba(14, 165, 233, 0.2),
+      inset 0 0 20px -10px rgba(56, 189, 248, 0.1);
+  }
 }
+
+/* Image mode activation animation */
+@keyframes image-mode-activate {
+  0% {
+    box-shadow:
+      0 0 0 0 rgba(56, 189, 248, 0),
+      0 0 0 0 rgba(56, 189, 248, 0);
+    border-color: rgba(56, 189, 248, 0);
+  }
+  50% {
+    box-shadow:
+      0 0 0 4px rgba(56, 189, 248, 0.3),
+      0 0 40px -5px rgba(14, 165, 233, 0.5);
+  }
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(56, 189, 248, 0.3),
+      0 0 15px -3px rgba(56, 189, 248, 0.4),
+      0 0 30px -5px rgba(14, 165, 233, 0.2),
+      inset 0 0 20px -10px rgba(56, 189, 248, 0.1);
+    border-color: rgba(56, 189, 248, 0.6);
+  }
+}
+
+/* Subtle pulse effect */
+@keyframes image-mode-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px rgba(56, 189, 248, 0.3),
+      0 0 15px -3px rgba(56, 189, 248, 0.4),
+      0 0 30px -5px rgba(14, 165, 233, 0.2),
+      inset 0 0 20px -10px rgba(56, 189, 248, 0.1);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(56, 189, 248, 0.5),
+      0 0 20px -3px rgba(56, 189, 248, 0.5),
+      0 0 40px -5px rgba(14, 165, 233, 0.3),
+      inset 0 0 25px -10px rgba(56, 189, 248, 0.15);
+  }
+}
+
+/* Voice recording animations */
+@keyframes voice-recording-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+  }
+}
+
+@keyframes voice-recording-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+@keyframes voice-waveform {
+  0%, 100% {
+    transform: scaleY(0.5);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+.voice-recording-btn {
+  animation: voice-recording-pulse 1.5s ease-in-out infinite;
+}
+
+.voice-recording-ring {
+  animation: voice-recording-ring 1.5s ease-out infinite;
+}
+
+.voice-waveform-bar {
+  animation: voice-waveform 0.5s ease-in-out infinite;
+}
+
+.voice-waveform-bar:nth-child(1) { animation-delay: 0s; }
+.voice-waveform-bar:nth-child(2) { animation-delay: 0.1s; }
+.voice-waveform-bar:nth-child(3) { animation-delay: 0.2s; }
+.voice-waveform-bar:nth-child(4) { animation-delay: 0.3s; }
+.voice-waveform-bar:nth-child(5) { animation-delay: 0.15s; }
+
