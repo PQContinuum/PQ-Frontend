@@ -578,7 +578,7 @@ export const MessageInput = memo(function MessageInput() {
       aspectRatio: videoAspectRatio,
       generateAudio: true,
       conversationId: currentConversationId || undefined,
-      messageId: assistantMessageId,
+      // No pasamos messageId porque el mensaje aún no existe en BD
     });
 
     clearInterval(progressInterval);
