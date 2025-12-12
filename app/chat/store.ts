@@ -153,14 +153,17 @@ const createChatStore = create<ChatStore>()(
       generatingMessageId: null,
 
       // Actions
-      addMessage: (message) =>
-        set(
+      addMessage: (message) => {
+        console.log('[Store] addMessage called with:', message);
+        console.log('[Store] message.generationState:', message.generationState);
+        return set(
           (state) => ({
             messages: [...state.messages, message],
           }),
           false,
           'addMessage'
-        ),
+        );
+      },
 
       updateMessage: (id, updater) =>
         set(

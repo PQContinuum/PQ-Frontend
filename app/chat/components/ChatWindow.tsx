@@ -62,7 +62,8 @@ export const ChatWindow = memo(function ChatWindow() {
           />
         </div>
       ))}
-      {isStreaming && (
+      {/* Solo mostrar TypingIndicator si NO se está generando imagen o video */}
+      {isStreaming && generationMode === 'none' && (
         <div className="px-2">
           <TypingIndicator />
         </div>
