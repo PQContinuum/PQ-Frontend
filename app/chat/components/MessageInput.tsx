@@ -381,11 +381,12 @@ export const MessageInput = memo(function MessageInput() {
     // Add user message showing the prompt
     const userMessageId = createId();
     const assistantMessageId = createId();
+    const userContent = `🖼️ ${prompt}`;
 
     addMessage({
       id: userMessageId,
       role: 'user',
-      content: `🖼️ ${prompt}`,
+      content: userContent,
     });
     addMessage({
       id: assistantMessageId,
@@ -395,6 +396,36 @@ export const MessageInput = memo(function MessageInput() {
 
     setInput('');
     setStreaming(true);
+
+    // Create conversation if needed
+    let currentConversationId = conversationId;
+    if (!currentConversationId) {
+      try {
+        const title = prompt.length > 50 ? `🖼️ ${prompt.substring(0, 47)}...` : `🖼️ ${prompt}`;
+        const conversation = await createConversationMutation.mutateAsync({ title });
+        currentConversationId = conversation.id;
+        setConversationId(conversation.id);
+      } catch (error) {
+        console.error('Error creating conversation for image:', error);
+      }
+    }
+
+    // Save user message to database
+    if (currentConversationId) {
+      try {
+        await fetch(`/api/conversations/${currentConversationId}/messages`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: userMessageId,
+            role: 'user',
+            content: userContent,
+          }),
+        });
+      } catch (error) {
+        console.error('Error saving user message:', error);
+      }
+    }
 
     // Use streaming if available
     const useStreaming = imageUsage?.streamingEnabled && imageUsage?.partialImages > 0;
@@ -418,14 +449,36 @@ export const MessageInput = memo(function MessageInput() {
           stylePreset: imageStylePreset,
         });
 
+    let assistantContent: string;
     if (result.success) {
-      updateMessage(assistantMessageId, () => `![Imagen generada](${result.url})`);
+      assistantContent = `![Imagen generada](${result.url})`;
+      updateMessage(assistantMessageId, () => assistantContent);
     } else {
-      updateMessage(assistantMessageId, () => `❌ ${result.error}`);
+      assistantContent = `❌ ${result.error}`;
+      updateMessage(assistantMessageId, () => assistantContent);
+    }
+
+    // Save assistant message to database
+    if (currentConversationId) {
+      try {
+        await fetch(`/api/conversations/${currentConversationId}/messages`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: assistantMessageId,
+            role: 'assistant',
+            content: assistantContent,
+          }),
+        });
+        queryClient.invalidateQueries({ queryKey: conversationKeys.detail(currentConversationId) });
+        queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
+      } catch (error) {
+        console.error('Error saving assistant message:', error);
+      }
     }
 
     setStreaming(false);
-  }, [input, imageSize, imageQuality, imageStylePreset, generateImage, generateWithStreaming, isGeneratingImage, addMessage, updateMessage, setStreaming, imageUsage]);
+  }, [input, imageSize, imageQuality, imageStylePreset, generateImage, generateWithStreaming, isGeneratingImage, addMessage, updateMessage, setStreaming, imageUsage, conversationId, createConversationMutation, setConversationId, queryClient]);
 
   // Handle video generation
   const handleGenerateVideo = useCallback(async () => {
@@ -440,11 +493,12 @@ export const MessageInput = memo(function MessageInput() {
 
     const userMessageId = createId();
     const assistantMessageId = createId();
+    const userContent = `🎬 ${prompt}`;
 
     addMessage({
       id: userMessageId,
       role: 'user',
-      content: `🎬 ${prompt}`,
+      content: userContent,
     });
     addMessage({
       id: assistantMessageId,
@@ -454,6 +508,36 @@ export const MessageInput = memo(function MessageInput() {
 
     setInput('');
     setStreaming(true);
+
+    // Create conversation if needed
+    let currentConversationId = conversationId;
+    if (!currentConversationId) {
+      try {
+        const title = prompt.length > 50 ? `🎬 ${prompt.substring(0, 47)}...` : `🎬 ${prompt}`;
+        const conversation = await createConversationMutation.mutateAsync({ title });
+        currentConversationId = conversation.id;
+        setConversationId(conversation.id);
+      } catch (error) {
+        console.error('Error creating conversation for video:', error);
+      }
+    }
+
+    // Save user message to database
+    if (currentConversationId) {
+      try {
+        await fetch(`/api/conversations/${currentConversationId}/messages`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: userMessageId,
+            role: 'user',
+            content: userContent,
+          }),
+        });
+      } catch (error) {
+        console.error('Error saving user message:', error);
+      }
+    }
 
     // Update message with progress
     const progressInterval = setInterval(() => {
@@ -472,17 +556,37 @@ export const MessageInput = memo(function MessageInput() {
 
     clearInterval(progressInterval);
 
+    let assistantContent: string;
     if (result.success) {
       // Display video with HTML5 video tag format
-      updateMessage(assistantMessageId, () =>
-        `<video controls src="${result.url}" style="max-width:100%;border-radius:12px;"></video>`
-      );
+      assistantContent = `<video controls src="${result.url}" style="max-width:100%;border-radius:12px;"></video>`;
+      updateMessage(assistantMessageId, () => assistantContent);
     } else {
-      updateMessage(assistantMessageId, () => `❌ ${result.error}`);
+      assistantContent = `❌ ${result.error}`;
+      updateMessage(assistantMessageId, () => assistantContent);
+    }
+
+    // Save assistant message to database
+    if (currentConversationId) {
+      try {
+        await fetch(`/api/conversations/${currentConversationId}/messages`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: assistantMessageId,
+            role: 'assistant',
+            content: assistantContent,
+          }),
+        });
+        queryClient.invalidateQueries({ queryKey: conversationKeys.detail(currentConversationId) });
+        queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
+      } catch (error) {
+        console.error('Error saving assistant message:', error);
+      }
     }
 
     setStreaming(false);
-  }, [input, videoModeType, videoImageUrl, videoDuration, videoAspectRatio, generateVideo, isGeneratingVideo, videoProgress, addMessage, updateMessage, setStreaming]);
+  }, [input, videoModeType, videoImageUrl, videoDuration, videoAspectRatio, generateVideo, isGeneratingVideo, videoProgress, addMessage, updateMessage, setStreaming, conversationId, createConversationMutation, setConversationId, queryClient]);
 
   const submitMessage = useCallback(
     async (event?: FormEvent<HTMLFormElement>) => {
