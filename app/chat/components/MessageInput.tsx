@@ -1059,25 +1059,43 @@ export const MessageInput = memo(function MessageInput() {
               <div className="flex items-center gap-3 flex-wrap">
                 {/* Mode selector: Text or Image */}
                 <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
-                  {VIDEO_MODES.filter(mode =>
-                    videoUsage?.allowedModes?.includes(mode.value) || mode.value === 'text-to-video'
-                  ).map((mode) => (
-                    <button
-                      key={mode.value}
-                      type="button"
-                      onClick={() => setVideoModeType(mode.value)}
-                      disabled={isLoading}
-                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition ${
-                        videoModeType === mode.value
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-500 hover:text-gray-700'
-                      } disabled:opacity-40`}
-                      title={mode.description}
-                    >
-                      <span>{mode.icon}</span>
-                      <span>{mode.label}</span>
-                    </button>
-                  ))}
+                  {VIDEO_MODES.map((mode) => {
+                    const isAllowed = videoUsage?.allowedModes?.includes(mode.value) || mode.value === 'text-to-video';
+                    const isSelected = videoModeType === mode.value;
+
+                    if (!isAllowed) {
+                      // Show locked mode
+                      return (
+                        <div
+                          key={mode.value}
+                          className="relative flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-gray-400 cursor-not-allowed"
+                          title="Actualiza a Professional para desbloquear"
+                        >
+                          <span className="grayscale opacity-50">{mode.icon}</span>
+                          <span>{mode.label}</span>
+                          <Lock className="size-3 text-gray-400" />
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <button
+                        key={mode.value}
+                        type="button"
+                        onClick={() => setVideoModeType(mode.value)}
+                        disabled={isLoading}
+                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition ${
+                          isSelected
+                            ? 'bg-white text-gray-900 shadow-sm'
+                            : 'text-gray-500 hover:text-gray-700'
+                        } disabled:opacity-40`}
+                        title={mode.description}
+                      >
+                        <span>{mode.icon}</span>
+                        <span>{mode.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {/* Image URL input for image-to-video mode */}
@@ -1104,46 +1122,78 @@ export const MessageInput = memo(function MessageInput() {
 
                 {/* Aspect ratio selector */}
                 <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
-                  {VIDEO_ASPECT_RATIOS.filter(ratio =>
-                    videoUsage?.allowedAspectRatios?.includes(ratio.value) || ratio.value === '16:9'
-                  ).map((ratio) => (
-                    <button
-                      key={ratio.value}
-                      type="button"
-                      onClick={() => setVideoAspectRatio(ratio.value)}
-                      disabled={isLoading}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition ${
-                        videoAspectRatio === ratio.value
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-500 hover:text-gray-700'
-                      } disabled:opacity-40`}
-                      title={ratio.label}
-                    >
-                      {ratio.value}
-                    </button>
-                  ))}
+                  {VIDEO_ASPECT_RATIOS.map((ratio) => {
+                    const isAllowed = videoUsage?.allowedAspectRatios?.includes(ratio.value) || ratio.value === '16:9';
+                    const isSelected = videoAspectRatio === ratio.value;
+
+                    if (!isAllowed) {
+                      return (
+                        <div
+                          key={ratio.value}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-gray-400 cursor-not-allowed"
+                          title="Actualiza tu plan para desbloquear"
+                        >
+                          <span>{ratio.value}</span>
+                          <Lock className="size-2.5" />
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <button
+                        key={ratio.value}
+                        type="button"
+                        onClick={() => setVideoAspectRatio(ratio.value)}
+                        disabled={isLoading}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-medium transition ${
+                          isSelected
+                            ? 'bg-white text-gray-900 shadow-sm'
+                            : 'text-gray-500 hover:text-gray-700'
+                        } disabled:opacity-40`}
+                        title={ratio.label}
+                      >
+                        {ratio.value}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {/* Duration selector */}
                 <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
-                  {VIDEO_DURATIONS.filter(dur =>
-                    videoUsage?.allowedDurations?.includes(dur.value) || dur.value === '5'
-                  ).map((dur) => (
-                    <button
-                      key={dur.value}
-                      type="button"
-                      onClick={() => setVideoDuration(dur.value)}
-                      disabled={isLoading}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition ${
-                        videoDuration === dur.value
-                          ? 'bg-white text-violet-600 shadow-sm'
-                          : 'text-gray-500 hover:text-gray-700'
-                      } disabled:opacity-40`}
-                      title={dur.description}
-                    >
-                      {dur.label}
-                    </button>
-                  ))}
+                  {VIDEO_DURATIONS.map((dur) => {
+                    const isAllowed = videoUsage?.allowedDurations?.includes(dur.value) || dur.value === '5';
+                    const isSelected = videoDuration === dur.value;
+
+                    if (!isAllowed) {
+                      return (
+                        <div
+                          key={dur.value}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-gray-400 cursor-not-allowed"
+                          title="Actualiza a Professional para desbloquear"
+                        >
+                          <span>{dur.label}</span>
+                          <Lock className="size-2.5" />
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <button
+                        key={dur.value}
+                        type="button"
+                        onClick={() => setVideoDuration(dur.value)}
+                        disabled={isLoading}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-medium transition ${
+                          isSelected
+                            ? 'bg-white text-violet-600 shadow-sm'
+                            : 'text-gray-500 hover:text-gray-700'
+                        } disabled:opacity-40`}
+                        title={dur.description}
+                      >
+                        {dur.label}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {/* Close button */}

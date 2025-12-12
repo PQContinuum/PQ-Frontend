@@ -73,6 +73,152 @@ const ImageGeneratingSkeleton = () => (
   </div>
 );
 
+// Skeleton component for video generation - creative animated preview
+const VideoGeneratingSkeleton = () => (
+  <div className="w-[400px] h-[225px] rounded-2xl overflow-hidden relative bg-gradient-to-br from-violet-50 via-purple-50 to-violet-50">
+    {/* Animated gradient background */}
+    <div className="absolute inset-0 bg-gradient-to-r from-violet-100/50 via-purple-100/50 to-fuchsia-100/50 animate-[gradient-shift_3s_ease-in-out_infinite]" />
+
+    {/* Film reel effect - top and bottom bars */}
+    <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-r from-gray-900/80 via-gray-800/80 to-gray-900/80 flex items-center px-2">
+      <div className="flex gap-1.5">
+        {[...Array(12)].map((_, i) => (
+          <div key={i} className="w-2 h-2 bg-gray-700 rounded-sm" />
+        ))}
+      </div>
+    </div>
+    <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-r from-gray-900/80 via-gray-800/80 to-gray-900/80 flex items-center px-2">
+      <div className="flex gap-1.5">
+        {[...Array(12)].map((_, i) => (
+          <div key={i} className="w-2 h-2 bg-gray-700 rounded-sm" />
+        ))}
+      </div>
+    </div>
+
+    {/* Floating video particles */}
+    <div className="absolute inset-0 overflow-hidden">
+      <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-violet-400/30 rounded-full animate-[float-particle_2s_ease-in-out_infinite]" />
+      <div className="absolute top-1/3 right-1/4 w-1.5 h-1.5 bg-purple-400/30 rounded-full animate-[float-particle_2.5s_ease-in-out_infinite_0.5s]" />
+      <div className="absolute bottom-1/3 left-1/3 w-2.5 h-2.5 bg-fuchsia-400/30 rounded-full animate-[float-particle_3s_ease-in-out_infinite_1s]" />
+    </div>
+
+    {/* Center content */}
+    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+      {/* Animated icon container */}
+      <div className="relative">
+        {/* Outer glow ring */}
+        <div className="absolute -inset-4 bg-gradient-to-r from-violet-400/20 via-purple-400/20 to-fuchsia-400/20 rounded-full blur-xl animate-pulse" />
+
+        {/* Spinning ring */}
+        <div className="absolute -inset-2 border-2 border-dashed border-violet-300/50 rounded-full animate-[spin_8s_linear_infinite]" />
+
+        {/* Play icon background */}
+        <div className="relative size-16 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg flex items-center justify-center">
+          <svg
+            className="size-8 text-violet-500 animate-pulse"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        </div>
+      </div>
+
+      {/* Text with dots animation */}
+      <div className="relative text-center">
+        <span className="text-sm font-medium text-violet-600">Generando video con IA</span>
+        <span className="ml-1 inline-flex text-violet-600">
+          <span className="animate-[bounce_1s_ease-in-out_infinite]">.</span>
+          <span className="animate-[bounce_1s_ease-in-out_infinite_0.2s]">.</span>
+          <span className="animate-[bounce_1s_ease-in-out_infinite_0.4s]">.</span>
+        </span>
+        <div className="text-xs text-violet-400 mt-1">Esto puede tomar 1-3 minutos</div>
+      </div>
+    </div>
+
+    {/* Bottom progress bar */}
+    <div className="absolute bottom-4 left-4 right-4 h-1.5 bg-gray-200/50 rounded-full overflow-hidden">
+      <div className="h-full bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 rounded-full animate-[progress_3s_ease-in-out_infinite]" />
+    </div>
+  </div>
+);
+
+// Custom video component with controls and download functionality
+const ChatVideo = ({ src }: { src: string }) => {
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!src) return;
+
+    try {
+      const response = await fetch(src);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `video-generado-${Date.now()}.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading video:', error);
+    }
+  };
+
+  if (hasError) {
+    return (
+      <span className="block w-full max-w-[400px] aspect-video rounded-2xl bg-gray-100 flex items-center justify-center">
+        <span className="text-sm text-gray-400">Error al cargar video</span>
+      </span>
+    );
+  }
+
+  return (
+    <span className="block w-full max-w-[400px]">
+      {/* Title */}
+      <span className="block text-sm font-semibold text-gray-800 mb-2">Video creado</span>
+
+      <span className="relative block group">
+        {isLoading && (
+          <span className="absolute inset-0 block rounded-2xl bg-gray-100 animate-pulse aspect-video" />
+        )}
+        <video
+          src={src}
+          controls
+          className={`w-full rounded-2xl shadow-lg transition-opacity duration-300 ${
+            isLoading ? 'opacity-0' : 'opacity-100'
+          }`}
+          onLoadedData={() => setIsLoading(false)}
+          onError={() => setHasError(true)}
+          preload="metadata"
+        />
+
+        {/* Hover overlay with download button */}
+        {!isLoading && (
+          <span className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={handleDownload}
+                  className="p-2 bg-black/60 hover:bg-black/80 rounded-lg backdrop-blur-sm transition"
+                >
+                  <svg className="size-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Descargar video</TooltipContent>
+            </Tooltip>
+          </span>
+        )}
+      </span>
+    </span>
+  );
+};
+
 // Custom image component with lightbox, download, and share functionality
 const ChatImage = ({ src, alt, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) => {
   const [isLoading, setIsLoading] = useState(true);
@@ -450,14 +596,25 @@ const CodeBlock = ({
 export function MessageBubble({ message, isStreaming = false, attachments }: MessageBubbleProps) {
   const isUser = message.role === 'user';
 
-  const { geoCulturalData, geoCulturalText, isLoadingGeoCultural, isGeneratingImage } = useMemo(() => {
-    if (isUser || !message.content) return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: false, isGeneratingImage: false };
+  const { geoCulturalData, geoCulturalText, isLoadingGeoCultural, isGeneratingImage, isGeneratingVideo, videoUrl } = useMemo(() => {
+    if (isUser || !message.content) return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: false, isGeneratingImage: false, isGeneratingVideo: false, videoUrl: null };
 
     const trimmedContent = message.content.trim();
 
     // Check if this is an image generation loading message
     if (trimmedContent.includes('🖼️ Generando imagen')) {
-      return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: false, isGeneratingImage: true };
+      return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: false, isGeneratingImage: true, isGeneratingVideo: false, videoUrl: null };
+    }
+
+    // Check if this is a video generation loading message
+    if (trimmedContent.includes('🎬 Generando video') || trimmedContent.includes('🎬 Enviando') || trimmedContent.includes('🎬 Iniciando')) {
+      return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: false, isGeneratingImage: false, isGeneratingVideo: true, videoUrl: null };
+    }
+
+    // Check if content contains a video tag (generated video result)
+    const videoMatch = trimmedContent.match(/<video[^>]*src="([^"]+)"[^>]*>/);
+    if (videoMatch) {
+      return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: false, isGeneratingImage: false, isGeneratingVideo: false, videoUrl: videoMatch[1] };
     }
 
     const looksLikeJSON = trimmedContent.startsWith('{');
@@ -470,21 +627,21 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
         if (parsed.type === 'geocultural_analysis' && 'reply' in parsed) {
           if (isStreaming && parsed.reply === '') {
             // It's the start of a geocultural stream, reply is still empty. Show skeleton.
-            return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: true, isGeneratingImage: false };
+            return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: true, isGeneratingImage: false, isGeneratingVideo: false, videoUrl: null };
           }
-          return { geoCulturalData: null, geoCulturalText: parsed, isLoadingGeoCultural: false, isGeneratingImage: false };
+          return { geoCulturalData: null, geoCulturalText: parsed, isLoadingGeoCultural: false, isGeneratingImage: false, isGeneratingVideo: false, videoUrl: null };
         }
 
         // Legacy format (with places and map) - no longer used but kept for compatibility
         if (parsed.reply && parsed.places && parsed.userCoords) {
-          return { geoCulturalData: parsed, geoCulturalText: null, isLoadingGeoCultural: false, isGeneratingImage: false };
+          return { geoCulturalData: parsed, geoCulturalText: null, isLoadingGeoCultural: false, isGeneratingImage: false, isGeneratingVideo: false, videoUrl: null };
         }
       } catch {
-        return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: true, isGeneratingImage: false };
+        return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: true, isGeneratingImage: false, isGeneratingVideo: false, videoUrl: null };
       }
     }
 
-    return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: false, isGeneratingImage: false };
+    return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: false, isGeneratingImage: false, isGeneratingVideo: false, videoUrl: null };
   }, [message.content, isUser, isStreaming]);
 
   // Show skeleton while generating image
@@ -493,6 +650,28 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
       <div className="flex justify-start">
         <div className="inline-flex rounded-4xl border border-transparent bg-transparent text-black px-4 py-2">
           <ImageGeneratingSkeleton />
+        </div>
+      </div>
+    );
+  }
+
+  // Show skeleton while generating video
+  if (isGeneratingVideo) {
+    return (
+      <div className="flex justify-start">
+        <div className="inline-flex rounded-4xl border border-transparent bg-transparent text-black px-4 py-2">
+          <VideoGeneratingSkeleton />
+        </div>
+      </div>
+    );
+  }
+
+  // Render generated video
+  if (videoUrl) {
+    return (
+      <div className="flex justify-start">
+        <div className="inline-flex rounded-4xl border border-transparent bg-transparent text-black px-4 py-2">
+          <ChatVideo src={videoUrl} />
         </div>
       </div>
     );
@@ -778,8 +957,8 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
             </div>
           </div>
         </div>
-        {/* Speech button for assistant messages (not for generated images) */}
-        {!isUser && !isStreaming && message.content && !message.content.includes('![Imagen generada]') && (
+        {/* Speech button for assistant messages (not for generated images or videos) */}
+        {!isUser && !isStreaming && message.content && !message.content.includes('![Imagen generada]') && !message.content.includes('<video') && (
           <div className="flex justify-start pl-2">
             <SpeechButton text={message.content} />
           </div>
