@@ -9,7 +9,7 @@ import {
   memo,
   useEffect,
 } from 'react';
-import { ArrowUp, MapPin, Paperclip, Plus, Check, Loader2, Image, X, ChevronDown, Lock } from 'lucide-react';
+import { ArrowUp, MapPin, Paperclip, Plus, Check, Loader2, Image, X, ChevronDown, Lock, Mic, Square } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { FileUpload } from './FileUpload';
 import {
@@ -40,6 +40,7 @@ import type { StructuredAddress } from '@/lib/geolocation/address-types';
 import { useImageGeneration } from '@/hooks/useImageGeneration';
 import type { ImageGenSize, ImageGenQuality } from '@/lib/memory/plan-limits';
 import { IMAGE_STYLE_PRESETS, getAvailablePresets } from '@/lib/image-gen/style-presets';
+import { useVoiceInput, formatDuration } from '@/hooks/useVoiceInput';
 
 type SSEPayload = {
   delta?: string;
@@ -126,6 +127,33 @@ export const MessageInput = memo(function MessageInput() {
     isGenerating: isGeneratingImage,
     usage: imageUsage,
   } = useImageGeneration();
+
+  // Voice input hook
+  const {
+    isRecording,
+    isTranscribing,
+    error: voiceError,
+    duration: recordingDuration,
+    toggleRecording,
+    cancelRecording,
+    isSupported: isVoiceSupported,
+  } = useVoiceInput({
+    onTranscript: (text) => {
+      // Append transcribed text to input
+      setInput((prev) => {
+        const separator = prev.trim() ? ' ' : '';
+        return prev + separator + text;
+      });
+      // Auto-resize textarea
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.style.height = 'auto';
+          const newHeight = Math.min(textareaRef.current.scrollHeight, 200);
+          textareaRef.current.style.height = `${newHeight}px`;
+        }
+      }, 0);
+    },
+  });
 
   const messages = useMessages();
   const geoCulturalMode = useGeoCulturalMode();
@@ -662,7 +690,7 @@ export const MessageInput = memo(function MessageInput() {
     setTimeout(() => textareaRef.current?.focus(), 100);
   }, []);
 
-  const isLoading = isStreaming || isGeneratingImage;
+  const isLoading = isStreaming || isGeneratingImage || isTranscribing;
 
   // Style preset picker component
   const StylePresetPicker = () => (
@@ -990,19 +1018,79 @@ export const MessageInput = memo(function MessageInput() {
               onKeyDown={handleKeyDown}
               rows={1}
               placeholder={
-                imageMode
+                isRecording
+                  ? 'Escuchando...'
+                  : isTranscribing
+                  ? 'Transcribiendo...'
+                  : imageMode
                   ? `Describe tu imagen en estilo ${selectedPreset.name}...`
                   : geoCulturalMode
                   ? 'Pregunta sobre lugares...'
                   : 'Mensaje...'
               }
-              disabled={isLoading}
+              disabled={isLoading || isRecording}
               className="flex-1 min-h-[20px] max-h-[200px] resize-none overflow-y-auto bg-transparent text-base leading-5 text-[#111111] outline-none placeholder:text-[#111111]/40 disabled:opacity-60 scrollbar-thin"
             />
 
+            {/* Voice input button */}
+            {isVoiceSupported && (
+              <div className="relative flex items-center">
+                {/* Recording indicator with waveform */}
+                {isRecording && (
+                  <div className="flex items-center gap-2 mr-2">
+                    {/* Waveform visualization */}
+                    <div className="flex items-center gap-0.5 h-5">
+                      {[...Array(5)].map((_, i) => (
+                        <div
+                          key={i}
+                          className="voice-waveform-bar w-0.5 bg-red-500 rounded-full"
+                          style={{ height: '100%' }}
+                        />
+                      ))}
+                    </div>
+                    {/* Duration */}
+                    <span className="text-xs font-medium text-red-500 tabular-nums min-w-[40px]">
+                      {formatDuration(recordingDuration)}
+                    </span>
+                  </div>
+                )}
+
+                {/* Transcribing indicator */}
+                {isTranscribing && (
+                  <div className="flex items-center gap-2 mr-2">
+                    <Loader2 className="size-4 animate-spin text-[#00552b]" />
+                    <span className="text-xs font-medium text-[#00552b]">Transcribiendo...</span>
+                  </div>
+                )}
+
+                {/* Microphone button */}
+                <button
+                  type="button"
+                  onClick={toggleRecording}
+                  disabled={isLoading && !isRecording}
+                  className={`relative flex shrink-0 items-center justify-center rounded-full p-2 transition ${
+                    isRecording
+                      ? 'bg-red-500 text-white voice-recording-btn'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-[#00552b]'
+                  } disabled:opacity-40 disabled:cursor-not-allowed`}
+                  title={isRecording ? 'Detener grabación' : 'Dictado por voz'}
+                >
+                  {/* Animated ring when recording */}
+                  {isRecording && (
+                    <span className="absolute inset-0 rounded-full bg-red-500/30 voice-recording-ring" />
+                  )}
+                  {isRecording ? (
+                    <Square className="size-4 fill-current" />
+                  ) : (
+                    <Mic className="size-5" />
+                  )}
+                </button>
+              </div>
+            )}
+
             <button
               type="submit"
-              disabled={!input.trim() || isLoading}
+              disabled={(!input.trim() || isLoading) && !isRecording}
               className="flex shrink-0 items-center justify-center rounded-full p-2 text-white transition disabled:cursor-not-allowed bg-[#00552b] hover:bg-[#00552b]/80 disabled:bg-[#00552b]/40"
             >
               {isGeneratingImage ? (

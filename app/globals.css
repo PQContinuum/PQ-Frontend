@@ -354,3 +354,53 @@
   }
 }
 
+/* Voice recording animations */
+@keyframes voice-recording-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+  }
+}
+
+@keyframes voice-recording-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+@keyframes voice-waveform {
+  0%, 100% {
+    transform: scaleY(0.5);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+.voice-recording-btn {
+  animation: voice-recording-pulse 1.5s ease-in-out infinite;
+}
+
+.voice-recording-ring {
+  animation: voice-recording-ring 1.5s ease-out infinite;
+}
+
+.voice-waveform-bar {
+  animation: voice-waveform 0.5s ease-in-out infinite;
+}
+
+.voice-waveform-bar:nth-child(1) { animation-delay: 0s; }
+.voice-waveform-bar:nth-child(2) { animation-delay: 0.1s; }
+.voice-waveform-bar:nth-child(3) { animation-delay: 0.2s; }
+.voice-waveform-bar:nth-child(4) { animation-delay: 0.3s; }
+.voice-waveform-bar:nth-child(5) { animation-delay: 0.15s; }
+
