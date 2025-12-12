@@ -50,6 +50,20 @@
       "when": 1765480288822,
       "tag": "0006_chubby_excalibur",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1765568124704,
+      "tag": "0007_reflective_lyja",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1765572323143,
+      "tag": "0008_slow_the_liberteens",
+      "breakpoints": true
     }
   ]
 }

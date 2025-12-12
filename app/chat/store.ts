@@ -6,6 +6,15 @@ import type { NamedSet } from 'zustand/middleware';
 
 export type ChatRole = 'user' | 'assistant';
 
+// Modos de generación disponibles
+export type GenerationMode = 'none' | 'image' | 'video' | 'geocultural';
+
+// Estado de generación que se persiste en el mensaje
+export type MessageGenerationState = {
+  type: 'image' | 'video' | 'geocultural';
+  status: 'generating' | 'completed' | 'error';
+};
+
 export type ChatMessage = {
   id: string;
   role: ChatRole;
@@ -17,6 +26,8 @@ export type ChatMessage = {
     fileSize: number;
     mimeType?: string;
   }>;
+  // Estado de generación persistido - se usa para mostrar skeleton y sincronizar entre dispositivos
+  generationState?: MessageGenerationState | null;
 };
 
 export const TYPING_STATES = [
@@ -60,14 +71,22 @@ type ChatStore = {
   geoCulturalMode: boolean;
   userLocation: UserLocation | null;
 
+  // Generation state - qué tipo de contenido se está generando
+  generationMode: GenerationMode;
+  isGenerating: boolean;
+  generatingMessageId: string | null; // ID del mensaje que se está generando
+
   // Actions
   addMessage: (message: ChatMessage) => void;
   updateMessage: (id: string, updater: (previous: string) => string) => void;
+  updateMessageGenerationState: (id: string, state: MessageGenerationState | null) => void;
   replaceMessages: (messages: ChatMessage[]) => void;
   setStreaming: (value: boolean) => void;
   setConversationId: (id: string | null) => void;
   setGeoCulturalMode: (value: boolean) => void;
   setUserLocation: (location: UserLocation | null) => void;
+  startGeneration: (mode: GenerationMode, messageId: string) => void;
+  stopGeneration: () => void;
   reset: () => void;
 };
 
@@ -128,15 +147,23 @@ const createChatStore = create<ChatStore>()(
       geoCulturalMode: false,
       userLocation: null,
 
+      // Generation state
+      generationMode: 'none',
+      isGenerating: false,
+      generatingMessageId: null,
+
       // Actions
-      addMessage: (message) =>
-        set(
+      addMessage: (message) => {
+        console.log('[Store] addMessage called with:', message);
+        console.log('[Store] message.generationState:', message.generationState);
+        return set(
           (state) => ({
             messages: [...state.messages, message],
           }),
           false,
           'addMessage'
-        ),
+        );
+      },
 
       updateMessage: (id, updater) =>
         set(
@@ -147,6 +174,17 @@ const createChatStore = create<ChatStore>()(
           }),
           false,
           'updateMessage'
+        ),
+
+      updateMessageGenerationState: (id, generationState) =>
+        set(
+          (state) => ({
+            messages: state.messages.map((msg) =>
+              msg.id === id ? { ...msg, generationState } : msg
+            ),
+          }),
+          false,
+          'updateMessageGenerationState'
         ),
 
       replaceMessages: (messages) =>
@@ -187,6 +225,28 @@ const createChatStore = create<ChatStore>()(
       setUserLocation: (location) =>
         set({ userLocation: location }, false, 'setUserLocation'),
 
+      startGeneration: (mode, messageId) =>
+        set(
+          {
+            generationMode: mode,
+            isGenerating: true,
+            generatingMessageId: messageId,
+          },
+          false,
+          'startGeneration'
+        ),
+
+      stopGeneration: () =>
+        set(
+          {
+            generationMode: 'none',
+            isGenerating: false,
+            generatingMessageId: null,
+          },
+          false,
+          'stopGeneration'
+        ),
+
       reset: () => {
         typingCycleController.stop(set);
         set(
@@ -197,6 +257,9 @@ const createChatStore = create<ChatStore>()(
             conversationId: null,
             geoCulturalMode: false,
             userLocation: null,
+            generationMode: 'none',
+            isGenerating: false,
+            generatingMessageId: null,
           },
           false,
           'reset'
@@ -217,8 +280,16 @@ export const useGeoCulturalMode = () => useChatStore((state) => state.geoCultura
 export const useUserLocation = () => useChatStore((state) => state.userLocation);
 export const useAddMessage = () => useChatStore((state) => state.addMessage);
 export const useUpdateMessage = () => useChatStore((state) => state.updateMessage);
+export const useUpdateMessageGenerationState = () => useChatStore((state) => state.updateMessageGenerationState);
 export const useReplaceMessages = () => useChatStore((state) => state.replaceMessages);
 export const useSetStreaming = () => useChatStore((state) => state.setStreaming);
 export const useSetConversationId = () => useChatStore((state) => state.setConversationId);
 export const useSetGeoCulturalMode = () => useChatStore((state) => state.setGeoCulturalMode);
 export const useSetUserLocation = () => useChatStore((state) => state.setUserLocation);
+
+// Generation state selectors
+export const useGenerationMode = () => useChatStore((state) => state.generationMode);
+export const useIsGenerating = () => useChatStore((state) => state.isGenerating);
+export const useGeneratingMessageId = () => useChatStore((state) => state.generatingMessageId);
+export const useStartGeneration = () => useChatStore((state) => state.startGeneration);
+export const useStopGeneration = () => useChatStore((state) => state.stopGeneration);

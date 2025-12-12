@@ -9,7 +9,8 @@ import {
   memo,
   useEffect,
 } from 'react';
-import { ArrowUp, MapPin, Paperclip, Plus, Check, Loader2, Image, X, ChevronDown, Lock, Mic, Square, Sparkles } from 'lucide-react';
+import { ArrowUp, MapPin, Paperclip, Plus, Check, Loader2, Image, X, ChevronDown, Lock, Mic, Square, Sparkles, Video } from 'lucide-react';
+import { VideoImageUpload } from './VideoImageUpload';
 import { useShallow } from 'zustand/react/shallow';
 import { FileUpload } from './FileUpload';
 import {
@@ -41,6 +42,15 @@ import { useImageGeneration } from '@/hooks/useImageGeneration';
 import type { ImageGenSize, ImageGenQuality } from '@/lib/memory/plan-limits';
 import { IMAGE_STYLE_PRESETS, getAvailablePresets } from '@/lib/image-gen/style-presets';
 import { useVoiceInput, formatDuration } from '@/hooks/useVoiceInput';
+import {
+  useVideoGeneration,
+  VIDEO_ASPECT_RATIOS,
+  VIDEO_DURATIONS,
+  VIDEO_MODES,
+  type VideoAspectRatio,
+  type VideoDuration,
+  type VideoMode,
+} from '@/hooks/useVideoGeneration';
 
 /**
  * FEATURE FLAGS - Control de acceso a funcionalidades
@@ -55,6 +65,7 @@ import { useVoiceInput, formatDuration } from '@/hooks/useVoiceInput';
  */
 const FEATURE_FLAGS = {
   imageGeneration: false,  // Generar imagen - DESHABILITADO
+  videoGeneration: true,   // Generar video - Kling V2.6
   geoCultural: true,       // GeoCultural mode
   fileUpload: true,        // Subir archivos
   voiceInput: true,        // Dictado por voz
@@ -146,6 +157,26 @@ export const MessageInput = memo(function MessageInput() {
     usage: imageUsage,
   } = useImageGeneration();
 
+  // Video mode state
+  const [videoMode, setVideoMode] = useState(false);
+  const [videoAspectRatio, setVideoAspectRatio] = useState<VideoAspectRatio>('16:9');
+  const [videoDuration, setVideoDuration] = useState<VideoDuration>('5');
+  const [videoModeType, setVideoModeType] = useState<VideoMode>('text-to-video');
+  const [videoImageUrl, setVideoImageUrl] = useState<string>('');
+
+  const {
+    generate: generateVideo,
+    isGenerating: isGeneratingVideo,
+    progress: videoProgress,
+    usage: videoUsage,
+  } = useVideoGeneration();
+
+  // Ref to track latest video progress for use in intervals
+  const videoProgressRef = useRef<string | null>(null);
+  useEffect(() => {
+    videoProgressRef.current = videoProgress;
+  }, [videoProgress]);
+
   // Voice input hook
   const {
     isRecording,
@@ -196,14 +227,17 @@ export const MessageInput = memo(function MessageInput() {
     textarea.style.height = `${newHeight}px`;
   }, []);
 
-  const { addMessage, updateMessage, setStreaming, setConversationId, setGeoCulturalMode, setUserLocation } = useChatStore(
+  const { addMessage, updateMessage, updateMessageGenerationState, setStreaming, setConversationId, setGeoCulturalMode, setUserLocation, startGeneration, stopGeneration } = useChatStore(
     useShallow((state) => ({
       addMessage: state.addMessage,
       updateMessage: state.updateMessage,
+      updateMessageGenerationState: state.updateMessageGenerationState,
       setStreaming: state.setStreaming,
       setConversationId: state.setConversationId,
       setGeoCulturalMode: state.setGeoCulturalMode,
       setUserLocation: state.setUserLocation,
+      startGeneration: state.startGeneration,
+      stopGeneration: state.stopGeneration,
     }))
   );
   const isStreaming = useIsStreaming();
@@ -357,20 +391,54 @@ export const MessageInput = memo(function MessageInput() {
     // Add user message showing the prompt
     const userMessageId = createId();
     const assistantMessageId = createId();
+    const userContent = `🖼️ ${prompt}`;
 
     addMessage({
       id: userMessageId,
       role: 'user',
-      content: `🖼️ ${prompt}`,
+      content: userContent,
     });
+    // Crear mensaje con estado de generación para mostrar skeleton
     addMessage({
       id: assistantMessageId,
       role: 'assistant',
-      content: '🖼️ Generando imagen...',
+      content: '',
+      generationState: { type: 'image', status: 'generating' },
     });
 
     setInput('');
     setStreaming(true);
+    startGeneration('image', assistantMessageId);
+
+    // Create conversation if needed
+    let currentConversationId = conversationId;
+    if (!currentConversationId) {
+      try {
+        const title = prompt.length > 50 ? `🖼️ ${prompt.substring(0, 47)}...` : `🖼️ ${prompt}`;
+        const conversation = await createConversationMutation.mutateAsync({ title });
+        currentConversationId = conversation.id;
+        setConversationId(conversation.id);
+      } catch (error) {
+        console.error('Error creating conversation for image:', error);
+      }
+    }
+
+    // Save user message to database
+    if (currentConversationId) {
+      try {
+        await fetch(`/api/conversations/${currentConversationId}/messages`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: userMessageId,
+            role: 'user',
+            content: userContent,
+          }),
+        });
+      } catch (error) {
+        console.error('Error saving user message:', error);
+      }
+    }
 
     // Use streaming if available
     const useStreaming = imageUsage?.streamingEnabled && imageUsage?.partialImages > 0;
@@ -394,18 +462,177 @@ export const MessageInput = memo(function MessageInput() {
           stylePreset: imageStylePreset,
         });
 
+    let assistantContent: string;
     if (result.success) {
-      updateMessage(assistantMessageId, () => `![Imagen generada](${result.url})`);
+      assistantContent = `![Imagen generada](${result.url})`;
+      updateMessage(assistantMessageId, () => assistantContent);
+      // Marcar generación como completada
+      updateMessageGenerationState(assistantMessageId, { type: 'image', status: 'completed' });
     } else {
-      updateMessage(assistantMessageId, () => `❌ ${result.error}`);
+      assistantContent = `❌ ${result.error}`;
+      updateMessage(assistantMessageId, () => assistantContent);
+      // Marcar generación como error
+      updateMessageGenerationState(assistantMessageId, { type: 'image', status: 'error' });
+    }
+
+    // Save assistant message to database with metadata
+    if (currentConversationId) {
+      try {
+        await fetch(`/api/conversations/${currentConversationId}/messages`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: assistantMessageId,
+            role: 'assistant',
+            content: assistantContent,
+            // Guardar estado de generación en metadata para persistencia
+            metadata: {
+              generationState: { type: 'image', status: result.success ? 'completed' : 'error' }
+            },
+          }),
+        });
+        queryClient.invalidateQueries({ queryKey: conversationKeys.detail(currentConversationId) });
+        queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
+      } catch (error) {
+        console.error('Error saving assistant message:', error);
+      }
     }
 
     setStreaming(false);
-  }, [input, imageSize, imageQuality, imageStylePreset, generateImage, generateWithStreaming, isGeneratingImage, addMessage, updateMessage, setStreaming, imageUsage]);
+    stopGeneration();
+  }, [input, imageSize, imageQuality, imageStylePreset, generateImage, generateWithStreaming, isGeneratingImage, addMessage, updateMessage, updateMessageGenerationState, setStreaming, startGeneration, stopGeneration, imageUsage, conversationId, createConversationMutation, setConversationId, queryClient]);
+
+  // Handle video generation
+  const handleGenerateVideo = useCallback(async () => {
+    const prompt = input.trim();
+    if (!prompt || isGeneratingVideo) return;
+
+    // Validate image-to-video mode
+    if (videoModeType === 'image-to-video' && !videoImageUrl) {
+      return;
+    }
+
+    const userMessageId = createId();
+    const assistantMessageId = createId();
+    const userContent = `${prompt}`;
+
+    addMessage({
+      id: userMessageId,
+      role: 'user',
+      content: userContent,
+    });
+    // Crear mensaje con estado de generación para mostrar skeleton
+    const newMessage = {
+      id: assistantMessageId,
+      role: 'assistant' as const,
+      content: '',
+      generationState: { type: 'video' as const, status: 'generating' as const },
+    };
+    console.log('[MessageInput] Creating video message with generationState:', newMessage);
+    addMessage(newMessage);
+
+    setInput('');
+    setStreaming(true);
+    startGeneration('video', assistantMessageId);
+
+    // Create conversation if needed
+    let currentConversationId = conversationId;
+    if (!currentConversationId) {
+      try {
+        const title = prompt.length > 50 ? `🎬 ${prompt.substring(0, 47)}...` : `🎬 ${prompt}`;
+        const conversation = await createConversationMutation.mutateAsync({ title });
+        currentConversationId = conversation.id;
+        setConversationId(conversation.id);
+      } catch (error) {
+        console.error('Error creating conversation for video:', error);
+      }
+    }
+
+    // Save user message to database
+    if (currentConversationId) {
+      try {
+        await fetch(`/api/conversations/${currentConversationId}/messages`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: userMessageId,
+            role: 'user',
+            content: userContent,
+          }),
+        });
+      } catch (error) {
+        console.error('Error saving user message:', error);
+      }
+    }
+
+    // Update message with progress using ref to get latest value
+    const progressInterval = setInterval(() => {
+      const currentProgress = videoProgressRef.current;
+      if (currentProgress) {
+        updateMessage(assistantMessageId, () => `🎬 ${currentProgress}`);
+      }
+    }, 1000);
+
+    const result = await generateVideo(prompt, {
+      mode: videoModeType,
+      imageUrl: videoModeType === 'image-to-video' ? videoImageUrl : undefined,
+      duration: videoDuration,
+      aspectRatio: videoAspectRatio,
+      generateAudio: true,
+    });
+
+    clearInterval(progressInterval);
+
+    let assistantContent: string;
+    if (result.success) {
+      // Display video with HTML5 video tag format
+      assistantContent = `<video controls src="${result.url}" style="max-width:100%;border-radius:12px;"></video>`;
+      updateMessage(assistantMessageId, () => assistantContent);
+      // Marcar generación como completada
+      updateMessageGenerationState(assistantMessageId, { type: 'video', status: 'completed' });
+    } else {
+      assistantContent = `❌ ${result.error}`;
+      updateMessage(assistantMessageId, () => assistantContent);
+      // Marcar generación como error
+      updateMessageGenerationState(assistantMessageId, { type: 'video', status: 'error' });
+    }
+
+    // Save assistant message to database with metadata
+    if (currentConversationId) {
+      try {
+        await fetch(`/api/conversations/${currentConversationId}/messages`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: assistantMessageId,
+            role: 'assistant',
+            content: assistantContent,
+            // Guardar estado de generación en metadata para persistencia
+            metadata: {
+              generationState: { type: 'video', status: result.success ? 'completed' : 'error' }
+            },
+          }),
+        });
+        queryClient.invalidateQueries({ queryKey: conversationKeys.detail(currentConversationId) });
+        queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
+      } catch (error) {
+        console.error('Error saving assistant message:', error);
+      }
+    }
+
+    setStreaming(false);
+    stopGeneration();
+  }, [input, videoModeType, videoImageUrl, videoDuration, videoAspectRatio, generateVideo, isGeneratingVideo, addMessage, updateMessage, updateMessageGenerationState, setStreaming, startGeneration, stopGeneration, conversationId, createConversationMutation, setConversationId, queryClient]);
 
   const submitMessage = useCallback(
     async (event?: FormEvent<HTMLFormElement>) => {
       event?.preventDefault();
+
+      // If in video mode, generate video instead
+      if (videoMode) {
+        handleGenerateVideo();
+        return;
+      }
 
       // If in image mode, generate image instead
       if (imageMode) {
@@ -702,13 +929,21 @@ export const MessageInput = memo(function MessageInput() {
 
   const toggleImageMode = useCallback(() => {
     setImageMode((prev) => !prev);
+    setVideoMode(false);
     setShowFileUpload(false);
     setShowStylePicker(false);
-    // Focus textarea when toggling
     setTimeout(() => textareaRef.current?.focus(), 100);
   }, []);
 
-  const isLoading = isStreaming || isGeneratingImage || isTranscribing;
+  const toggleVideoMode = useCallback(() => {
+    setVideoMode((prev) => !prev);
+    setImageMode(false);
+    setShowFileUpload(false);
+    setShowStylePicker(false);
+    setTimeout(() => textareaRef.current?.focus(), 100);
+  }, []);
+
+  const isLoading = isStreaming || isGeneratingImage || isGeneratingVideo || isTranscribing;
 
   // Style preset picker component
   const StylePresetPicker = () => (
@@ -864,6 +1099,8 @@ export const MessageInput = memo(function MessageInput() {
           className={`rounded-[2rem] bg-white shadow-[0_20px_50px_rgba(0,0,0,0.08)] relative transition-all duration-500 ${
             imageMode
               ? 'border-2 border-sky-400/60 image-mode-glow'
+              : videoMode
+              ? 'border-2 border-violet-400/60 video-mode-glow'
               : 'border border-black/5'
           }`}
         >
@@ -956,6 +1193,170 @@ export const MessageInput = memo(function MessageInput() {
             </div>
           )}
 
+          {/* Video mode controls */}
+          {videoMode && (
+            <div className="px-4 pt-3 pb-2 border-b border-gray-100">
+              <div className="flex items-center gap-3 flex-wrap">
+                {/* Mode selector: Text or Image */}
+                <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+                  {VIDEO_MODES.map((mode) => {
+                    const isAllowed = videoUsage?.allowedModes?.includes(mode.value) || mode.value === 'text-to-video';
+                    const isSelected = videoModeType === mode.value;
+
+                    if (!isAllowed) {
+                      // Show locked mode
+                      return (
+                        <div
+                          key={mode.value}
+                          className="relative flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-gray-400 cursor-not-allowed"
+                          title="Actualiza a Professional para desbloquear"
+                        >
+                          <span className="grayscale opacity-50">{mode.icon}</span>
+                          <span>{mode.label}</span>
+                          <Lock className="size-3 text-gray-400" />
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <button
+                        key={mode.value}
+                        type="button"
+                        onClick={() => setVideoModeType(mode.value)}
+                        disabled={isLoading}
+                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition ${
+                          isSelected
+                            ? 'bg-white text-gray-900 shadow-sm'
+                            : 'text-gray-500 hover:text-gray-700'
+                        } disabled:opacity-40`}
+                        title={mode.description}
+                      >
+                        <span>{mode.icon}</span>
+                        <span>{mode.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Image upload for image-to-video mode */}
+                {videoModeType === 'image-to-video' && (
+                  <VideoImageUpload
+                    onImageUploaded={setVideoImageUrl}
+                    onImageRemoved={() => setVideoImageUrl('')}
+                    currentImageUrl={videoImageUrl}
+                    disabled={isLoading}
+                  />
+                )}
+
+                {/* Aspect ratio selector */}
+                <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+                  {VIDEO_ASPECT_RATIOS.map((ratio) => {
+                    const isAllowed = videoUsage?.allowedAspectRatios?.includes(ratio.value) || ratio.value === '16:9';
+                    const isSelected = videoAspectRatio === ratio.value;
+
+                    if (!isAllowed) {
+                      return (
+                        <div
+                          key={ratio.value}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-gray-400 cursor-not-allowed"
+                          title="Actualiza tu plan para desbloquear"
+                        >
+                          <span>{ratio.value}</span>
+                          <Lock className="size-2.5" />
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <button
+                        key={ratio.value}
+                        type="button"
+                        onClick={() => setVideoAspectRatio(ratio.value)}
+                        disabled={isLoading}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-medium transition ${
+                          isSelected
+                            ? 'bg-white text-gray-900 shadow-sm'
+                            : 'text-gray-500 hover:text-gray-700'
+                        } disabled:opacity-40`}
+                        title={ratio.label}
+                      >
+                        {ratio.value}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Duration selector */}
+                <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+                  {VIDEO_DURATIONS.map((dur) => {
+                    const isAllowed = videoUsage?.allowedDurations?.includes(dur.value) || dur.value === '5';
+                    const isSelected = videoDuration === dur.value;
+
+                    if (!isAllowed) {
+                      return (
+                        <div
+                          key={dur.value}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-gray-400 cursor-not-allowed"
+                          title="Actualiza a Professional para desbloquear"
+                        >
+                          <span>{dur.label}</span>
+                          <Lock className="size-2.5" />
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <button
+                        key={dur.value}
+                        type="button"
+                        onClick={() => setVideoDuration(dur.value)}
+                        disabled={isLoading}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-medium transition ${
+                          isSelected
+                            ? 'bg-white text-violet-600 shadow-sm'
+                            : 'text-gray-500 hover:text-gray-700'
+                        } disabled:opacity-40`}
+                        title={dur.description}
+                      >
+                        {dur.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Close button */}
+                <button
+                  type="button"
+                  onClick={() => setVideoMode(false)}
+                  className="ml-auto p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+
+              {/* Progress indicator */}
+              {isGeneratingVideo && videoProgress && (
+                <div className="flex items-center gap-2 mt-2 text-xs text-violet-600">
+                  <Loader2 className="size-3 animate-spin" />
+                  <span>{videoProgress}</span>
+                </div>
+              )}
+
+              {/* Usage and info */}
+              <div className="flex items-center justify-between mt-2">
+                <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                  <Video className="size-3" />
+                  <span>Continuum V0.1 Pro{videoUsage?.audioEnabled ? ' + Audio' : ''}</span>
+                </div>
+                {videoUsage && (
+                  <span className="text-xs text-gray-400">
+                    {videoUsage.remainingToday}/{videoUsage.dailyLimit} hoy
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Main input row */}
           <div className="flex flex-row items-center gap-3 px-4 py-3">
             <DropdownMenu>
@@ -964,7 +1365,7 @@ export const MessageInput = memo(function MessageInput() {
                   type="button"
                   disabled={isLoading}
                   className={`relative flex shrink-0 items-center justify-center rounded-full p-2 transition ${
-                    geoCulturalMode || showFileUpload || attachments.length > 0 || imageMode
+                    geoCulturalMode || showFileUpload || attachments.length > 0 || imageMode || videoMode
                       ? 'bg-[#00552b] text-white'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   } disabled:opacity-40 disabled:cursor-not-allowed`}
@@ -996,6 +1397,25 @@ export const MessageInput = memo(function MessageInput() {
                   <Image className="mr-2 size-4" />
                   <span className="flex-1">Generar imagen</span>
                   {imageMode && FEATURE_FLAGS.imageGeneration && <Check className="size-4 text-[#00552b]" />}
+                </DropdownMenuItem>
+
+                {/* Generar video - Kling V2.6 */}
+                <DropdownMenuItem
+                  onClick={FEATURE_FLAGS.videoGeneration ? toggleVideoMode : undefined}
+                  disabled={isLoading || !FEATURE_FLAGS.videoGeneration}
+                  className={`relative cursor-pointer ${!FEATURE_FLAGS.videoGeneration ? 'opacity-100' : ''}`}
+                >
+                  {!FEATURE_FLAGS.videoGeneration && (
+                    <div className="absolute -inset-x-2 -inset-y-1 bg-gradient-to-r from-white/90 via-white/70 to-white/90 backdrop-blur-[1px] rounded-sm flex items-center justify-end pr-2 z-10">
+                      <div className="flex items-center gap-1.5 bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-[10px] font-medium shadow-sm">
+                        <Sparkles className="size-3" />
+                        <span>Próximamente</span>
+                      </div>
+                    </div>
+                  )}
+                  <Video className="mr-2 size-4" />
+                  <span className="flex-1">Generar video</span>
+                  {videoMode && FEATURE_FLAGS.videoGeneration && <Check className="size-4 text-[#00552b]" />}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -1050,6 +1470,10 @@ export const MessageInput = memo(function MessageInput() {
                   ? 'Escuchando...'
                   : isTranscribing
                   ? 'Transcribiendo...'
+                  : videoMode
+                  ? videoModeType === 'image-to-video'
+                    ? 'Describe cómo quieres animar la imagen...'
+                    : 'Describe tu video (escena, acción, estilo)...'
                   : imageMode
                   ? `Describe tu imagen en estilo ${selectedPreset.name}...`
                   : geoCulturalMode

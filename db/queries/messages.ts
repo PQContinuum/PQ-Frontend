@@ -54,15 +54,25 @@ export async function createMessage(
 }
 
 /**
- * Actualizar un mensaje
+ * Actualizar un mensaje (content y/o metadata)
  */
 export async function updateMessage(
   messageId: string,
-  content: string
+  content?: string,
+  metadata?: string
 ): Promise<Message | undefined> {
+  // Construir objeto de actualización dinámicamente
+  const updateData: Partial<{ content: string; metadata: string | null }> = {};
+  if (content !== undefined) updateData.content = content;
+  if (metadata !== undefined) updateData.metadata = metadata;
+
+  if (Object.keys(updateData).length === 0) {
+    return undefined;
+  }
+
   const result = await db
     .update(messages)
-    .set({ content })
+    .set(updateData)
     .where(eq(messages.id, messageId))
     .returning();
 

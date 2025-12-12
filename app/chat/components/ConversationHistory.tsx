@@ -3,6 +3,7 @@
 import React, { useCallback, memo } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useConversationId, useSetConversationId, useReplaceMessages, useSetGeoCulturalMode, useSetUserLocation } from '../store';
+import type { ChatMessage, MessageGenerationState } from '../store';
 import { SidebarMenuItem, useSidebar } from '@/components/ui/sidebar';
 import { ConversationItem } from './ConversationItem';
 import {
@@ -22,6 +23,37 @@ import {
 } from '@/hooks/use-conversations';
 import type { ConversationWithMessages } from '@/hooks/use-conversations';
 import { useQueryClient } from '@tanstack/react-query';
+
+// Helper para transformar mensajes de API a ChatMessage con generationState
+function mapApiMessagesToChatMessages(
+  messages: ConversationWithMessages['messages']
+): ChatMessage[] {
+  return messages.map((msg) => {
+    let generationState: MessageGenerationState | undefined = undefined;
+
+    // Parsear metadata si existe
+    if (msg.metadata) {
+      try {
+        const metadata = typeof msg.metadata === 'string'
+          ? JSON.parse(msg.metadata)
+          : msg.metadata;
+        if (metadata?.generationState) {
+          generationState = metadata.generationState as MessageGenerationState;
+        }
+      } catch {
+        // Ignore parse errors
+      }
+    }
+
+    return {
+      id: msg.id,
+      role: msg.role,
+      content: msg.content,
+      attachments: msg.attachments,
+      generationState,
+    };
+  });
+}
 
 export const ConversationHistory = memo(function ConversationHistory() {
   const conversationId = useConversationId();
@@ -50,8 +82,8 @@ export const ConversationHistory = memo(function ConversationHistory() {
     );
 
     if (cachedConversation) {
-      // Usar cache inmediatamente
-      replaceMessages(cachedConversation.messages);
+      // Usar cache inmediatamente - mapear metadata a generationState
+      replaceMessages(mapApiMessagesToChatMessages(cachedConversation.messages));
 
       // Restaurar contexto geocultural si existe
       if (cachedConversation.geoCulturalContext) {
@@ -82,7 +114,7 @@ export const ConversationHistory = memo(function ConversationHistory() {
       }).then((freshConversation) => {
         // Actualizar solo si hay cambios
         if (JSON.stringify(freshConversation.messages) !== JSON.stringify(cachedConversation.messages)) {
-          replaceMessages(freshConversation.messages);
+          replaceMessages(mapApiMessagesToChatMessages(freshConversation.messages));
         }
 
         // Actualizar contexto geocultural si cambió
@@ -117,7 +149,8 @@ export const ConversationHistory = memo(function ConversationHistory() {
           staleTime: 1000 * 60 * 10,
         });
 
-        replaceMessages(conversation.messages);
+        // Mapear metadata a generationState
+        replaceMessages(mapApiMessagesToChatMessages(conversation.messages));
 
         // Restaurar contexto geocultural si existe
         if (conversation.geoCulturalContext) {

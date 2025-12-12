@@ -249,6 +249,132 @@ export function getQualityDescription(quality: ImageGenQuality): string {
 }
 
 // ============================================================================
+// VIDEO GENERATION (Kling V2.6 Pro) LIMITS
+// ============================================================================
+
+// Kling V2.6 durations: 5s or 10s
+export type VideoGenDuration = '5' | '10';
+
+// Kling V2.6 aspect ratios
+export type VideoGenAspectRatio = '16:9' | '9:16' | '1:1';
+
+// Video generation modes
+export type VideoGenMode = 'text-to-video' | 'image-to-video';
+
+export type VideoGenPlanLimits = {
+  // Máximo de videos por día
+  maxVideosPerDay: number;
+  // Máximo de videos por mes
+  maxVideosPerMonth: number;
+  // Si tiene acceso a generación de video
+  videoGenEnabled: boolean;
+  // Duraciones permitidas
+  allowedDurations: VideoGenDuration[];
+  // Aspect ratios permitidos
+  allowedAspectRatios: VideoGenAspectRatio[];
+  // Modos permitidos (text-to-video, image-to-video)
+  allowedModes: VideoGenMode[];
+  // Si tiene acceso a audio generado
+  audioEnabled: boolean;
+  // Costo estimado máximo USD/mes
+  estimatedMaxCostUSD: number;
+};
+
+/**
+ * LÍMITES DE GENERACIÓN DE VIDEO POR PLAN (Kling V2.6 Pro via Fal.ai)
+ * ====================================================================
+ * Costos Kling V2.6 Pro:
+ * - Sin audio: $0.07/segundo (5s = $0.35, 10s = $0.70)
+ * - Con audio: $0.14/segundo (5s = $0.70, 10s = $1.40)
+ *
+ * IMPORTANTE: Videos son ~35x más caros que imágenes de baja calidad
+ * Objetivo: mantener costo video ≤ 15-20% del precio del plan
+ */
+export const VIDEO_GEN_LIMITS: Record<PlanName, VideoGenPlanLimits> = {
+  Free: {
+    maxVideosPerDay: 1,
+    maxVideosPerMonth: 3,
+    videoGenEnabled: true,
+    allowedDurations: ['5'],           // Solo 5 segundos
+    allowedAspectRatios: ['16:9'],     // Solo horizontal
+    allowedModes: ['text-to-video'],   // Solo texto a video
+    audioEnabled: false,               // Sin audio para ahorrar costos
+    estimatedMaxCostUSD: 1.05,         // 3 × $0.35 (5s sin audio)
+  },
+  Basic: {
+    maxVideosPerDay: 3,
+    maxVideosPerMonth: 20,
+    videoGenEnabled: true,
+    allowedDurations: ['5'],           // Solo 5 segundos
+    allowedAspectRatios: ['16:9', '9:16', '1:1'],
+    allowedModes: ['text-to-video'],   // Solo texto a video
+    audioEnabled: true,                // Con audio
+    estimatedMaxCostUSD: 14.00,        // 20 × $0.70 (5s con audio)
+  },
+  Professional: {
+    maxVideosPerDay: 8,
+    maxVideosPerMonth: 60,
+    videoGenEnabled: true,
+    allowedDurations: ['5', '10'],     // Ambas duraciones
+    allowedAspectRatios: ['16:9', '9:16', '1:1'],
+    allowedModes: ['text-to-video', 'image-to-video'],
+    audioEnabled: true,
+    estimatedMaxCostUSD: 63.00,        // ~45×$0.70 + 15×$1.40 (mix)
+  },
+  Enterprise: {
+    maxVideosPerDay: 20,
+    maxVideosPerMonth: 200,
+    videoGenEnabled: true,
+    allowedDurations: ['5', '10'],
+    allowedAspectRatios: ['16:9', '9:16', '1:1'],
+    allowedModes: ['text-to-video', 'image-to-video'],
+    audioEnabled: true,
+    estimatedMaxCostUSD: 210.00,       // ~150×$0.70 + 50×$1.40 (mix)
+  },
+};
+
+/**
+ * Obtiene los límites de generación de video del plan
+ */
+export function getVideoGenLimits(planName: PlanName | null | undefined): VideoGenPlanLimits {
+  if (!planName || !(planName in VIDEO_GEN_LIMITS)) {
+    return VIDEO_GEN_LIMITS.Free;
+  }
+  return VIDEO_GEN_LIMITS[planName];
+}
+
+/**
+ * Calcula el costo de un video según sus parámetros
+ */
+export function calculateVideoCost(
+  duration: VideoGenDuration,
+  audioEnabled: boolean
+): number {
+  const seconds = parseInt(duration);
+  const costPerSecond = audioEnabled ? 0.14 : 0.07;
+  return seconds * costPerSecond;
+}
+
+/**
+ * Obtiene la etiqueta de duración en español
+ */
+export function getDurationLabel(duration: VideoGenDuration): string {
+  return duration === '5' ? '5 segundos' : '10 segundos';
+}
+
+/**
+ * Obtiene la etiqueta del aspect ratio
+ */
+export function getAspectRatioLabel(aspectRatio: VideoGenAspectRatio): string {
+  switch (aspectRatio) {
+    case '16:9': return 'Horizontal';
+    case '9:16': return 'Vertical';
+    case '1:1': return 'Cuadrado';
+    default: return aspectRatio;
+  }
+}
+
+// ============================================================================
 // MEMORY LIMITS
 // ============================================================================
 

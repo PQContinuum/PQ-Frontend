@@ -13,65 +13,175 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip
 
 import 'highlight.js/styles/github.css';
 
-// Skeleton component for image generation - creative animated preview
-const ImageGeneratingSkeleton = () => (
-  <div className="w-[340px] h-[340px] rounded-2xl overflow-hidden relative bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50">
-    {/* Animated gradient background */}
-    <div className="absolute inset-0 bg-gradient-to-r from-blue-100/50 via-purple-100/50 to-pink-100/50 animate-[gradient-shift_3s_ease-in-out_infinite]" />
+// Minimalist media generation skeleton - works for both image and video
+interface MediaGeneratingSkeletonProps {
+  type: 'image' | 'video';
+  aspectRatio?: 'square' | 'landscape' | 'portrait';
+}
 
-    {/* Floating particles effect */}
-    <div className="absolute inset-0 overflow-hidden">
-      <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-blue-400/30 rounded-full animate-[float-particle_2s_ease-in-out_infinite]" />
-      <div className="absolute top-1/3 right-1/4 w-1.5 h-1.5 bg-purple-400/30 rounded-full animate-[float-particle_2.5s_ease-in-out_infinite_0.5s]" />
-      <div className="absolute bottom-1/3 left-1/3 w-2.5 h-2.5 bg-pink-400/30 rounded-full animate-[float-particle_3s_ease-in-out_infinite_1s]" />
-      <div className="absolute top-1/2 right-1/3 w-1 h-1 bg-blue-300/40 rounded-full animate-[float-particle_2s_ease-in-out_infinite_0.3s]" />
-    </div>
+const MediaGeneratingSkeleton = ({ type, aspectRatio = 'square' }: MediaGeneratingSkeletonProps) => {
+  // Determine dimensions based on type and aspect ratio
+  const getDimensions = () => {
+    if (type === 'image') {
+      return 'w-[340px] h-[340px]'; // Square for images
+    }
+    // Video dimensions based on aspect ratio - usar dimensiones fijas
+    switch (aspectRatio) {
+      case 'portrait':
+        return 'w-[320px] h-[568px]'; // 9:16
+      case 'landscape':
+      default:
+        return 'w-[560px] h-[315px]'; // 16:9 con dimensiones fijas
+    }
+  };
 
-    {/* Center content */}
-    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-      {/* Animated icon container */}
-      <div className="relative">
-        {/* Outer glow ring */}
-        <div className="absolute -inset-4 bg-gradient-to-r from-blue-400/20 via-purple-400/20 to-pink-400/20 rounded-full blur-xl animate-pulse" />
+  const isVideo = type === 'video';
 
-        {/* Spinning ring */}
-        <div className="absolute -inset-2 border-2 border-dashed border-gray-300/50 rounded-full animate-[spin_8s_linear_infinite]" />
-
-        {/* Icon background */}
-        <div className="relative size-16 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg flex items-center justify-center">
+  return (
+    <div className={`${getDimensions()} rounded-2xl overflow-hidden relative bg-[#f5f5f5]`}>
+      {/* Center content */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        {/* Circular loader with icon */}
+        <div className="relative">
+          {/* Spinning arc - the main loading indicator */}
           <svg
-            className="size-8 text-gray-400 animate-pulse"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+            className="size-24 animate-[spin_1.5s_linear_infinite]"
+            viewBox="0 0 100 100"
           >
-            <path
+            {/* Background circle */}
+            <circle
+              cx="50"
+              cy="50"
+              r="42"
+              fill="none"
+              stroke="#e5e5e5"
+              strokeWidth="3"
+            />
+            {/* Animated arc */}
+            <circle
+              cx="50"
+              cy="50"
+              r="42"
+              fill="none"
+              stroke="#1a1a1a"
+              strokeWidth="3"
               strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.5}
-              d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
+              strokeDasharray="66 198"
+              className="origin-center"
             />
           </svg>
+
+          {/* Center icon */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="size-16 bg-white rounded-full shadow-sm flex items-center justify-center">
+              {isVideo ? (
+                // Video/Play icon
+                <svg
+                  className="size-7 text-[#1a1a1a]"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              ) : (
+                // Image/Mountain icon
+                <svg
+                  className="size-7 text-[#1a1a1a]"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2zm0-2V5h14v14H5z" />
+                  <path d="M12 9a2 2 0 100-4 2 2 0 000 4z" />
+                  <path d="M5 19l4-6 3 4 4-5 4 7H5z" />
+                </svg>
+              )}
+            </div>
+          </div>
         </div>
       </div>
-
-      {/* Text with shimmer */}
-      <div className="relative">
-        <span className="text-sm font-medium text-gray-500">Creando tu imagen</span>
-        <span className="ml-1 inline-flex">
-          <span className="animate-[bounce_1s_ease-in-out_infinite]">.</span>
-          <span className="animate-[bounce_1s_ease-in-out_infinite_0.2s]">.</span>
-          <span className="animate-[bounce_1s_ease-in-out_infinite_0.4s]">.</span>
-        </span>
-      </div>
     </div>
+  );
+};
 
-    {/* Bottom shimmer bar */}
-    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-200/50 overflow-hidden">
-      <div className="h-full w-1/3 bg-gradient-to-r from-transparent via-blue-400/60 to-transparent animate-[shimmer-bar_1.5s_ease-in-out_infinite]" />
-    </div>
-  </div>
-);
+// Wrapper components for backwards compatibility
+const ImageGeneratingSkeleton = () => <MediaGeneratingSkeleton type="image" />;
+const VideoGeneratingSkeleton = () => <MediaGeneratingSkeleton type="video" aspectRatio="landscape" />;
+
+// Custom video component with controls and download functionality
+const ChatVideo = ({ src }: { src: string }) => {
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!src) return;
+
+    try {
+      const response = await fetch(src);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `video-generado-${Date.now()}.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading video:', error);
+    }
+  };
+
+  if (hasError) {
+    return (
+      <span className="block w-full max-w-[560px] aspect-video rounded-2xl bg-gray-100 flex items-center justify-center">
+        <span className="text-sm text-gray-400">Error al cargar video</span>
+      </span>
+    );
+  }
+
+  return (
+    <span className="block w-full max-w-[560px]">
+      {/* Title */}
+      <span className="block text-sm font-semibold text-gray-800 mb-2">Video creado</span>
+
+      <span className="relative block group">
+        {isLoading && (
+          <span className="absolute inset-0 block rounded-2xl bg-gray-100 animate-pulse aspect-video" />
+        )}
+        <video
+          src={src}
+          controls
+          className={`w-full rounded-2xl shadow-lg transition-opacity duration-300 ${
+            isLoading ? 'opacity-0' : 'opacity-100'
+          }`}
+          onLoadedData={() => setIsLoading(false)}
+          onError={() => setHasError(true)}
+          preload="metadata"
+        />
+
+        {/* Hover overlay with download button */}
+        {!isLoading && (
+          <span className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={handleDownload}
+                  className="p-2 bg-black/60 hover:bg-black/80 rounded-lg backdrop-blur-sm transition"
+                >
+                  <svg className="size-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Descargar video</TooltipContent>
+            </Tooltip>
+          </span>
+        )}
+      </span>
+    </span>
+  );
+};
 
 // Custom image component with lightbox, download, and share functionality
 const ChatImage = ({ src, alt, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) => {
@@ -401,6 +511,9 @@ type MessageBubbleProps = {
     fileSize: number;
     mimeType?: string;
   }>;
+  // Props se mantienen para compatibilidad pero ahora message.generationState es la fuente de verdad
+  isGenerating?: boolean;
+  generationMode?: 'none' | 'image' | 'video' | 'geocultural';
 };
 
 type MarkdownCodeProps = ComponentPropsWithoutRef<'code'> & {
@@ -450,14 +563,22 @@ const CodeBlock = ({
 export function MessageBubble({ message, isStreaming = false, attachments }: MessageBubbleProps) {
   const isUser = message.role === 'user';
 
-  const { geoCulturalData, geoCulturalText, isLoadingGeoCultural, isGeneratingImage } = useMemo(() => {
-    if (isUser || !message.content) return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: false, isGeneratingImage: false };
+  // Estado de generación desde el mensaje - fuente de verdad para mostrar skeletons
+  const generationState = message.generationState;
+  const isGeneratingMedia = generationState?.status === 'generating';
+
+  // DEBUG: Ver el estado de generación
+  console.log('[MessageBubble] message.id:', message.id, 'generationState:', generationState, 'isGeneratingMedia:', isGeneratingMedia, 'type:', generationState?.type);
+
+  const { geoCulturalData, geoCulturalText, isLoadingGeoCultural, videoUrl } = useMemo(() => {
+    if (isUser || !message.content) return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: false, videoUrl: null };
 
     const trimmedContent = message.content.trim();
 
-    // Check if this is an image generation loading message
-    if (trimmedContent.includes('🖼️ Generando imagen')) {
-      return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: false, isGeneratingImage: true };
+    // Check if content contains a video tag (generated video result)
+    const videoMatch = trimmedContent.match(/<video[^>]*src="([^"]+)"[^>]*>/);
+    if (videoMatch) {
+      return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: false, videoUrl: videoMatch[1] };
     }
 
     const looksLikeJSON = trimmedContent.startsWith('{');
@@ -468,31 +589,58 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
 
         // Check for new geocultural analysis format (text-only)
         if (parsed.type === 'geocultural_analysis' && 'reply' in parsed) {
-          if (isStreaming && parsed.reply === '') {
-            // It's the start of a geocultural stream, reply is still empty. Show skeleton.
-            return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: true, isGeneratingImage: false };
+          // Si está generando geocultural y reply está vacío, mostrar skeleton
+          if (generationState?.type === 'geocultural' && isGeneratingMedia && parsed.reply === '') {
+            return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: true, videoUrl: null };
           }
-          return { geoCulturalData: null, geoCulturalText: parsed, isLoadingGeoCultural: false, isGeneratingImage: false };
+          return { geoCulturalData: null, geoCulturalText: parsed, isLoadingGeoCultural: false, videoUrl: null };
         }
 
         // Legacy format (with places and map) - no longer used but kept for compatibility
         if (parsed.reply && parsed.places && parsed.userCoords) {
-          return { geoCulturalData: parsed, geoCulturalText: null, isLoadingGeoCultural: false, isGeneratingImage: false };
+          return { geoCulturalData: parsed, geoCulturalText: null, isLoadingGeoCultural: false, videoUrl: null };
         }
       } catch {
-        return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: true, isGeneratingImage: false };
+        // Si está generando geocultural, mostrar skeleton mientras parsea
+        if (generationState?.type === 'geocultural' && isGeneratingMedia) {
+          return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: true, videoUrl: null };
+        }
+        return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: false, videoUrl: null };
       }
     }
 
-    return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: false, isGeneratingImage: false };
-  }, [message.content, isUser, isStreaming]);
+    return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: false, videoUrl: null };
+  }, [message.content, isUser, generationState, isGeneratingMedia]);
 
   // Show skeleton while generating image
-  if (isGeneratingImage) {
+  if (isGeneratingMedia && generationState?.type === 'image') {
     return (
       <div className="flex justify-start">
         <div className="inline-flex rounded-4xl border border-transparent bg-transparent text-black px-4 py-2">
           <ImageGeneratingSkeleton />
+        </div>
+      </div>
+    );
+  }
+
+  // Show skeleton while generating video
+  if (isGeneratingMedia && generationState?.type === 'video') {
+    console.log('[MessageBubble] ✅ RENDERING VIDEO SKELETON for message:', message.id);
+    return (
+      <div className="flex justify-start">
+        <div className="inline-flex rounded-4xl border border-transparent bg-transparent text-black px-4 py-2">
+          <VideoGeneratingSkeleton />
+        </div>
+      </div>
+    );
+  }
+
+  // Render generated video
+  if (videoUrl) {
+    return (
+      <div className="flex justify-start">
+        <div className="inline-flex rounded-4xl border border-transparent bg-transparent text-black px-4 py-2">
+          <ChatVideo src={videoUrl} />
         </div>
       </div>
     );
@@ -778,8 +926,8 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
             </div>
           </div>
         </div>
-        {/* Speech button for assistant messages (not for generated images) */}
-        {!isUser && !isStreaming && message.content && !message.content.includes('![Imagen generada]') && (
+        {/* Speech button for assistant messages (not for generated images or videos) */}
+        {!isUser && !isStreaming && message.content && !message.content.includes('![Imagen generada]') && !message.content.includes('<video') && (
           <div className="flex justify-start pl-2">
             <SpeechButton text={message.content} />
           </div>

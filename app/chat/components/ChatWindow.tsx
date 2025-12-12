@@ -2,7 +2,14 @@
 
 import { useLayoutEffect, useRef, memo } from 'react';
 
-import { useMessages, useIsStreaming, useConversationId } from '@/app/chat/store';
+import {
+  useMessages,
+  useIsStreaming,
+  useConversationId,
+  useGenerationMode,
+  useIsGenerating,
+  useGeneratingMessageId,
+} from '@/app/chat/store';
 
 import { MessageBubble } from './MessageBubble';
 import { TypingIndicator } from './TypingIndicator';
@@ -11,6 +18,9 @@ export const ChatWindow = memo(function ChatWindow() {
   const messages = useMessages();
   const isStreaming = useIsStreaming();
   const conversationId = useConversationId();
+  const generationMode = useGenerationMode();
+  const isGenerating = useIsGenerating();
+  const generatingMessageId = useGeneratingMessageId();
   const containerRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const previousMessageCount = useRef(messages.length);
@@ -47,10 +57,13 @@ export const ChatWindow = memo(function ChatWindow() {
             message={message}
             isStreaming={isStreaming && index === messages.length - 1 && message.role === 'assistant'}
             attachments={message.attachments}
+            isGenerating={isGenerating && message.id === generatingMessageId}
+            generationMode={message.id === generatingMessageId ? generationMode : 'none'}
           />
         </div>
       ))}
-      {isStreaming && (
+      {/* Solo mostrar TypingIndicator si NO se está generando imagen o video */}
+      {isStreaming && generationMode === 'none' && (
         <div className="px-2">
           <TypingIndicator />
         </div>

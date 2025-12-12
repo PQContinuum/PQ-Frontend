@@ -67,6 +67,8 @@ export const messages = pgTable("messages", {
     .references(() => conversations.id, { onDelete: "cascade" }),
   role: messageRoleEnum("role").notNull(),
   content: text("content").notNull(),
+  // Metadata JSON: { generationState?: { type: 'image'|'video'|'geocultural', status: 'generating'|'completed'|'error' } }
+  metadata: text("metadata"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -182,6 +184,39 @@ export const imageGenUsage = pgTable("image_gen_usage", {
     .defaultNow(),
 });
 
+// Tabla de uso de generación de videos (Kling V2.6 via Fal.ai)
+// Registra cada video generado para control de límites por plan
+export const videoGenUsage = pgTable("video_gen_usage", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull(), // Referencia a auth.users
+
+  // Información del video generado
+  prompt: text("prompt").notNull(),
+  mode: varchar("mode", { length: 20 }).notNull().default("text-to-video"), // 'text-to-video' | 'image-to-video'
+  duration: varchar("duration", { length: 5 }).notNull().default("5"), // '5' | '10' (seconds)
+  aspectRatio: varchar("aspect_ratio", { length: 10 }).notNull().default("16:9"), // '16:9' | '9:16' | '1:1'
+  audioEnabled: boolean("audio_enabled").notNull().default(true),
+
+  // Imagen fuente (solo para image-to-video)
+  sourceImageUrl: text("source_image_url"),
+
+  // Almacenamiento
+  storagePath: text("storage_path"), // Path en Supabase Storage
+  originalUrl: text("original_url"), // URL original de Fal.ai
+  requestId: varchar("request_id", { length: 100 }), // ID de la solicitud de Fal.ai
+
+  // Costos ($0.07/s sin audio, $0.14/s con audio)
+  costUsd: numeric("cost_usd", { precision: 10, scale: 6 }).notNull(),
+
+  // Metadata
+  generationTimeMs: integer("generation_time_ms"), // Tiempo que tardó en generar
+
+  // Timestamp
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 // Tabla de attachments de conversaciones
 export const conversationAttachments = pgTable("conversation_attachments", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -272,3 +307,5 @@ export type ConversationAttachment = typeof conversationAttachments.$inferSelect
 export type NewConversationAttachment = typeof conversationAttachments.$inferInsert;
 export type ImageGenUsage = typeof imageGenUsage.$inferSelect;
 export type NewImageGenUsage = typeof imageGenUsage.$inferInsert;
+export type VideoGenUsage = typeof videoGenUsage.$inferSelect;
+export type NewVideoGenUsage = typeof videoGenUsage.$inferInsert;
