@@ -73,72 +73,129 @@ const ImageGeneratingSkeleton = () => (
   </div>
 );
 
-// Skeleton component for video generation - creative animated preview
+// Skeleton component for video generation - cinematic animated preview
 const VideoGeneratingSkeleton = () => (
-  <div className="w-[400px] h-[225px] rounded-2xl overflow-hidden relative bg-gradient-to-br from-violet-50 via-purple-50 to-violet-50">
-    {/* Animated gradient background */}
-    <div className="absolute inset-0 bg-gradient-to-r from-violet-100/50 via-purple-100/50 to-fuchsia-100/50 animate-[gradient-shift_3s_ease-in-out_infinite]" />
+  <div className="w-full max-w-[560px] aspect-video rounded-2xl overflow-hidden relative bg-gradient-to-br from-gray-900 via-violet-950 to-gray-900">
+    {/* Cinematic letterbox bars */}
+    <div className="absolute top-0 left-0 right-0 h-6 bg-black z-10" />
+    <div className="absolute bottom-0 left-0 right-0 h-6 bg-black z-10" />
 
-    {/* Film reel effect - top and bottom bars */}
-    <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-r from-gray-900/80 via-gray-800/80 to-gray-900/80 flex items-center px-2">
-      <div className="flex gap-1.5">
-        {[...Array(12)].map((_, i) => (
-          <div key={i} className="w-2 h-2 bg-gray-700 rounded-sm" />
-        ))}
-      </div>
-    </div>
-    <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-r from-gray-900/80 via-gray-800/80 to-gray-900/80 flex items-center px-2">
-      <div className="flex gap-1.5">
-        {[...Array(12)].map((_, i) => (
-          <div key={i} className="w-2 h-2 bg-gray-700 rounded-sm" />
-        ))}
-      </div>
-    </div>
-
-    {/* Floating video particles */}
+    {/* Animated aurora background */}
     <div className="absolute inset-0 overflow-hidden">
-      <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-violet-400/30 rounded-full animate-[float-particle_2s_ease-in-out_infinite]" />
-      <div className="absolute top-1/3 right-1/4 w-1.5 h-1.5 bg-purple-400/30 rounded-full animate-[float-particle_2.5s_ease-in-out_infinite_0.5s]" />
-      <div className="absolute bottom-1/3 left-1/3 w-2.5 h-2.5 bg-fuchsia-400/30 rounded-full animate-[float-particle_3s_ease-in-out_infinite_1s]" />
+      <div className="absolute -inset-[100%] bg-gradient-conic from-violet-500/20 via-fuchsia-500/20 via-purple-500/20 to-violet-500/20 animate-[spin_20s_linear_infinite]" />
+      <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-transparent to-gray-900/80" />
     </div>
 
-    {/* Center content */}
-    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-      {/* Animated icon container */}
+    {/* Animated film frames strip - simulating frames being created */}
+    <div className="absolute top-8 left-0 right-0 flex justify-center gap-2 animate-[slideInFromLeft_0.8s_ease-out]">
+      {[...Array(5)].map((_, i) => (
+        <div
+          key={i}
+          className="w-12 h-8 rounded border border-violet-400/30 bg-violet-900/30 backdrop-blur-sm overflow-hidden"
+          style={{ animationDelay: `${i * 0.15}s` }}
+        >
+          {/* Shimmer effect inside each frame */}
+          <div
+            className="w-full h-full bg-gradient-to-r from-transparent via-violet-400/20 to-transparent animate-[shimmer_2s_ease-in-out_infinite]"
+            style={{ animationDelay: `${i * 0.3}s` }}
+          />
+        </div>
+      ))}
+    </div>
+
+    {/* Center content - Clapperboard style */}
+    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+      {/* Main icon with multiple rings */}
       <div className="relative">
-        {/* Outer glow ring */}
-        <div className="absolute -inset-4 bg-gradient-to-r from-violet-400/20 via-purple-400/20 to-fuchsia-400/20 rounded-full blur-xl animate-pulse" />
+        {/* Outer pulsing glow */}
+        <div className="absolute -inset-8 bg-violet-500/10 rounded-full blur-2xl animate-pulse" />
 
-        {/* Spinning ring */}
-        <div className="absolute -inset-2 border-2 border-dashed border-violet-300/50 rounded-full animate-[spin_8s_linear_infinite]" />
+        {/* Rotating outer ring */}
+        <div className="absolute -inset-6 border border-violet-400/20 rounded-full animate-[spin_12s_linear_infinite]">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-violet-400 rounded-full" />
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-fuchsia-400 rounded-full" />
+        </div>
 
-        {/* Play icon background */}
-        <div className="relative size-16 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg flex items-center justify-center">
-          <svg
-            className="size-8 text-violet-500 animate-pulse"
-            fill="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path d="M8 5v14l11-7z" />
-          </svg>
+        {/* Counter-rotating middle ring */}
+        <div className="absolute -inset-4 border border-dashed border-purple-400/30 rounded-full animate-[spin_8s_linear_infinite_reverse]" />
+
+        {/* Icon container */}
+        <div className="relative size-20 bg-gradient-to-br from-violet-600 to-purple-700 rounded-2xl shadow-2xl shadow-violet-500/30 flex items-center justify-center">
+          {/* Animated play icon */}
+          <div className="relative">
+            <svg
+              className="size-10 text-white drop-shadow-lg"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path d="M8 5v14l11-7z" />
+            </svg>
+            {/* Pulse ring around play */}
+            <div className="absolute inset-0 border-2 border-white/30 rounded-full animate-ping" style={{ animationDuration: '2s' }} />
+          </div>
         </div>
       </div>
 
-      {/* Text with dots animation */}
-      <div className="relative text-center">
-        <span className="text-sm font-medium text-violet-600">Generando video con IA</span>
-        <span className="ml-1 inline-flex text-violet-600">
-          <span className="animate-[bounce_1s_ease-in-out_infinite]">.</span>
-          <span className="animate-[bounce_1s_ease-in-out_infinite_0.2s]">.</span>
-          <span className="animate-[bounce_1s_ease-in-out_infinite_0.4s]">.</span>
-        </span>
-        <div className="text-xs text-violet-400 mt-1">Esto puede tomar 1-3 minutos</div>
+      {/* Status text */}
+      <div className="text-center space-y-1 mt-2">
+        <div className="flex items-center justify-center gap-2">
+          <div className="w-2 h-2 bg-violet-400 rounded-full animate-pulse" />
+          <span className="text-base font-semibold text-white">Creando tu video</span>
+          <span className="inline-flex text-white">
+            <span className="animate-[bounce_1s_ease-in-out_infinite]">.</span>
+            <span className="animate-[bounce_1s_ease-in-out_infinite_0.2s]">.</span>
+            <span className="animate-[bounce_1s_ease-in-out_infinite_0.4s]">.</span>
+          </span>
+        </div>
+        <p className="text-xs text-violet-300/80">La IA está generando cada frame de tu video</p>
+      </div>
+
+      {/* Process steps indicator */}
+      <div className="flex items-center gap-3 mt-2">
+        {['Analizando', 'Renderizando', 'Finalizando'].map((step, i) => (
+          <div key={step} className="flex items-center gap-1.5">
+            <div
+              className={`w-1.5 h-1.5 rounded-full ${i === 0 ? 'bg-green-400 animate-pulse' : i === 1 ? 'bg-violet-400/50' : 'bg-gray-600'}`}
+            />
+            <span className={`text-[10px] ${i === 0 ? 'text-green-400' : i === 1 ? 'text-violet-400/50' : 'text-gray-600'}`}>
+              {step}
+            </span>
+          </div>
+        ))}
       </div>
     </div>
 
-    {/* Bottom progress bar */}
-    <div className="absolute bottom-4 left-4 right-4 h-1.5 bg-gray-200/50 rounded-full overflow-hidden">
-      <div className="h-full bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 rounded-full animate-[progress_3s_ease-in-out_infinite]" />
+    {/* Bottom timeline progress */}
+    <div className="absolute bottom-8 left-6 right-6 z-20">
+      {/* Timeline track */}
+      <div className="relative h-1 bg-gray-800 rounded-full overflow-hidden">
+        {/* Animated progress */}
+        <div className="absolute inset-y-0 left-0 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-purple-500 rounded-full animate-[video-progress_4s_ease-in-out_infinite]" />
+        {/* Glow effect */}
+        <div className="absolute inset-y-0 left-0 bg-gradient-to-r from-violet-400 via-fuchsia-400 to-purple-400 rounded-full blur-sm animate-[video-progress_4s_ease-in-out_infinite]" />
+      </div>
+
+      {/* Time markers */}
+      <div className="flex justify-between mt-1.5">
+        <span className="text-[9px] text-violet-400/60 font-mono">00:00</span>
+        <span className="text-[9px] text-violet-400/60 font-mono">~1-3 min</span>
+      </div>
+    </div>
+
+    {/* Floating sparkles */}
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {[...Array(6)].map((_, i) => (
+        <div
+          key={i}
+          className="absolute w-1 h-1 bg-white rounded-full animate-[float-particle_3s_ease-in-out_infinite]"
+          style={{
+            left: `${15 + i * 15}%`,
+            top: `${30 + (i % 3) * 20}%`,
+            animationDelay: `${i * 0.5}s`,
+            opacity: 0.4,
+          }}
+        />
+      ))}
     </div>
   </div>
 );
@@ -170,14 +227,14 @@ const ChatVideo = ({ src }: { src: string }) => {
 
   if (hasError) {
     return (
-      <span className="block w-full max-w-[400px] aspect-video rounded-2xl bg-gray-100 flex items-center justify-center">
+      <span className="block w-full max-w-[560px] aspect-video rounded-2xl bg-gray-100 flex items-center justify-center">
         <span className="text-sm text-gray-400">Error al cargar video</span>
       </span>
     );
   }
 
   return (
-    <span className="block w-full max-w-[400px]">
+    <span className="block w-full max-w-[560px]">
       {/* Title */}
       <span className="block text-sm font-semibold text-gray-800 mb-2">Video creado</span>
 

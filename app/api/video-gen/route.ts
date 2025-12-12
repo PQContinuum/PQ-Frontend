@@ -193,21 +193,24 @@ export async function POST(request: NextRequest) {
       const videoResponse = await fetch(videoUrl);
       if (videoResponse.ok) {
         const videoBuffer = await videoResponse.arrayBuffer();
-        const fileName = `video-${user.id}-${Date.now()}.mp4`;
-        storagePath = `videos/${user.id}/${fileName}`;
+        const fileName = `video-${Date.now()}.mp4`;
+        storagePath = `${user.id}/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
-          .from('attachments')
+          .from('generated-images')
           .upload(storagePath, videoBuffer, {
             contentType: 'video/mp4',
             upsert: false,
           });
 
         if (!uploadError) {
-          const { data: publicUrlData } = supabase.storage
-            .from('attachments')
-            .getPublicUrl(storagePath);
-          savedVideoUrl = publicUrlData.publicUrl;
+          // Get signed URL (valid for 7 days)
+          const { data: signedData } = await supabase.storage
+            .from('generated-images')
+            .createSignedUrl(storagePath, 60 * 60 * 24 * 7);
+          if (signedData?.signedUrl) {
+            savedVideoUrl = signedData.signedUrl;
+          }
           console.log(`[VideoGen] Saved to storage: ${storagePath}`);
         } else {
           console.warn('[VideoGen] Failed to save to storage:', uploadError);

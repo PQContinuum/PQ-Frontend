@@ -9,7 +9,8 @@ import {
   memo,
   useEffect,
 } from 'react';
-import { ArrowUp, MapPin, Paperclip, Plus, Check, Loader2, Image, X, ChevronDown, Lock, Mic, Square, Sparkles, Video, ImagePlus } from 'lucide-react';
+import { ArrowUp, MapPin, Paperclip, Plus, Check, Loader2, Image, X, ChevronDown, Lock, Mic, Square, Sparkles, Video } from 'lucide-react';
+import { VideoImageUpload } from './VideoImageUpload';
 import { useShallow } from 'zustand/react/shallow';
 import { FileUpload } from './FileUpload';
 import {
@@ -169,6 +170,12 @@ export const MessageInput = memo(function MessageInput() {
     progress: videoProgress,
     usage: videoUsage,
   } = useVideoGeneration();
+
+  // Ref to track latest video progress for use in intervals
+  const videoProgressRef = useRef<string | null>(null);
+  useEffect(() => {
+    videoProgressRef.current = videoProgress;
+  }, [videoProgress]);
 
   // Voice input hook
   const {
@@ -487,13 +494,12 @@ export const MessageInput = memo(function MessageInput() {
 
     // Validate image-to-video mode
     if (videoModeType === 'image-to-video' && !videoImageUrl) {
-      alert('Por favor sube una imagen para animar');
       return;
     }
 
     const userMessageId = createId();
     const assistantMessageId = createId();
-    const userContent = `🎬 ${prompt}`;
+    const userContent = `${prompt}`;
 
     addMessage({
       id: userMessageId,
@@ -539,10 +545,11 @@ export const MessageInput = memo(function MessageInput() {
       }
     }
 
-    // Update message with progress
+    // Update message with progress using ref to get latest value
     const progressInterval = setInterval(() => {
-      if (videoProgress) {
-        updateMessage(assistantMessageId, () => `🎬 ${videoProgress}`);
+      const currentProgress = videoProgressRef.current;
+      if (currentProgress) {
+        updateMessage(assistantMessageId, () => `🎬 ${currentProgress}`);
       }
     }, 1000);
 
@@ -1202,26 +1209,14 @@ export const MessageInput = memo(function MessageInput() {
                   })}
                 </div>
 
-                {/* Image URL input for image-to-video mode */}
+                {/* Image upload for image-to-video mode */}
                 {videoModeType === 'image-to-video' && (
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="url"
-                      value={videoImageUrl}
-                      onChange={(e) => setVideoImageUrl(e.target.value)}
-                      placeholder="URL de imagen..."
-                      className="px-3 py-1 text-xs bg-gray-50 border border-gray-200 rounded-lg w-40 focus:outline-none focus:ring-1 focus:ring-violet-400"
-                    />
-                    {videoImageUrl && (
-                      <button
-                        type="button"
-                        onClick={() => setVideoImageUrl('')}
-                        className="p-1 text-gray-400 hover:text-gray-600"
-                      >
-                        <X className="size-3" />
-                      </button>
-                    )}
-                  </div>
+                  <VideoImageUpload
+                    onImageUploaded={setVideoImageUrl}
+                    onImageRemoved={() => setVideoImageUrl('')}
+                    currentImageUrl={videoImageUrl}
+                    disabled={isLoading}
+                  />
                 )}
 
                 {/* Aspect ratio selector */}
@@ -1322,7 +1317,7 @@ export const MessageInput = memo(function MessageInput() {
               <div className="flex items-center justify-between mt-2">
                 <div className="flex items-center gap-1.5 text-xs text-gray-400">
                   <Video className="size-3" />
-                  <span>Kling V2.6 Pro{videoUsage?.audioEnabled ? ' + Audio' : ''}</span>
+                  <span>Continuum V0.1 Pro{videoUsage?.audioEnabled ? ' + Audio' : ''}</span>
                 </div>
                 {videoUsage && (
                   <span className="text-xs text-gray-400">
