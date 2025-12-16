@@ -216,6 +216,7 @@ export const MessageInput = memo(function MessageInput() {
     requestLocation,
     quality,
     warnings,
+    stage: locationStage,
   } = usePreciseLocation();
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -1025,6 +1026,7 @@ export const MessageInput = memo(function MessageInput() {
         address={address}
         quality={quality}
         warnings={warnings}
+        stage={locationStage}
       />
 
       {address && coords && (
