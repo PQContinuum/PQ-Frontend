@@ -274,6 +274,10 @@ async function handleGeoCulturalMode(
     }
 
     // Comprehensive location validation
+    // Note: We allow high accuracy values because:
+    // 1. Cell tower locations can be 1-30km accuracy
+    // 2. Users can manually confirm/adjust on the map
+    // 3. GeoCultural mode works with approximate locations (neighborhood/city level)
     const validationResult = validateLocation(
         {
             lat: geoCulturalContext.lat,
@@ -282,8 +286,8 @@ async function handleGeoCulturalMode(
             timestamp: geoCulturalContext.timestamp,
         },
         {
-            maxAccuracy: 200, // Max 200m accuracy
-            maxAgeSeconds: 60, // Max 60s old
+            maxAccuracy: 50000, // Allow up to 50km - user can refine on map
+            maxAgeSeconds: 300, // Allow up to 5 minutes old
             strictMode: false, // Disable fake GPS detection (too strict for real mobile devices)
         }
     );

@@ -40,6 +40,7 @@ export function LocationMapConfirmDialog({
   const [currentAddress, setCurrentAddress] = useState<StructuredAddress>(initialAddress);
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [geocodingError, setGeocodingError] = useState<string | null>(null);
+  const [userAdjustedPosition, setUserAdjustedPosition] = useState(false);
   const geocodingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
@@ -163,6 +164,7 @@ export function LocationMapConfirmDialog({
         const newLat = latLng.lat;
         const newLng = latLng.lng;
         setMarkerPosition({ lat: newLat, lng: newLng });
+        setUserAdjustedPosition(true); // User manually adjusted
         reverseGeocodePosition(newLat, newLng);
       }
     },
@@ -171,13 +173,27 @@ export function LocationMapConfirmDialog({
 
   // Handle confirm button
   const handleConfirm = useCallback(() => {
+    // If user manually adjusted the position on the map, consider it high accuracy
+    // (user visually confirmed their location = ~10m accuracy)
+    // Otherwise, use original accuracy but cap it at 100m for confirmed locations
+    const confirmedAccuracy = userAdjustedPosition
+      ? 10 // User manually placed the pin = very accurate
+      : Math.min(initialLocation.accuracy, 100); // Cap at 100m since user confirmed
+
     onConfirm({
       lat: markerPosition.lat,
       lng: markerPosition.lng,
-      accuracy: initialLocation.accuracy,
-      address: currentAddress,
+      accuracy: confirmedAccuracy,
+      address: {
+        ...currentAddress,
+        lat: markerPosition.lat,
+        lng: markerPosition.lng,
+        accuracy: confirmedAccuracy,
+        timestamp: Date.now(),
+        quality: confirmedAccuracy <= 20 ? 'excellent' : confirmedAccuracy <= 50 ? 'good' : 'fair',
+      },
     });
-  }, [markerPosition, initialLocation.accuracy, currentAddress, onConfirm]);
+  }, [markerPosition, initialLocation.accuracy, currentAddress, onConfirm, userAdjustedPosition]);
 
   // Reset position when dialog opens
   useEffect(() => {
@@ -188,6 +204,7 @@ export function LocationMapConfirmDialog({
       });
       setCurrentAddress(initialAddress);
       setGeocodingError(null);
+      setUserAdjustedPosition(false); // Reset adjustment tracking
     }
   }, [isOpen, initialLocation, initialAddress]);
 
@@ -292,6 +309,7 @@ export function LocationMapConfirmDialog({
                               const newLat = event.latLng.lat();
                               const newLng = event.latLng.lng();
                               setMarkerPosition({ lat: newLat, lng: newLng });
+                              setUserAdjustedPosition(true); // User manually adjusted
                               reverseGeocodePosition(newLat, newLng);
                             }
                           }}

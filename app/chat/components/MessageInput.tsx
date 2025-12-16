@@ -356,15 +356,16 @@ export const MessageInput = memo(function MessageInput() {
     [coords, address, geoCulturalMode, setGeoCulturalMode, setUserLocation, userLocation]
   );
 
-  // When location is obtained, automatically open the map dialog
+  // When location is obtained (with or without address), automatically open the map dialog
+  // This allows users to confirm/adjust their position even if geocoding failed
   const prevTimestampRef = useRef<number | null>(null);
   useEffect(() => {
-    if (coords && address && showLocationDialog && coords.timestamp !== prevTimestampRef.current) {
+    if (coords && showLocationDialog && coords.timestamp !== prevTimestampRef.current) {
       prevTimestampRef.current = coords.timestamp;
       setShowLocationDialog(false);
       setShowMapDialog(true);
     }
-  }, [coords, address, showLocationDialog]);
+  }, [coords, showLocationDialog]);
 
   const prevConversationIdRef = useRef<string | null>(null);
   useEffect(() => {
@@ -1029,7 +1030,7 @@ export const MessageInput = memo(function MessageInput() {
         stage={locationStage}
       />
 
-      {address && coords && (
+      {coords && (
         <LocationMapConfirmDialog
           isOpen={showMapDialog}
           onClose={handleCloseMapDialog}
@@ -1039,7 +1040,32 @@ export const MessageInput = memo(function MessageInput() {
             lng: coords.lng,
             accuracy: coords.accuracy,
           }}
-          initialAddress={address}
+          initialAddress={address || {
+            // Placeholder address when geocoding failed
+            // The map will geocode when user confirms/moves marker
+            lat: coords.lat,
+            lng: coords.lng,
+            accuracy: coords.accuracy,
+            timestamp: coords.timestamp,
+            formattedAddress: 'Ubicación aproximada - ajusta el marcador',
+            shortAddress: 'Ajusta tu ubicación',
+            street: null,
+            streetNumber: null,
+            neighborhood: null,
+            city: null,
+            state: null,
+            country: null,
+            countryCode: null,
+            postalCode: null,
+            placeId: null,
+            sublocalityLevel1: null,
+            sublocalityLevel2: null,
+            administrativeAreaLevel2: null,
+            locationType: null,
+            quality: coords.accuracy <= 100 ? 'fair' : 'poor',
+            warnings: ['Precisión baja. Por favor, ajusta el marcador a tu ubicación exacta.'],
+            note: 'Geocodificación pendiente',
+          }}
         />
       )}
 
