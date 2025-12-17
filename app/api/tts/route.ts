@@ -2,9 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { canUseTTS, recordTTSUsage } from '@/lib/tts-usage';
 
-// Valid voices for tts-1
-const VALID_VOICES = ['alloy', 'ash', 'coral', 'echo', 'fable', 'nova', 'onyx', 'sage', 'shimmer'] as const;
+// Valid voices for gpt-4o-mini-tts (11 voices available)
+const VALID_VOICES = ['alloy', 'ash', 'ballad', 'coral', 'echo', 'fable', 'nova', 'onyx', 'sage', 'shimmer', 'verse'] as const;
 type Voice = (typeof VALID_VOICES)[number];
+
+// Instructions for natural, warm speech
+const TTS_INSTRUCTIONS = `Habla de manera natural, cálida y amigable.
+Usa un tono conversacional como si estuvieras hablando con un amigo.
+Pronuncia correctamente el español latinoamericano.
+Mantén un ritmo fluido y pausas naturales.`;
 
 export async function POST(request: NextRequest) {
   try {
@@ -57,6 +63,7 @@ export async function POST(request: NextRequest) {
 
     // =============================================
     // STREAMING TTS - Direct pipe from OpenAI
+    // Using gpt-4o-mini-tts for better quality and steerability
     // =============================================
     const openaiResponse = await fetch('https://api.openai.com/v1/audio/speech', {
       method: 'POST',
@@ -65,9 +72,10 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'tts-1',
+        model: 'gpt-4o-mini-tts',
         voice: selectedVoice,
         input: inputText,
+        instructions: TTS_INSTRUCTIONS,
         response_format: responseFormat,
         speed: 1.0,
       }),
