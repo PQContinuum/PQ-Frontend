@@ -6,11 +6,11 @@ import { canUseTTS, recordTTSUsage } from '@/lib/tts-usage';
 const VALID_VOICES = ['alloy', 'ash', 'ballad', 'coral', 'echo', 'fable', 'nova', 'onyx', 'sage', 'shimmer', 'verse'] as const;
 type Voice = (typeof VALID_VOICES)[number];
 
-// Instructions for natural, warm speech
-const TTS_INSTRUCTIONS = `Habla de manera natural, cálida y amigable.
-Usa un tono conversacional como si estuvieras hablando con un amigo.
-Pronuncia correctamente el español latinoamericano.
-Mantén un ritmo fluido y pausas naturales.`;
+// Instructions for natural, warm speech (works for both Spanish and English)
+const TTS_INSTRUCTIONS = `Speak naturally, warmly and friendly.
+Use a conversational tone as if talking to a friend.
+Maintain fluid rhythm with natural pauses.
+Pronounce Spanish words with Latin American accent when present.`;
 
 export async function POST(request: NextRequest) {
   try {
