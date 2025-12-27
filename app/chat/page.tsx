@@ -29,6 +29,7 @@ import {
   SidebarProvider,
   SidebarRail,
   SidebarTrigger,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import {
   Select,
@@ -52,10 +53,94 @@ import { ConversationHistory } from './components/ConversationHistory';
 import { SettingsDialog } from './components/SettingsDialog';
 import { TTSSettingsModal } from './components/TTSSettingsModal';
 import { PendingJobsBanner } from './components/PendingJobsBanner';
+import { FeedbackWidget } from '@/components/feedback-widget';
 import { useMessages, useReplaceMessages, useSetConversationId } from './store';
 import { createSupabaseBrowserClient } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { useUserPlan } from '@/hooks/use-user-plan';
+
+// Component for the sidebar footer that needs sidebar state
+function SidebarFooterContent({
+  userEmail,
+  userPlan,
+  selectValue,
+  handleSelectAction,
+}: {
+  userEmail: string | null;
+  userPlan: { planName: string } | undefined;
+  selectValue: string;
+  handleSelectAction: (value: string) => void;
+}) {
+  const { state } = useSidebar();
+  const isCollapsed = state === 'collapsed';
+
+  return (
+    <SidebarFooter className="bg-[#f6f6f6] gap-2">
+      <FeedbackWidget isCollapsed={isCollapsed} />
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <Select value={selectValue} onValueChange={handleSelectAction}>
+            <SelectTrigger className="w-full border-0 bg-transparent hover:bg-white/50 transition-colors [&>svg]:group-data-[collapsible=icon]:hidden">
+              <div className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
+                <div className="text-2xl">👤</div>
+                <div className="flex flex-col items-start flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
+                  <span className="text-sm font-medium truncate w-full text-left">
+                    {userEmail
+                      ? userEmail.length > 20
+                        ? `${userEmail.slice(0, 20)}...`
+                        : userEmail
+                      : 'Usuario'}
+                  </span>
+                  <span className={`text-xs font-semibold ${
+                    userPlan?.planName === 'Free' || !userPlan?.planName
+                      ? 'text-[#7EEFB2]'
+                      : userPlan?.planName === 'Básico' || userPlan?.planName === 'Basic'
+                      ? 'text-[#3CCB75]'
+                      : userPlan?.planName === 'Profesional' || userPlan?.planName === 'Professional'
+                      ? 'text-[#DAA520]'
+                      : userPlan?.planName === 'Enterprise' || userPlan?.planName === 'Empresarial'
+                      ? 'text-[#0A4D68]'
+                      : 'text-[#7EEFB2]'
+                  }`}>
+                    Plan {userPlan?.planName || 'Free'}
+                  </span>
+                </div>
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="upgrade">
+                <Link href={'/payment'}>
+                <div className="flex items-center gap-2">
+                  <Sparkles className="size-4" />
+                  <span>Mejorar Plan</span>
+                </div>
+                </Link>
+              </SelectItem>
+              <SelectItem value="settings">
+                <div className="flex items-center gap-2">
+                  <Settings className="size-4" />
+                  <span>Configuración</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="voice">
+                <div className="flex items-center gap-2">
+                  <Volume2 className="size-4" />
+                  <span>Configuración de Voz</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="logout">
+                <div className="flex items-center gap-2">
+                  <LogOut className="size-4" />
+                  <span>Cerrar sesión</span>
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    </SidebarFooter>
+  );
+}
 
 export default function ChatPage() {
   const messages = useMessages();
@@ -238,69 +323,12 @@ export default function ChatPage() {
           </SidebarGroup>
         </SidebarContent>
 
-        <SidebarFooter className="bg-[#f6f6f6]">
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <Select value={selectValue} onValueChange={handleSelectAction}>
-                <SelectTrigger className="w-full border-0 bg-transparent hover:bg-white/50 transition-colors [&>svg]:group-data-[collapsible=icon]:hidden">
-                  <div className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
-                    <div className="text-2xl">👤</div>
-                    <div className="flex flex-col items-start flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
-                      <span className="text-sm font-medium truncate w-full text-left">
-                        {userEmail
-                          ? userEmail.length > 20
-                            ? `${userEmail.slice(0, 20)}...`
-                            : userEmail
-                          : 'Usuario'}
-                      </span>
-                      <span className={`text-xs font-semibold ${
-                        userPlan?.planName === 'Free' || !userPlan?.planName
-                          ? 'text-[#7EEFB2]'
-                          : userPlan?.planName === 'Básico' || userPlan?.planName === 'Basic'
-                          ? 'text-[#3CCB75]'
-                          : userPlan?.planName === 'Profesional' || userPlan?.planName === 'Professional'
-                          ? 'text-[#DAA520]'
-                          : userPlan?.planName === 'Enterprise' || userPlan?.planName === 'Empresarial'
-                          ? 'text-[#0A4D68]'
-                          : 'text-[#7EEFB2]'
-                      }`}>
-                        Plan {userPlan?.planName || 'Free'}
-                      </span>
-                    </div>
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="upgrade">
-                    <Link href={'/payment'}>
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="size-4" />
-                      <span>Mejorar Plan</span>
-                    </div>
-                    </Link>
-                  </SelectItem>
-                  <SelectItem value="settings">
-                    <div className="flex items-center gap-2">
-                      <Settings className="size-4" />
-                      <span>Configuración</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="voice">
-                    <div className="flex items-center gap-2">
-                      <Volume2 className="size-4" />
-                      <span>Configuración de Voz</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="logout">
-                    <div className="flex items-center gap-2">
-                      <LogOut className="size-4" />
-                      <span>Cerrar sesión</span>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarFooter>
+        <SidebarFooterContent
+          userEmail={userEmail}
+          userPlan={userPlan}
+          selectValue={selectValue}
+          handleSelectAction={handleSelectAction}
+        />
 
         <SidebarRail />
       </Sidebar>

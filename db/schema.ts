@@ -44,6 +44,25 @@ export const attachmentTypeEnum = pgEnum("attachment_type", [
   "archive"
 ]);
 
+// Enum para la categoría de feedback
+export const feedbackCategoryEnum = pgEnum("feedback_category", [
+  "ai",           // Relacionado con respuestas de AI
+  "ui",           // Interface de usuario
+  "bug",          // Reportar bugs
+  "feature",      // Solicitar funcionalidad
+  "performance",  // Problemas de rendimiento
+  "other"         // Otros
+]);
+
+// Enum para el sentimiento del feedback
+export const feedbackSentimentEnum = pgEnum("feedback_sentiment", [
+  "very_negative",  // 😡
+  "negative",       // 😞
+  "neutral",        // 😐
+  "positive",       // 🙂
+  "very_positive"   // 🤩
+]);
+
 // Tabla de conversaciones
 // user_id referencia a auth.users de Supabase (sin foreign key porque está en otro schema)
 export const conversations = pgTable("conversations", {
@@ -325,6 +344,34 @@ export const conversationAttachments = pgTable("conversation_attachments", {
     .defaultNow(),
 });
 
+// Tabla de feedback de usuarios
+export const feedback = pgTable("feedback", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull(), // Referencia a auth.users
+
+  // Contenido del feedback
+  category: feedbackCategoryEnum("category").notNull(),
+  sentiment: feedbackSentimentEnum("sentiment").notNull(),
+  message: text("message").notNull(),
+
+  // Contexto adicional (opcional)
+  pageUrl: text("page_url"), // URL donde se envió el feedback
+  userAgent: text("user_agent"), // Browser/device info
+  conversationId: uuid("conversation_id"), // Si el feedback es sobre una conversación específica
+
+  // Metadata (JSON para info adicional: screenshot, etc.)
+  metadata: text("metadata"),
+
+  // Estado del feedback
+  isRead: boolean("is_read").notNull().default(false),
+  isResolved: boolean("is_resolved").notNull().default(false),
+
+  // Timestamps
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 // Relaciones
 export const conversationsRelations = relations(conversations, ({ many }) => ({
   messages: many(messages),
@@ -397,3 +444,5 @@ export type VideoGenUsage = typeof videoGenUsage.$inferSelect;
 export type NewVideoGenUsage = typeof videoGenUsage.$inferInsert;
 export type GenerationJob = typeof generationJobs.$inferSelect;
 export type NewGenerationJob = typeof generationJobs.$inferInsert;
+export type Feedback = typeof feedback.$inferSelect;
+export type NewFeedback = typeof feedback.$inferInsert;

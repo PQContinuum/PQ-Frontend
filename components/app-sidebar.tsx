@@ -31,6 +31,7 @@ import type { Route } from "./nav-main";
 import DashboardNavigation from "@/components/nav-main";
 import { NotificationsPopover } from "@/components/nav-notifications";
 import { TeamSwitcher } from "@/components/team-switcher";
+import { FeedbackWidget } from "@/components/feedback-widget";
 
 const sampleNotifications = [
   {
@@ -216,7 +217,8 @@ export function DashboardSidebar() {
       <SidebarContent className="gap-4 px-2 py-4">
         <DashboardNavigation routes={dashboardRoutes} />
       </SidebarContent>
-      <SidebarFooter className="px-2">
+      <SidebarFooter className="px-2 gap-2">
+        <FeedbackWidget isCollapsed={isCollapsed} />
         <TeamSwitcher teams={teams} />
       </SidebarFooter>
     </Sidebar>
