@@ -24,6 +24,7 @@ import {
   Zap,
   Loader2,
   Crown,
+  Clock,
 } from "lucide-react";
 
 type BillingFrequency = "monthly" | "yearly";
@@ -269,35 +270,45 @@ export function PricingSection() {
                   ))}
                 </CardContent>
                 <CardFooter>
-                  <Link
-                    href={getPlanHref(plan.id)}
-                    onClick={() => handlePlanClick(plan.id)}
-                    className="w-full"
-                  >
+                  {plan.id === "free" ? (
+                    <Link
+                      href={getPlanHref(plan.id)}
+                      onClick={() => handlePlanClick(plan.id)}
+                      className="w-full"
+                    >
+                      <Button
+                        className="w-full border-white/20 bg-white text-black hover:bg-[#00552b] hover:text-white hover:border-[#00552b] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        variant="outline"
+                        disabled={loadingPlan !== null}
+                      >
+                        {loadingPlan === plan.id ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Cargando...
+                          </>
+                        ) : (
+                          <>
+                            {plan.cta}
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                          </>
+                        )}
+                      </Button>
+                    </Link>
+                  ) : (
                     <Button
                       className={cn(
-                        "w-full",
+                        "w-full cursor-not-allowed",
                         plan.popular
-                          ? "bg-[#00552b] hover:bg-[#00552b]/90 text-white shadow-lg shadow-[#00552b]/30"
-                          : "border-white/20 bg-white text-black hover:bg-[#00552b] hover:text-white hover:border-[#00552b] transition-all",
-                        "disabled:opacity-50 disabled:cursor-not-allowed"
+                          ? "bg-neutral-600 text-neutral-300"
+                          : "border-white/10 bg-neutral-800 text-neutral-400"
                       )}
                       variant={plan.popular ? "default" : "outline"}
-                      disabled={loadingPlan !== null}
+                      disabled
                     >
-                      {loadingPlan === plan.id ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Cargando...
-                        </>
-                      ) : (
-                        <>
-                          {plan.cta}
-                          <ArrowRight className="ml-2 h-4 w-4" />
-                        </>
-                      )}
+                      <Clock className="mr-2 h-4 w-4" />
+                      Coming Soon
                     </Button>
-                  </Link>
+                  )}
                 </CardFooter>
               </Card>
             );

@@ -12,18 +12,10 @@ import {
 } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
-import { ArrowRight, Check, Sparkles, Zap, Building2, Rocket, Loader2, Crown } from 'lucide-react';
+import { ArrowRight, Check, Sparkles, Zap, Building2, Rocket, Crown, Clock } from 'lucide-react';
 import { useState } from 'react';
 import Link from 'next/link';
-import { loadStripe } from '@stripe/stripe-js';
-import {
-  EmbeddedCheckoutProvider,
-  EmbeddedCheckout,
-} from '@stripe/react-stripe-js';
 import { useUserPlan } from '@/hooks/use-user-plan';
-
-// Cargar Stripe
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 const plans = [
   {
@@ -128,78 +120,7 @@ const plans = [
 
 export default function PaymentPage() {
   const [frequency, setFrequency] = useState<string>('monthly');
-  const [clientSecret, setClientSecret] = useState<string>('');
-  const [loading, setLoading] = useState<string | null>(null);
   const { data: userPlan } = useUserPlan();
-
-  const handleCheckout = async (planId: string, planName: string) => {
-    const plan = plans.find((p) => p.id === planId);
-    if (!plan) return;
-
-    const priceId = plan.stripePriceId[frequency as keyof typeof plan.stripePriceId];
-
-    // Si no hay priceId (planes gratis o enterprise), manejar con Link
-    if (!priceId) {
-      // El botón de enterprise usa mailto y free usa Link, no necesita este handler
-      return;
-    }
-
-    setLoading(planId);
-
-    try {
-      const response = await fetch('/api/create-checkout-session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          priceId,
-          planName,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.error) {
-        console.error('Error creating checkout session:', data.error);
-        setLoading(null);
-        return;
-      }
-
-      setClientSecret(data.clientSecret);
-    } catch (error) {
-      console.error('Error:', error);
-      setLoading(null);
-    }
-  };
-
-  if (clientSecret) {
-    return (
-      <div className="min-h-screen bg-white">
-
-        <div className="relative flex flex-col gap-8 px-8 pt-8">
-          <button
-            onClick={() => {
-              setClientSecret('');
-              setLoading(null);
-            }}
-            className="text-sm text-neutral-700 hover:text-black hover:text-semibold transition-colors self-start"
-          >
-            ← Volver a planes
-          </button>
-
-          <div className="mx-auto w-full">
-            <EmbeddedCheckoutProvider
-              stripe={stripePromise}
-              options={{ clientSecret }}
-            >
-              <EmbeddedCheckout />
-            </EmbeddedCheckoutProvider>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-black">
@@ -335,27 +256,16 @@ export default function PaymentPage() {
                     ) : (
                       <Button
                         className={cn(
-                          'w-full',
+                          'w-full cursor-not-allowed',
                           plan.popular
-                            ? 'bg-[#00552b] hover:bg-[#00552b]/90 text-white shadow-lg shadow-[#00552b]/30'
-                            : 'border-white/20 bg-white text-black hover:bg-[#00552b] hover:text-white hover:border-[#00552b] transition-all',
-                          'disabled:opacity-50 disabled:cursor-not-allowed'
+                            ? 'bg-neutral-600 text-neutral-300'
+                            : 'border-white/10 bg-neutral-800 text-neutral-400'
                         )}
                         variant={plan.popular ? 'default' : 'outline'}
-                        onClick={() => handleCheckout(plan.id, plan.name)}
-                        disabled={loading !== null}
+                        disabled
                       >
-                        {loading === plan.id ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Cargando...
-                          </>
-                        ) : (
-                          <>
-                            {plan.cta}
-                            <ArrowRight className="ml-2 h-4 w-4" />
-                          </>
-                        )}
+                        <Clock className="mr-2 h-4 w-4" />
+                        Coming Soon
                       </Button>
                     )}
                   </CardFooter>

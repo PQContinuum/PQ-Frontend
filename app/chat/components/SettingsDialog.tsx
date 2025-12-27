@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { motion } from 'framer-motion';
-import { User, CreditCard, Sparkles } from 'lucide-react';
+import { User, CreditCard, Sparkles, Clock } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import {
   Dialog,
@@ -176,15 +176,10 @@ export function SettingsDialog({
                         <p className="text-xs text-[#4c4c4c] mb-3 leading-relaxed">
                           Desbloquea todas las funciones premium de Continuum AI
                         </p>
-                        <button
-                          onClick={() => {
-                            onOpenChange(false);
-                            router.push('/payment');
-                          }}
-                          className="text-xs font-bold text-yellow-700 hover:text-yellow-800 underline underline-offset-2"
-                        >
-                          Ver planes →
-                        </button>
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-neutral-500">
+                          <Clock className="size-3" />
+                          Planes premium - Coming Soon
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -290,16 +285,10 @@ export function SettingsDialog({
                       <p className="text-sm text-[#4c4c4c] mb-4 max-w-sm mx-auto">
                         Mejora tu plan y desbloquea el potencial completo de Continuum AI
                       </p>
-                      <button
-                        onClick={() => {
-                          onOpenChange(false);
-                          router.push('/payment');
-                        }}
-                        className="bg-gradient-to-r from-[#00552b] to-[#00aa56] text-white px-6 py-2.5 rounded-lg font-semibold text-sm hover:shadow-lg transition-all inline-flex items-center gap-2"
-                      >
-                        <Sparkles className="size-4" />
-                        Ver Planes
-                      </button>
+                      <span className="bg-neutral-200 text-neutral-500 px-6 py-2.5 rounded-lg font-semibold text-sm inline-flex items-center gap-2 cursor-not-allowed">
+                        <Clock className="size-4" />
+                        Coming Soon
+                      </span>
                     </div>
                   )}
 
