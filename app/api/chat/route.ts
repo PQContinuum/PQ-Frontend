@@ -3,7 +3,6 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { streamAssistantReply, type AttachmentInput } from "@/lib/openai";
 import { getUserContextForPrompt } from "@/lib/memory/user-context";
 import { getUserPlanName } from "@/lib/subscription";
-import { shouldAutoEnableGeoCultural } from "@/lib/geocultural/auto-mode";
 import { validateLocation } from "@/lib/geolocation/location-validator";
 import { reverseGeocodeServer } from "@/lib/geolocation/server-geocoding";
 import { db } from "@/db";
@@ -437,21 +436,11 @@ export async function POST(req: NextRequest) {
     try {
         const { message, messages = [], geoCulturalContext, attachmentIds = [] } = await req.json();
 
-        const autoEnableGeoCultural = shouldAutoEnableGeoCultural(message || '');
         const hasGeoCoordinates =
             geoCulturalContext !== null &&
             geoCulturalContext !== undefined &&
             typeof geoCulturalContext.lat === 'number' &&
             typeof geoCulturalContext.lng === 'number';
-
-        if (autoEnableGeoCultural && !hasGeoCoordinates) {
-            return NextResponse.json(
-                {
-                    error: 'Se detectó una pregunta sobre tu ubicación. Activa el Modo GeoCultural y comparte tu localización para continuar con el análisis.',
-                },
-                { status: 400 }
-            );
-        }
 
         // Get user and supabase client
         const supabase = await createSupabaseServerClient();
@@ -498,9 +487,8 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        // Check if GeoCultural mode is active
-        const explicitGeoCulturalMode = geoCulturalContext !== null && geoCulturalContext !== undefined;
-        const isGeoCulturalMode = (explicitGeoCulturalMode && hasGeoCoordinates) || (autoEnableGeoCultural && hasGeoCoordinates);
+        // Check if GeoCultural mode is active (only via explicit icon activation)
+        const isGeoCulturalMode = hasGeoCoordinates && geoCulturalContext !== null && geoCulturalContext !== undefined;
 
         if (isGeoCulturalMode && geoCulturalContext) {
             return await handleGeoCulturalMode(message, messages, geoCulturalContext, userContext, attachments);

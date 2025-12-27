@@ -36,7 +36,6 @@ import { usePreciseLocation } from '@/hooks/use-precise-location';
 import { LocationPermissionDialog } from './LocationPermissionDialog';
 import { LocationMapConfirmDialog } from './LocationMapConfirmDialog';
 import type { GeoCulturalAnalysisText } from '@/app/chat/components/MessageBubble';
-import { shouldAutoEnableGeoCultural } from '@/lib/geocultural/auto-mode';
 import type { StructuredAddress } from '@/lib/geolocation/address-types';
 import { useImageGeneration } from '@/hooks/useImageGeneration';
 import type { ImageGenSize, ImageGenQuality } from '@/lib/memory/plan-limits';
@@ -314,47 +313,6 @@ export const MessageInput = memo(function MessageInput() {
   const handleCloseMapDialog = useCallback(() => {
     setShowMapDialog(false);
   }, []);
-
-  const ensureGeoCulturalIfNeeded = useCallback(
-    async (value: string) => {
-      if (!shouldAutoEnableGeoCultural(value)) {
-        return true;
-      }
-
-      if (!geoCulturalMode) {
-        setGeoCulturalMode(true);
-      }
-
-      if (userLocation) {
-        return true;
-      }
-
-      if (coords && address) {
-        setUserLocation({
-          lat: coords.lat,
-          lng: coords.lng,
-          accuracy: coords.accuracy,
-          timestamp: Date.now(),
-          address: {
-            formattedAddress: address.formattedAddress,
-            shortAddress: address.shortAddress,
-            street: address.street,
-            streetNumber: address.streetNumber,
-            neighborhood: address.neighborhood,
-            city: address.city,
-            state: address.state,
-            country: address.country,
-            postalCode: address.postalCode,
-          },
-        });
-        return true;
-      }
-
-      setShowLocationDialog(true);
-      return false;
-    },
-    [coords, address, geoCulturalMode, setGeoCulturalMode, setUserLocation, userLocation]
-  );
 
   // When location is obtained (with or without address), automatically open the map dialog
   // This allows users to confirm/adjust their position even if geocoding failed
@@ -666,11 +624,6 @@ export const MessageInput = memo(function MessageInput() {
 
       if (!value) return;
 
-      const canProceed = await ensureGeoCulturalIfNeeded(value);
-      if (!canProceed) {
-        return;
-      }
-
       const userMessageId = createId();
       const assistantMessageId = createId();
       const payloadMessages = [
@@ -927,7 +880,6 @@ export const MessageInput = memo(function MessageInput() {
       queryClient,
       geoCulturalMode,
       userLocation,
-      ensureGeoCulturalIfNeeded,
       attachments,
       setAttachments,
       setShowFileUpload,
