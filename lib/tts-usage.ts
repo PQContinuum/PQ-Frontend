@@ -113,14 +113,14 @@ export async function canUseTTS(userId: string): Promise<{
   const usage = await getTTSUsage(userId);
 
   if (!usage.canUseTTS) {
-    if (usage.remainingToday === 0) {
+    if (usage.remainingToday === 0 && usage.dailyLimit !== Infinity) {
       return {
         allowed: false,
         reason: `Has alcanzado el límite diario de ${usage.dailyLimit} reproducciones. Se reinicia mañana.`,
         usage,
       };
     }
-    if (usage.remainingMonth === 0) {
+    if (usage.remainingMonth === 0 && usage.monthlyLimit !== Infinity) {
       return {
         allowed: false,
         reason: `Has alcanzado el límite mensual de ${usage.monthlyLimit} reproducciones. Considera actualizar tu plan.`,
@@ -158,5 +158,8 @@ export async function recordTTSUsage(
 export async function getTTSUsageSummary(userId: string): Promise<string> {
   const usage = await getTTSUsage(userId);
 
-  return `${usage.todayCount}/${usage.dailyLimit} hoy • ${usage.monthCount}/${usage.monthlyLimit} este mes`;
+  const dailyDisplay = usage.dailyLimit === Infinity ? '∞' : usage.dailyLimit;
+  const monthlyDisplay = usage.monthlyLimit === Infinity ? '∞' : usage.monthlyLimit;
+
+  return `${usage.todayCount}/${dailyDisplay} hoy • ${usage.monthCount}/${monthlyDisplay} este mes`;
 }

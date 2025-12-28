@@ -58,10 +58,10 @@ export const TTS_LIMITS: Record<PlanName, TTSPlanLimits> = {
     estimatedMaxCostUSD: 15.00,
   },
   Enterprise: {
-    maxTTSPerDay: 200,
-    maxTTSPerMonth: 6000,
+    maxTTSPerDay: Infinity,
+    maxTTSPerMonth: Infinity,
     ttsEnabled: true,
-    estimatedMaxCostUSD: 60.00,
+    estimatedMaxCostUSD: -1, // Ilimitado
   },
 };
 
