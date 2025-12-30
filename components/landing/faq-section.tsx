@@ -5,11 +5,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ChevronDown } from "lucide-react";
 
 const faqs = [
-  {
-    question: "¿Puedo cancelar en cualquier momento?",
-    answer:
-      "Sí, sin contratos ni permanencias. Tu plan sigue activo hasta el final del período facturado.",
-  },
+  // Hidden for now - only free plan available
+  // {
+  //   question: "¿Puedo cancelar en cualquier momento?",
+  //   answer:
+  //     "Sí, sin contratos ni permanencias. Tu plan sigue activo hasta el final del período facturado.",
+  // },
   {
     question: "¿Guardan mis conversaciones?",
     answer:
@@ -24,16 +25,17 @@ const faqs = [
     question: "¿Requiere tarjeta para el Free?",
     answer: "No. Solo email para crear tu cuenta.",
   },
-  {
-    question: "¿Puedo cambiar de plan después?",
-    answer:
-      "Sí. Actualiza o degrada cuando quieras desde tu panel.",
-  },
-  {
-    question: "¿Qué métodos de pago aceptan?",
-    answer:
-      "Tarjeta de crédito/débito, PayPal y transferencia (solo plan anual).",
-  },
+  // Hidden for now - only free plan available
+  // {
+  //   question: "¿Puedo cambiar de plan después?",
+  //   answer:
+  //     "Sí. Actualiza o degrada cuando quieras desde tu panel.",
+  // },
+  // {
+  //   question: "¿Qué métodos de pago aceptan?",
+  //   answer:
+  //     "Tarjeta de crédito/débito, PayPal y transferencia (solo plan anual).",
+  // },
 ];
 
 export function FAQSection() {

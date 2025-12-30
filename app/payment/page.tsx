@@ -148,8 +148,8 @@ export default function PaymentPage() {
             hacerte la vida más fácil? Nuestros planes escalan contigo.
           </p>
 
-          {/* Tabs for billing frequency */}
-          <Tabs defaultValue={frequency} onValueChange={setFrequency}>
+          {/* Tabs for billing frequency - Hidden for now, only free plan */}
+          {/* <Tabs defaultValue={frequency} onValueChange={setFrequency}>
             <TabsList className="bg-white/5 border border-white/10">
               <TabsTrigger value="monthly" className="data-[state=active]:bg-[#00552b] text-white data-[state=active]:font-semibold">
                 Mensual
@@ -161,11 +161,11 @@ export default function PaymentPage() {
                 </Badge>
               </TabsTrigger>
             </TabsList>
-          </Tabs>
+          </Tabs> */}
 
-          {/* Pricing cards */}
-          <div className="mt-8 grid w-full max-w-7xl gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {plans.map((plan) => {
+          {/* Pricing cards - Only showing free plan for now */}
+          <div className="mt-8 flex justify-center max-w-md mx-auto">
+            {plans.filter((plan) => plan.id === 'free').map((plan) => {
               const Icon = plan.icon;
               const isCurrentPlan = userPlan?.planName === plan.name;
 

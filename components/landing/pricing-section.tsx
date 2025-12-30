@@ -13,7 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+// import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import {
   ArrowRight,
@@ -129,7 +129,7 @@ const plans: Plan[] = [
 ];
 
 export function PricingSection() {
-  const [frequency, setFrequency] = useState<BillingFrequency>("monthly");
+  const [frequency] = useState<BillingFrequency>("monthly");
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const { data: userPlan } = useUserPlan();
 
@@ -160,8 +160,8 @@ export function PricingSection() {
           </p>
         </div>
 
-        {/* Tabs for billing frequency */}
-        <div className="flex justify-center mb-10">
+        {/* Tabs for billing frequency - Hidden for now, only free plan */}
+        {/* <div className="flex justify-center mb-10">
           <Tabs
             value={frequency}
             onValueChange={(value) => setFrequency(value as BillingFrequency)}
@@ -187,11 +187,11 @@ export function PricingSection() {
               </TabsTrigger>
             </TabsList>
           </Tabs>
-        </div>
+        </div> */}
 
-        {/* Pricing cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
-          {plans.map((plan) => {
+        {/* Pricing cards - Only showing free plan for now */}
+        <div className="flex justify-center max-w-md mx-auto">
+          {plans.filter((plan) => plan.id === "free").map((plan) => {
             const Icon = plan.icon;
             const price = plan.price[frequency];
             const isCurrentPlan = userPlan?.planName === plan.name;
