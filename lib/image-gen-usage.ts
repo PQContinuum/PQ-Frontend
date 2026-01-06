@@ -15,7 +15,7 @@ import {
  * Image Generation Usage Tracking Library
  * =======================================
  * Tracks and enforces image generation limits per plan.
- * Updated for gpt-image-1 model (2025)
+ * Updated for FLUX Pro via Fal.ai (2025)
  */
 
 export interface ImageGenUsageInfo {
@@ -30,9 +30,7 @@ export interface ImageGenUsageInfo {
   allowedQualities: ImageGenQuality[];
   allowedSizes: ImageGenSize[];
   maxResolution: ImageGenSize;
-  // gpt-image-1 specific features
-  streamingEnabled: boolean;
-  partialImages: number;
+  // FLUX Pro specific features
   premiumStyles: boolean;
 }
 
@@ -103,9 +101,7 @@ export async function getImageGenUsage(userId: string): Promise<ImageGenUsageInf
       allowedQualities: limits.allowedQualities,
       allowedSizes: getAllowedSizes(limits.maxResolution),
       maxResolution: limits.maxResolution,
-      // gpt-image-1 specific features
-      streamingEnabled: limits.streamingEnabled,
-      partialImages: limits.partialImages,
+      // FLUX Pro specific features
       premiumStyles: limits.premiumStyles,
     };
   } catch (error) {
@@ -114,17 +110,15 @@ export async function getImageGenUsage(userId: string): Promise<ImageGenUsageInf
     return {
       todayCount: 0,
       monthCount: 0,
-      dailyLimit: 3,
-      monthlyLimit: 15,
+      dailyLimit: 5,
+      monthlyLimit: 30,
       canGenerate: true,
-      remainingToday: 3,
-      remainingMonth: 15,
+      remainingToday: 5,
+      remainingMonth: 30,
       planName: "Free",
       allowedQualities: ['low'],
       allowedSizes: ['1024x1024'],
       maxResolution: '1024x1024',
-      streamingEnabled: false,
-      partialImages: 0,
       premiumStyles: false,
     };
   }
@@ -215,7 +209,7 @@ export async function recordImageGenUsage(
       userId,
       prompt: data.prompt,
       revisedPrompt: data.revisedPrompt,
-      model: data.model || 'gpt-image-1',
+      model: data.model || 'flux-pro',
       quality: data.quality,
       size: data.size,
       style: data.stylePreset || 'auto', // Now stores style preset ID

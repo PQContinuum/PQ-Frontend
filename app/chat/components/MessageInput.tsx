@@ -63,8 +63,8 @@ import {
  * - No es clickeable
  */
 const FEATURE_FLAGS = {
-  imageGeneration: false,  // Generar imagen - DESHABILITADO
-  videoGeneration: true,   // Generar video - Kling V2.6
+  imageGeneration: true,   // Generar imagen - FLUX Pro via Fal.ai
+  videoGeneration: true,   // Generar video - Minimax Video via Fal.ai
   geoCultural: true,       // GeoCultural mode
   fileUpload: true,        // Subir archivos
   voiceInput: true,        // Dictado por voz

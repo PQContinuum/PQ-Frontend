@@ -26,29 +26,38 @@ fal.config({
   credentials: process.env.FAL_AI_API_KEY,
 });
 
-// Types for Kling Video API
+// Types for Minimax Video API (supports audio in multiple languages including Spanish)
 interface TextToVideoInput {
   prompt: string;
-  duration?: VideoGenDuration;
-  aspect_ratio?: VideoGenAspectRatio;
-  negative_prompt?: string;
-  cfg_scale?: number;
-  generate_audio?: boolean;
+  prompt_optimizer?: boolean;
+  // Audio/Voice settings for Spanish Latino
+  audio?: {
+    text: string;
+    voice_id?: string;
+    language?: string;
+    speed?: number;
+    emotion?: 'neutral' | 'happy' | 'sad' | 'angry' | 'fearful' | 'disgusted' | 'surprised';
+  };
 }
 
 interface ImageToVideoInput {
   prompt: string;
   image_url: string;
-  duration?: VideoGenDuration;
-  aspect_ratio?: VideoGenAspectRatio;
-  negative_prompt?: string;
-  cfg_scale?: number;
-  tail_image_url?: string;
+  prompt_optimizer?: boolean;
+  // Audio/Voice settings for Spanish Latino
+  audio?: {
+    text: string;
+    voice_id?: string;
+    language?: string;
+    speed?: number;
+    emotion?: 'neutral' | 'happy' | 'sad' | 'angry' | 'fearful' | 'disgusted' | 'surprised';
+  };
 }
 
 /**
  * POST /api/video-gen
- * Generate a video using Kling V2.6 Pro via Fal.ai
+ * Generate a video using Minimax Video via Fal.ai
+ * Supports audio narration in Spanish Latino
  * Now uses background job system with webhooks
  */
 export async function POST(request: NextRequest) {
@@ -153,28 +162,31 @@ export async function POST(request: NextRequest) {
 
     console.log(`[VideoGen] Created job ${job.id} for user ${user.id}`);
 
-    // 8. Select endpoint based on mode
+    // 8. Select endpoint based on mode (Minimax Video with audio support)
     const endpoint = mode === 'image-to-video'
-      ? 'fal-ai/kling-video/v2.6/pro/image-to-video'
-      : 'fal-ai/kling-video/v2.6/pro/text-to-video';
+      ? 'fal-ai/minimax-video/video-01/image-to-video'
+      : 'fal-ai/minimax-video/video-01';
 
-    // 9. Build input based on mode
+    // 9. Build input based on mode with Spanish Latino audio narration
+    const audioConfig = finalAudioEnabled ? {
+      text: prompt.trim(), // Use the prompt as narration text
+      language: 'Spanish', // Spanish Latino support
+      voice_id: 'Friendly_Person', // Natural friendly voice
+      speed: 1.0,
+      emotion: 'neutral' as const,
+    } : undefined;
+
     const falInput: TextToVideoInput | ImageToVideoInput = mode === 'image-to-video'
       ? {
           prompt: prompt.trim(),
           image_url: imageUrl!,
-          duration,
-          aspect_ratio: aspectRatio,
-          negative_prompt: 'blur, distort, low quality, pixelated, artifacts',
-          cfg_scale: 0.5,
+          prompt_optimizer: true,
+          ...(audioConfig && { audio: audioConfig }),
         }
       : {
           prompt: prompt.trim(),
-          duration,
-          aspect_ratio: aspectRatio,
-          negative_prompt: 'blur, distort, low quality, pixelated, artifacts',
-          cfg_scale: 0.5,
-          generate_audio: finalAudioEnabled,
+          prompt_optimizer: true,
+          ...(audioConfig && { audio: audioConfig }),
         };
 
     // 10. Get webhook URL

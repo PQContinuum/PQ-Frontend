@@ -76,13 +76,13 @@ export function getTTSLimits(planName: PlanName | null | undefined): TTSPlanLimi
 }
 
 // ============================================================================
-// IMAGE GENERATION (gpt-image-1) LIMITS
+// IMAGE GENERATION (FLUX Pro via Fal.ai) LIMITS
 // ============================================================================
 
-// gpt-image-1 quality levels: low (~$0.02), medium (~$0.07), high (~$0.19)
+// FLUX quality levels: low (schnell ~$0.003), medium (pro ~$0.05/mp), high (pro v1.1 ~$0.05/mp)
 export type ImageGenQuality = 'low' | 'medium' | 'high';
 
-// gpt-image-1 sizes: 1024x1024, 1024x1536 (portrait), 1536x1024 (landscape), auto
+// FLUX sizes: 1024x1024, 1024x1536 (portrait), 1536x1024 (landscape), auto
 export type ImageGenSize = '1024x1024' | '1024x1536' | '1536x1024' | 'auto';
 
 // Style presets are managed in lib/image-gen/style-presets.ts
@@ -99,16 +99,12 @@ export type ImageGenPlanLimits = {
   maxImagesPerMonth: number;
   // Si tiene acceso a generación de imágenes
   imageGenEnabled: boolean;
-  // Modelo usado (gpt-image-1 es el único soportado ahora)
-  allowedModels: ('gpt-image-1')[];
-  // Calidades permitidas (low, medium, high)
+  // Modelo usado (FLUX Pro via Fal.ai)
+  allowedModels: ('flux-pro')[];
+  // Calidades permitidas (low=schnell, medium=pro, high=pro-v1.1)
   allowedQualities: ImageGenQuality[];
   // Resolución máxima permitida
   maxResolution: ImageGenSize;
-  // Si tiene acceso a streaming de imágenes parciales
-  streamingEnabled: boolean;
-  // Número de imágenes parciales en streaming (0-3)
-  partialImages: number;
   // Presets de estilo premium disponibles
   premiumStyles: boolean;
   // Costo estimado máximo USD/mes
@@ -116,62 +112,54 @@ export type ImageGenPlanLimits = {
 };
 
 /**
- * LÍMITES DE GENERACIÓN DE IMÁGENES POR PLAN
- * ==========================================
- * Basado en análisis financiero gpt-image-1:
- * - Costo low quality 1024x1024: ~$0.02 USD por imagen
- * - Costo medium quality 1024x1024: ~$0.07 USD por imagen
- * - Costo high quality 1024x1024: ~$0.19 USD por imagen
+ * LÍMITES DE GENERACIÓN DE IMÁGENES POR PLAN (FLUX Pro via Fal.ai)
+ * =================================================================
+ * Basado en análisis financiero FLUX:
+ * - Costo low quality (schnell): ~$0.003 USD por imagen
+ * - Costo medium quality (pro): ~$0.05 USD por megapixel (~$0.05 para 1024x1024)
+ * - Costo high quality (pro v1.1): ~$0.05 USD por megapixel
  * - Objetivo: mantener costo imágenes ≤ 20% del precio del plan
  */
 export const IMAGE_GEN_LIMITS: Record<PlanName, ImageGenPlanLimits> = {
   Free: {
-    maxImagesPerDay: 3,
-    maxImagesPerMonth: 15,
+    maxImagesPerDay: 5,
+    maxImagesPerMonth: 30,
     imageGenEnabled: true,
-    allowedModels: ['gpt-image-1'],
-    allowedQualities: ['low'],
+    allowedModels: ['flux-pro'],
+    allowedQualities: ['low'],              // Solo schnell (muy económico)
     maxResolution: '1024x1024',
-    streamingEnabled: false,
-    partialImages: 0,
     premiumStyles: false,
-    estimatedMaxCostUSD: 0.30,
+    estimatedMaxCostUSD: 0.09,              // 30 × $0.003
   },
   Basic: {
-    maxImagesPerDay: 10,
-    maxImagesPerMonth: 100,
+    maxImagesPerDay: 15,
+    maxImagesPerMonth: 200,
     imageGenEnabled: true,
-    allowedModels: ['gpt-image-1'],
-    allowedQualities: ['low', 'medium'],
+    allowedModels: ['flux-pro'],
+    allowedQualities: ['low', 'medium'],    // Schnell + Pro
     maxResolution: '1024x1024',
-    streamingEnabled: true,
-    partialImages: 1,
     premiumStyles: false,
-    estimatedMaxCostUSD: 7.00,
+    estimatedMaxCostUSD: 5.00,              // Mix de schnell y pro
   },
   Professional: {
-    maxImagesPerDay: 25,
-    maxImagesPerMonth: 400,
+    maxImagesPerDay: 40,
+    maxImagesPerMonth: 600,
     imageGenEnabled: true,
-    allowedModels: ['gpt-image-1'],
-    allowedQualities: ['low', 'medium', 'high'],
+    allowedModels: ['flux-pro'],
+    allowedQualities: ['low', 'medium', 'high'], // Todas las calidades
     maxResolution: '1536x1024',
-    streamingEnabled: true,
-    partialImages: 2,
     premiumStyles: true,
-    estimatedMaxCostUSD: 28.00,
+    estimatedMaxCostUSD: 20.00,             // Mix de todas las calidades
   },
   Enterprise: {
-    maxImagesPerDay: 100,
-    maxImagesPerMonth: 2000,
+    maxImagesPerDay: 150,
+    maxImagesPerMonth: 3000,
     imageGenEnabled: true,
-    allowedModels: ['gpt-image-1'],
+    allowedModels: ['flux-pro'],
     allowedQualities: ['low', 'medium', 'high'],
     maxResolution: '1536x1024',
-    streamingEnabled: true,
-    partialImages: 3,
     premiumStyles: true,
-    estimatedMaxCostUSD: 140.00,
+    estimatedMaxCostUSD: 100.00,            // Mix generoso de todas las calidades
   },
 };
 
@@ -186,27 +174,33 @@ export function getImageGenLimits(planName: PlanName | null | undefined): ImageG
 }
 
 /**
- * Calcula el costo de una imagen según sus parámetros (gpt-image-1)
- * Precios aproximados basados en la documentación de OpenAI 2025
+ * Calcula el costo de una imagen según sus parámetros (FLUX Pro via Fal.ai)
+ * Precios basados en la documentación de Fal.ai 2025
  */
 export function calculateImageCost(
   quality: ImageGenQuality,
   size: ImageGenSize
 ): number {
-  // gpt-image-1 pricing (approximate USD per image)
+  // FLUX pricing (approximate USD per image)
+  // low = schnell (~$0.003), medium/high = pro (~$0.05/megapixel)
   const BASE_COSTS: Record<ImageGenQuality, number> = {
-    'low': 0.02,
-    'medium': 0.07,
-    'high': 0.19,
+    'low': 0.003,     // FLUX Schnell - muy rápido y económico
+    'medium': 0.05,   // FLUX Pro - alta calidad
+    'high': 0.055,    // FLUX Pro v1.1 - máxima calidad
   };
 
-  // Size multiplier (larger sizes cost more)
+  // Size multiplier based on megapixels (for pro models)
   const SIZE_MULTIPLIER: Record<ImageGenSize, number> = {
-    '1024x1024': 1.0,
-    '1024x1536': 1.3,
-    '1536x1024': 1.3,
-    'auto': 1.0, // Default to square cost
+    '1024x1024': 1.0,    // 1 megapixel
+    '1024x1536': 1.5,    // 1.5 megapixels
+    '1536x1024': 1.5,    // 1.5 megapixels
+    'auto': 1.0,         // Default to square cost
   };
+
+  // Schnell has flat pricing, Pro charges per megapixel
+  if (quality === 'low') {
+    return BASE_COSTS[quality]; // Flat rate for schnell
+  }
 
   return BASE_COSTS[quality] * SIZE_MULTIPLIER[size];
 }
@@ -249,13 +243,14 @@ export function getQualityDescription(quality: ImageGenQuality): string {
 }
 
 // ============================================================================
-// VIDEO GENERATION (Kling V2.6 Pro) LIMITS
+// VIDEO GENERATION (Minimax Video via Fal.ai) LIMITS
+// Supports audio narration in Spanish Latino
 // ============================================================================
 
-// Kling V2.6 durations: 5s or 10s
+// Minimax Video durations: 5s or 10s
 export type VideoGenDuration = '5' | '10';
 
-// Kling V2.6 aspect ratios
+// Minimax Video aspect ratios
 export type VideoGenAspectRatio = '16:9' | '9:16' | '1:1';
 
 // Video generation modes
@@ -281,14 +276,15 @@ export type VideoGenPlanLimits = {
 };
 
 /**
- * LÍMITES DE GENERACIÓN DE VIDEO POR PLAN (Kling V2.6 Pro via Fal.ai)
+ * LÍMITES DE GENERACIÓN DE VIDEO POR PLAN (Minimax Video via Fal.ai)
  * ====================================================================
- * Costos Kling V2.6 Pro:
- * - Sin audio: $0.07/segundo (5s = $0.35, 10s = $0.70)
- * - Con audio: $0.14/segundo (5s = $0.70, 10s = $1.40)
+ * Costos Minimax Video:
+ * - Video básico: ~$0.50 por video
+ * - Con audio en español: incluido en el costo base
  *
- * IMPORTANTE: Videos son ~35x más caros que imágenes de baja calidad
+ * IMPORTANTE: Videos son ~25x más caros que imágenes
  * Objetivo: mantener costo video ≤ 15-20% del precio del plan
+ * Soporta audio con narración en español latino
  */
 export const VIDEO_GEN_LIMITS: Record<PlanName, VideoGenPlanLimits> = {
   Free: {
@@ -298,8 +294,8 @@ export const VIDEO_GEN_LIMITS: Record<PlanName, VideoGenPlanLimits> = {
     allowedDurations: ['5'],           // Solo 5 segundos
     allowedAspectRatios: ['16:9'],     // Solo horizontal
     allowedModes: ['text-to-video'],   // Solo texto a video
-    audioEnabled: false,               // Sin audio para ahorrar costos
-    estimatedMaxCostUSD: 1.05,         // 3 × $0.35 (5s sin audio)
+    audioEnabled: false,               // Sin audio español para ahorrar costos
+    estimatedMaxCostUSD: 1.50,         // 3 × $0.50 (Minimax Video)
   },
   Basic: {
     maxVideosPerDay: 3,
@@ -308,8 +304,8 @@ export const VIDEO_GEN_LIMITS: Record<PlanName, VideoGenPlanLimits> = {
     allowedDurations: ['5'],           // Solo 5 segundos
     allowedAspectRatios: ['16:9', '9:16', '1:1'],
     allowedModes: ['text-to-video'],   // Solo texto a video
-    audioEnabled: true,                // Con audio
-    estimatedMaxCostUSD: 14.00,        // 20 × $0.70 (5s con audio)
+    audioEnabled: true,                // Con audio en español latino
+    estimatedMaxCostUSD: 10.00,        // 20 × $0.50 (Minimax Video con audio)
   },
   Professional: {
     maxVideosPerDay: 8,
@@ -318,8 +314,8 @@ export const VIDEO_GEN_LIMITS: Record<PlanName, VideoGenPlanLimits> = {
     allowedDurations: ['5', '10'],     // Ambas duraciones
     allowedAspectRatios: ['16:9', '9:16', '1:1'],
     allowedModes: ['text-to-video', 'image-to-video'],
-    audioEnabled: true,
-    estimatedMaxCostUSD: 63.00,        // ~45×$0.70 + 15×$1.40 (mix)
+    audioEnabled: true,                // Con audio en español latino
+    estimatedMaxCostUSD: 37.50,        // ~45×$0.50 + 15×$0.75 (mix 5s y 10s)
   },
   Enterprise: {
     maxVideosPerDay: 20,
@@ -328,8 +324,8 @@ export const VIDEO_GEN_LIMITS: Record<PlanName, VideoGenPlanLimits> = {
     allowedDurations: ['5', '10'],
     allowedAspectRatios: ['16:9', '9:16', '1:1'],
     allowedModes: ['text-to-video', 'image-to-video'],
-    audioEnabled: true,
-    estimatedMaxCostUSD: 210.00,       // ~150×$0.70 + 50×$1.40 (mix)
+    audioEnabled: true,                // Con audio en español latino
+    estimatedMaxCostUSD: 125.00,       // ~150×$0.50 + 50×$0.75 (mix)
   },
 };
 
@@ -344,15 +340,18 @@ export function getVideoGenLimits(planName: PlanName | null | undefined): VideoG
 }
 
 /**
- * Calcula el costo de un video según sus parámetros
+ * Calcula el costo de un video según sus parámetros (Minimax Video)
+ * Minimax cobra ~$0.50 por video, el audio está incluido
  */
 export function calculateVideoCost(
   duration: VideoGenDuration,
-  audioEnabled: boolean
+  _audioEnabled: boolean
 ): number {
-  const seconds = parseInt(duration);
-  const costPerSecond = audioEnabled ? 0.14 : 0.07;
-  return seconds * costPerSecond;
+  // Minimax Video pricing: ~$0.50 per video regardless of audio
+  // Duration affects quality/complexity but base price is similar
+  const baseCost = 0.50;
+  const durationMultiplier = duration === '10' ? 1.5 : 1.0;
+  return baseCost * durationMultiplier;
 }
 
 /**

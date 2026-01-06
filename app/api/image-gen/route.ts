@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { fal } from '@fal-ai/client';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import {
   canGenerateImage,
@@ -11,12 +12,17 @@ import { getImageGenLimits } from '@/lib/memory/plan-limits';
 import { applyStyleToPrompt, getStylePreset } from '@/lib/image-gen/style-presets';
 import type { ImageGenQuality, ImageGenSize } from '@/lib/memory/plan-limits';
 
-export const maxDuration = 120; // 120 seconds timeout for gpt-image-1 (can take up to 2 min)
+export const maxDuration = 120; // 120 seconds timeout for FLUX Pro
+
+// Configure fal client
+fal.config({
+  credentials: process.env.FAL_AI_API_KEY,
+});
 
 /**
  * POST /api/image-gen
- * Generate an image using gpt-image-1 (OpenAI's latest model)
- * Supports streaming with partial images
+ * Generate an image using FLUX Pro via Fal.ai
+ * High quality professional image generation
  */
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
@@ -90,8 +96,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 6. Check API Key
-    const apiKey = process.env.OPENAI_API_KEY;
+    // 6. Check API Key (Fal.ai)
+    const apiKey = process.env.FAL_AI_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
         { error: 'Generación de imágenes no configurada' },
@@ -102,41 +108,19 @@ export async function POST(request: NextRequest) {
     // 7. Apply style modifier to prompt
     const enhancedPrompt = applyStyleToPrompt(prompt.trim(), stylePreset);
 
-    // 8. Determine if streaming should be used
-    const useStreaming = stream && planLimits.streamingEnabled;
-    const partialImages = useStreaming ? planLimits.partialImages : 0;
-
-    // 9. Call OpenAI gpt-image-1 API
-    if (useStreaming && partialImages > 0) {
-      // STREAMING MODE - Return partial images as they generate
-      return handleStreamingGeneration({
-        apiKey,
-        prompt: enhancedPrompt,
-        size,
-        quality,
-        partialImages,
-        user,
-        supabase,
-        originalPrompt: prompt.trim(),
-        stylePreset,
-        startTime,
-        usage,
-      });
-    } else {
-      // NON-STREAMING MODE - Wait for full image
-      return handleNonStreamingGeneration({
-        apiKey,
-        prompt: enhancedPrompt,
-        size,
-        quality,
-        user,
-        supabase,
-        originalPrompt: prompt.trim(),
-        stylePreset,
-        startTime,
-        usage,
-      });
-    }
+    // 8. FLUX Pro doesn't support streaming, use direct generation
+    // Generate image using FLUX Pro via Fal.ai
+    return handleFluxGeneration({
+      prompt: enhancedPrompt,
+      size,
+      quality,
+      user,
+      supabase,
+      originalPrompt: prompt.trim(),
+      stylePreset,
+      startTime,
+      usage,
+    });
   } catch (error) {
     console.error('[ImageGen] Error:', error);
     return NextResponse.json({ error: 'Error al generar imagen' }, { status: 500 });
@@ -144,10 +128,9 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * Non-streaming image generation
+ * FLUX Pro image generation via Fal.ai
  */
-async function handleNonStreamingGeneration({
-  apiKey,
+async function handleFluxGeneration({
   prompt,
   size,
   quality,
@@ -158,7 +141,6 @@ async function handleNonStreamingGeneration({
   startTime,
   usage,
 }: {
-  apiKey: string;
   prompt: string;
   size: ImageGenSize;
   quality: ImageGenQuality;
@@ -169,360 +151,167 @@ async function handleNonStreamingGeneration({
   startTime: number;
   usage: Awaited<ReturnType<typeof canGenerateImage>>['usage'];
 }) {
-  // Map size to gpt-image-1 format
-  const apiSize = mapSizeToApi(size);
+  // Map size to FLUX Pro format
+  const { width, height } = mapSizeToFlux(size);
 
-  const openaiResponse = await fetch('https://api.openai.com/v1/images/generations', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'gpt-image-1',
-      prompt: prompt.slice(0, 32000), // gpt-image-1 accepts longer prompts
-      n: 1,
-      size: apiSize,
-      quality,
-    }),
-  });
-
-  if (!openaiResponse.ok) {
-    const error = await openaiResponse.json().catch(() => ({}));
-    console.error('[ImageGen] OpenAI error:', error);
-    return handleOpenAIError(error, openaiResponse.status);
-  }
-
-  const result = await openaiResponse.json();
-  const imageData = result.data[0];
-  const generationTimeMs = Date.now() - startTime;
-
-  // gpt-image-1 returns base64, convert to URL via Supabase Storage
-  let publicUrl: string;
-  let storagePath: string | undefined;
+  // Select FLUX model based on quality
+  const endpoint = getFluxEndpoint(quality);
 
   try {
-    // Decode base64 image
-    const imageBuffer = Buffer.from(imageData.b64_json, 'base64');
+    // Call FLUX Pro via Fal.ai
+    const result = await fal.subscribe(endpoint, {
+      input: {
+        prompt: prompt.slice(0, 2000), // FLUX prompt limit
+        image_size: {
+          width,
+          height,
+        },
+        num_images: 1,
+        enable_safety_checker: true,
+        safety_tolerance: '2', // Moderate tolerance
+      },
+    });
 
-    // Generate unique filename
-    const imageId = crypto.randomUUID();
-    storagePath = `${user.id}/${imageId}_${size}.png`;
+    const generationTimeMs = Date.now() - startTime;
+    const imageUrl = (result.data as { images?: Array<{ url: string }> })?.images?.[0]?.url;
 
-    // Upload to Supabase Storage
-    const { error: uploadError } = await supabase.storage
-      .from('generated-images')
-      .upload(storagePath, imageBuffer, {
-        contentType: 'image/png',
-        upsert: false,
-      });
-
-    if (uploadError) {
-      console.error('[ImageGen] Storage upload error:', uploadError);
-      // Create data URL as fallback
-      publicUrl = `data:image/png;base64,${imageData.b64_json}`;
-    } else {
-      // Get signed URL (valid for 7 days)
-      const { data: urlData, error: signError } = await supabase.storage
-        .from('generated-images')
-        .createSignedUrl(storagePath, 60 * 60 * 24 * 7);
-
-      if (!signError && urlData) {
-        publicUrl = urlData.signedUrl;
-      } else {
-        publicUrl = `data:image/png;base64,${imageData.b64_json}`;
-      }
+    if (!imageUrl) {
+      console.error('[ImageGen] FLUX returned no image');
+      return NextResponse.json(
+        { error: 'No se pudo generar la imagen' },
+        { status: 500 }
+      );
     }
-  } catch (storageError) {
-    console.error('[ImageGen] Storage error:', storageError);
-    publicUrl = `data:image/png;base64,${imageData.b64_json}`;
-  }
 
-  // Record usage
-  recordImageGenUsage(user.id, {
-    prompt: originalPrompt,
-    revisedPrompt: imageData.revised_prompt,
-    model: 'gpt-image-1',
-    quality,
-    size,
-    stylePreset,
-    storagePath,
-    generationTimeMs,
-  }).catch((err) => {
-    console.error('[ImageGen] Failed to record usage:', err);
-  });
+    // Download image and upload to Supabase Storage for persistence
+    let publicUrl: string = imageUrl;
+    let storagePath: string | undefined;
 
-  return NextResponse.json({
-    success: true,
-    image: {
-      url: publicUrl,
-      revisedPrompt: imageData.revised_prompt,
-      size,
-      quality,
-      stylePreset,
-    },
-    usage: {
-      remainingToday: Math.max(0, (usage?.remainingToday || 1) - 1),
-      remainingMonth: Math.max(0, (usage?.remainingMonth || 1) - 1),
-      dailyLimit: usage?.dailyLimit,
-      monthlyLimit: usage?.monthlyLimit,
-    },
-    generationTimeMs,
-  });
-}
+    try {
+      // Fetch the generated image
+      const imageResponse = await fetch(imageUrl);
+      if (imageResponse.ok) {
+        const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
 
-/**
- * Streaming image generation with partial images
- */
-async function handleStreamingGeneration({
-  apiKey,
-  prompt,
-  size,
-  quality,
-  partialImages,
-  user,
-  supabase,
-  originalPrompt,
-  stylePreset,
-  startTime,
-  usage,
-}: {
-  apiKey: string;
-  prompt: string;
-  size: ImageGenSize;
-  quality: ImageGenQuality;
-  partialImages: number;
-  user: { id: string };
-  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>;
-  originalPrompt: string;
-  stylePreset: string;
-  startTime: number;
-  usage: Awaited<ReturnType<typeof canGenerateImage>>['usage'];
-}) {
-  const apiSize = mapSizeToApi(size);
+        // Generate unique filename
+        const imageId = crypto.randomUUID();
+        storagePath = `${user.id}/${imageId}_${size}.png`;
 
-  const encoder = new TextEncoder();
+        // Upload to Supabase Storage
+        const { error: uploadError } = await supabase.storage
+          .from('generated-images')
+          .upload(storagePath, imageBuffer, {
+            contentType: 'image/png',
+            upsert: false,
+          });
 
-  const stream = new ReadableStream({
-    async start(controller) {
-      try {
-        const openaiResponse = await fetch('https://api.openai.com/v1/images/generations', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'gpt-image-1',
-            prompt: prompt.slice(0, 32000),
-            n: 1,
-            size: apiSize,
-            quality,
-            stream: true,
-            partial_images: partialImages,
-          }),
-        });
+        if (!uploadError) {
+          // Get signed URL (valid for 7 days)
+          const { data: urlData, error: signError } = await supabase.storage
+            .from('generated-images')
+            .createSignedUrl(storagePath, 60 * 60 * 24 * 7);
 
-        if (!openaiResponse.ok) {
-          const error = await openaiResponse.json().catch(() => ({}));
-          console.error('[ImageGen] OpenAI streaming error:', error);
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({
-            event: 'error',
-            error: getErrorMessage(error)
-          })}\n\n`));
-          controller.close();
-          return;
-        }
-
-        const reader = openaiResponse.body?.getReader();
-        if (!reader) {
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({
-            event: 'error',
-            error: 'No response body'
-          })}\n\n`));
-          controller.close();
-          return;
-        }
-
-        const decoder = new TextDecoder();
-        let buffer = '';
-        let finalImage: { b64_json: string; revised_prompt?: string } | null = null;
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || '';
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6);
-              if (data === '[DONE]') continue;
-
-              try {
-                const parsed = JSON.parse(data);
-
-                // Handle partial image
-                if (parsed.partial_image_index !== undefined && parsed.b64_json) {
-                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({
-                    event: 'partial',
-                    index: parsed.partial_image_index,
-                    image: `data:image/png;base64,${parsed.b64_json}`,
-                  })}\n\n`));
-                }
-
-                // Handle final image
-                if (parsed.data?.[0]?.b64_json) {
-                  finalImage = parsed.data[0];
-                }
-              } catch {
-                // Ignore parse errors for incomplete chunks
-              }
-            }
+          if (!signError && urlData) {
+            publicUrl = urlData.signedUrl;
           }
+        } else {
+          console.error('[ImageGen] Storage upload error:', uploadError);
         }
-
-        // Process final image
-        if (finalImage) {
-          const generationTimeMs = Date.now() - startTime;
-          let publicUrl: string;
-          let storagePath: string | undefined;
-
-          try {
-            const imageBuffer = Buffer.from(finalImage.b64_json, 'base64');
-            const imageId = crypto.randomUUID();
-            storagePath = `${user.id}/${imageId}_${size}.png`;
-
-            const { error: uploadError } = await supabase.storage
-              .from('generated-images')
-              .upload(storagePath, imageBuffer, {
-                contentType: 'image/png',
-                upsert: false,
-              });
-
-            if (!uploadError) {
-              const { data: urlData } = await supabase.storage
-                .from('generated-images')
-                .createSignedUrl(storagePath, 60 * 60 * 24 * 7);
-              publicUrl = urlData?.signedUrl || `data:image/png;base64,${finalImage.b64_json}`;
-            } else {
-              publicUrl = `data:image/png;base64,${finalImage.b64_json}`;
-            }
-          } catch {
-            publicUrl = `data:image/png;base64,${finalImage.b64_json}`;
-          }
-
-          // Record usage
-          recordImageGenUsage(user.id, {
-            prompt: originalPrompt,
-            revisedPrompt: finalImage.revised_prompt,
-            model: 'gpt-image-1',
-            quality,
-            size,
-            stylePreset,
-            storagePath,
-            generationTimeMs,
-          }).catch(console.error);
-
-          // Send final result
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({
-            event: 'complete',
-            image: {
-              url: publicUrl,
-              revisedPrompt: finalImage.revised_prompt,
-              size,
-              quality,
-              stylePreset,
-            },
-            usage: {
-              remainingToday: Math.max(0, (usage?.remainingToday || 1) - 1),
-              remainingMonth: Math.max(0, (usage?.remainingMonth || 1) - 1),
-            },
-            generationTimeMs,
-          })}\n\n`));
-        }
-
-        controller.close();
-      } catch (error) {
-        console.error('[ImageGen] Stream error:', error);
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify({
-          event: 'error',
-          error: 'Error durante la generación'
-        })}\n\n`));
-        controller.close();
       }
-    },
-  });
+    } catch (storageError) {
+      console.error('[ImageGen] Storage error:', storageError);
+      // Keep using the original Fal.ai URL as fallback
+    }
 
-  return new Response(stream, {
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
-    },
-  });
+    // Record usage
+    recordImageGenUsage(user.id, {
+      prompt: originalPrompt,
+      revisedPrompt: prompt, // FLUX uses the enhanced prompt
+      model: 'flux-pro',
+      quality,
+      size,
+      stylePreset,
+      storagePath,
+      generationTimeMs,
+    }).catch((err) => {
+      console.error('[ImageGen] Failed to record usage:', err);
+    });
+
+    return NextResponse.json({
+      success: true,
+      image: {
+        url: publicUrl,
+        revisedPrompt: prompt,
+        size,
+        quality,
+        stylePreset,
+      },
+      usage: {
+        remainingToday: Math.max(0, (usage?.remainingToday || 1) - 1),
+        remainingMonth: Math.max(0, (usage?.remainingMonth || 1) - 1),
+        dailyLimit: usage?.dailyLimit,
+        monthlyLimit: usage?.monthlyLimit,
+      },
+      generationTimeMs,
+    });
+
+  } catch (falError) {
+    console.error('[ImageGen] FLUX Pro error:', falError);
+    return handleFluxError(falError);
+  }
 }
 
 /**
- * Map our size format to OpenAI's gpt-image-1 API format
+ * Map our size format to FLUX Pro dimensions
  */
-function mapSizeToApi(size: ImageGenSize): string {
+function mapSizeToFlux(size: ImageGenSize): { width: number; height: number } {
   switch (size) {
-    case '1024x1024': return '1024x1024';
-    case '1024x1536': return '1024x1536';
-    case '1536x1024': return '1536x1024';
-    case 'auto': return 'auto';
-    default: return '1024x1024';
+    case '1024x1024': return { width: 1024, height: 1024 };
+    case '1024x1536': return { width: 1024, height: 1536 };
+    case '1536x1024': return { width: 1536, height: 1024 };
+    case 'auto': return { width: 1024, height: 1024 }; // Default to square
+    default: return { width: 1024, height: 1024 };
   }
 }
 
 /**
- * Get user-friendly error message from OpenAI error
+ * Get FLUX endpoint based on quality level
+ * - low: flux-schnell (fast, ~$0.003/image)
+ * - medium: flux-pro (balanced, ~$0.05/megapixel)
+ * - high: flux-pro/v1.1 (highest quality, ~$0.05/megapixel)
  */
-function getErrorMessage(error: Record<string, unknown>): string {
-  const errorObj = error.error as Record<string, unknown> | undefined;
-  const code = errorObj?.code;
-  const message = errorObj?.message as string | undefined;
-
-  if (code === 'content_policy_violation') {
-    return 'El prompt viola las políticas de contenido. Por favor, modifícalo e intenta de nuevo.';
+function getFluxEndpoint(quality: ImageGenQuality): string {
+  switch (quality) {
+    case 'low': return 'fal-ai/flux/schnell';
+    case 'medium': return 'fal-ai/flux-pro';
+    case 'high': return 'fal-ai/flux-pro/v1.1';
+    default: return 'fal-ai/flux-pro';
   }
-  if (code === 'rate_limit_exceeded') {
-    return 'Demasiadas solicitudes. Por favor, espera un momento e intenta de nuevo.';
-  }
-  if (message) {
-    return message;
-  }
-  return 'Error al generar la imagen';
 }
 
 /**
- * Handle OpenAI API errors
+ * Handle FLUX API errors
  */
-function handleOpenAIError(error: Record<string, unknown>, status: number) {
-  const message = getErrorMessage(error);
-  const errorObj = error.error as Record<string, unknown> | undefined;
-  const code = errorObj?.code;
+function handleFluxError(error: unknown): NextResponse {
+  const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
 
-  if (code === 'content_policy_violation') {
+  if (errorMessage.includes('content') || errorMessage.includes('safety')) {
     return NextResponse.json(
-      { error: 'Contenido no permitido', message },
+      { error: 'Contenido no permitido', message: 'El prompt viola las políticas de contenido.' },
       { status: 400 }
     );
   }
 
-  if (code === 'rate_limit_exceeded') {
+  if (errorMessage.includes('rate') || errorMessage.includes('limit')) {
     return NextResponse.json(
-      { error: 'Límite de API excedido', message },
+      { error: 'Límite de API excedido', message: 'Demasiadas solicitudes. Intenta en unos minutos.' },
       { status: 429 }
     );
   }
 
   return NextResponse.json(
-    { error: 'Error al generar la imagen', message },
-    { status }
+    { error: 'Error al generar la imagen', message: errorMessage },
+    { status: 500 }
   );
 }
 
@@ -553,9 +342,7 @@ export async function GET() {
         allowedSizes: usage.allowedSizes,
         maxResolution: usage.maxResolution,
         planName: usage.planName,
-        // gpt-image-1 features
-        streamingEnabled: usage.streamingEnabled,
-        partialImages: usage.partialImages,
+        // FLUX Pro features
         premiumStyles: usage.premiumStyles,
       },
     });
