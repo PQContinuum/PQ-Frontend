@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getUserSubscription, needsPayment } from "@/lib/subscription";
+import { getUserSubscription, needsPayment, createFreeSubscription } from "@/lib/subscription";
 
 /**
  * GET /api/check-subscription
@@ -18,6 +18,9 @@ export async function GET() {
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // Fallback: Crear subscription Free si no existe (para usuarios que no pasaron por callback)
+    await createFreeSubscription(user.id);
 
     // Verificar si el usuario necesita pagar
     const needsPay = await needsPayment(user.id);

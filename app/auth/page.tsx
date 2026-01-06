@@ -45,7 +45,8 @@ export default function AuthPage() {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/chat`,
+            // Redirigir a callback para crear subscription Free automáticamente
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
           },
         });
 
