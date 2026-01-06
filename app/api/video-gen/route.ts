@@ -26,38 +26,26 @@ fal.config({
   credentials: process.env.FAL_AI_API_KEY,
 });
 
-// Types for Minimax Video API (supports audio in multiple languages including Spanish)
+// Types for Google Veo 3 API (supports audio with dialogue in Spanish)
 interface TextToVideoInput {
   prompt: string;
-  prompt_optimizer?: boolean;
-  // Audio/Voice settings for Spanish Latino
-  audio?: {
-    text: string;
-    voice_id?: string;
-    language?: string;
-    speed?: number;
-    emotion?: 'neutral' | 'happy' | 'sad' | 'angry' | 'fearful' | 'disgusted' | 'surprised';
-  };
+  aspect_ratio?: '16:9' | '9:16';
+  duration?: '4s' | '6s' | '8s'; // Veo 3 duration format
+  generate_audio?: boolean; // Genera audio con diálogo, efectos y ambiente
 }
 
 interface ImageToVideoInput {
   prompt: string;
   image_url: string;
-  prompt_optimizer?: boolean;
-  // Audio/Voice settings for Spanish Latino
-  audio?: {
-    text: string;
-    voice_id?: string;
-    language?: string;
-    speed?: number;
-    emotion?: 'neutral' | 'happy' | 'sad' | 'angry' | 'fearful' | 'disgusted' | 'surprised';
-  };
+  aspect_ratio?: '16:9' | '9:16';
+  duration?: '4s' | '6s' | '8s';
+  generate_audio?: boolean;
 }
 
 /**
  * POST /api/video-gen
- * Generate a video using Minimax Video via Fal.ai
- * Supports audio narration in Spanish Latino
+ * Generate a video using Google Veo 3 via Fal.ai
+ * Supports audio with dialogue in Spanish (based on prompt language)
  * Now uses background job system with webhooks
  */
 export async function POST(request: NextRequest) {
@@ -162,40 +150,41 @@ export async function POST(request: NextRequest) {
 
     console.log(`[VideoGen] Created job ${job.id} for user ${user.id}`);
 
-    // 8. Select endpoint based on mode (Minimax Video with audio support)
+    // 8. Select endpoint based on mode (Google Veo 3)
     const endpoint = mode === 'image-to-video'
-      ? 'fal-ai/minimax-video/video-01/image-to-video'
-      : 'fal-ai/minimax-video/video-01';
+      ? 'fal-ai/veo3/image-to-video'
+      : 'fal-ai/veo3';
 
-    // 9. Build input based on mode with Spanish Latino audio narration
-    const audioConfig = finalAudioEnabled ? {
-      text: prompt.trim(), // Use the prompt as narration text
-      language: 'Spanish', // Spanish Latino support
-      voice_id: 'Friendly_Person', // Natural friendly voice
-      speed: 1.0,
-      emotion: 'neutral' as const,
-    } : undefined;
+    // 9. Map duration (Veo 3 supports '4s', '6s', '8s')
+    const veo3Duration = duration === '10' ? '8s' : '6s'; // 5 → 6s, 10 → 8s
 
+    // 10. Map aspect ratio (Veo 3 only supports 16:9 and 9:16)
+    const veo3AspectRatio = aspectRatio === '1:1' ? '16:9' : aspectRatio;
+
+    // 11. Build input based on mode
+    // Note: For Spanish audio, the prompt should be in Spanish
     const falInput: TextToVideoInput | ImageToVideoInput = mode === 'image-to-video'
       ? {
           prompt: prompt.trim(),
           image_url: imageUrl!,
-          prompt_optimizer: true,
-          ...(audioConfig && { audio: audioConfig }),
+          duration: veo3Duration as '4s' | '6s' | '8s',
+          aspect_ratio: veo3AspectRatio as '16:9' | '9:16',
+          generate_audio: finalAudioEnabled,
         }
       : {
           prompt: prompt.trim(),
-          prompt_optimizer: true,
-          ...(audioConfig && { audio: audioConfig }),
+          duration: veo3Duration as '4s' | '6s' | '8s',
+          aspect_ratio: veo3AspectRatio as '16:9' | '9:16',
+          generate_audio: finalAudioEnabled, // Audio con diálogo en español si el prompt está en español
         };
 
-    // 10. Get webhook URL
+    // 12. Get webhook URL
     const webhookUrl = process.env.FAL_WEBHOOK_URL ||
       `${process.env.NEXT_PUBLIC_APP_URL || 'https://continuumai.app'}/api/webhooks/fal-ai`;
 
     console.log(`[VideoGen] Submitting to Fal.ai queue with webhook: ${webhookUrl}`);
 
-    // 11. Submit to Fal.ai queue (non-blocking)
+    // 13. Submit to Fal.ai queue (non-blocking)
     try {
       const queueResult = await fal.queue.submit(endpoint, {
         input: falInput,

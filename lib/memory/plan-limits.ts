@@ -243,14 +243,14 @@ export function getQualityDescription(quality: ImageGenQuality): string {
 }
 
 // ============================================================================
-// VIDEO GENERATION (Minimax Video via Fal.ai) LIMITS
-// Supports audio narration in Spanish Latino
+// VIDEO GENERATION (Google Veo 3 via Fal.ai) LIMITS
+// Supports audio with dialogue in Spanish Latino (based on prompt language)
 // ============================================================================
 
-// Minimax Video durations: 5s or 10s
-export type VideoGenDuration = '5' | '10';
+// Veo 3 durations: 5s or 8s (mapped from user selection)
+export type VideoGenDuration = '5' | '10'; // '10' gets mapped to '8' for Veo 3
 
-// Minimax Video aspect ratios
+// Veo 3 aspect ratios (1:1 gets mapped to 16:9)
 export type VideoGenAspectRatio = '16:9' | '9:16' | '1:1';
 
 // Video generation modes
@@ -276,56 +276,56 @@ export type VideoGenPlanLimits = {
 };
 
 /**
- * LÍMITES DE GENERACIÓN DE VIDEO POR PLAN (Minimax Video via Fal.ai)
- * ====================================================================
- * Costos Minimax Video:
- * - Video básico: ~$0.50 por video
- * - Con audio en español: incluido en el costo base
+ * LÍMITES DE GENERACIÓN DE VIDEO POR PLAN (Google Veo 3 via Fal.ai)
+ * ==================================================================
+ * Costos Veo 3:
+ * - ~$0.50/segundo de video generado
+ * - 5s = ~$2.50, 8s = ~$4.00
  *
- * IMPORTANTE: Videos son ~25x más caros que imágenes
- * Objetivo: mantener costo video ≤ 15-20% del precio del plan
- * Soporta audio con narración en español latino
+ * IMPORTANTE: Veo 3 es premium pero genera audio con diálogo en español
+ * El audio incluye: diálogo, efectos de sonido, ambiente, sincronización de labios
+ * Para español: escribir el prompt en español
  */
 export const VIDEO_GEN_LIMITS: Record<PlanName, VideoGenPlanLimits> = {
   Free: {
     maxVideosPerDay: 1,
-    maxVideosPerMonth: 3,
+    maxVideosPerMonth: 2,
     videoGenEnabled: true,
     allowedDurations: ['5'],           // Solo 5 segundos
     allowedAspectRatios: ['16:9'],     // Solo horizontal
-    allowedModes: ['text-to-video'],   // Solo texto a video
-    audioEnabled: false,               // Sin audio español para ahorrar costos
-    estimatedMaxCostUSD: 1.50,         // 3 × $0.50 (Minimax Video)
+    allowedModes: ['text-to-video', 'image-to-video'], // Ambos modos
+    audioEnabled: true,                // Audio con diálogo en español
+    estimatedMaxCostUSD: 5.00,         // 2 × $2.50 (5s con audio)
   },
   Basic: {
-    maxVideosPerDay: 3,
-    maxVideosPerMonth: 20,
+    maxVideosPerDay: 2,
+    maxVideosPerMonth: 10,
     videoGenEnabled: true,
     allowedDurations: ['5'],           // Solo 5 segundos
     allowedAspectRatios: ['16:9', '9:16', '1:1'],
-    allowedModes: ['text-to-video'],   // Solo texto a video
-    audioEnabled: true,                // Con audio en español latino
-    estimatedMaxCostUSD: 10.00,        // 20 × $0.50 (Minimax Video con audio)
+    allowedModes: ['text-to-video', 'image-to-video'], // Ambos modos
+    audioEnabled: true,                // Audio con diálogo en español
+    estimatedMaxCostUSD: 25.00,        // 10 × $2.50 (5s con audio)
   },
   Professional: {
-    maxVideosPerDay: 8,
-    maxVideosPerMonth: 60,
+    maxVideosPerDay: 5,
+    maxVideosPerMonth: 30,
     videoGenEnabled: true,
-    allowedDurations: ['5', '10'],     // Ambas duraciones
+    allowedDurations: ['5', '10'],     // Ambas duraciones (10 → 8s en Veo 3)
     allowedAspectRatios: ['16:9', '9:16', '1:1'],
     allowedModes: ['text-to-video', 'image-to-video'],
-    audioEnabled: true,                // Con audio en español latino
-    estimatedMaxCostUSD: 37.50,        // ~45×$0.50 + 15×$0.75 (mix 5s y 10s)
+    audioEnabled: true,                // Audio con diálogo en español
+    estimatedMaxCostUSD: 90.00,        // Mix: 20×$2.50 + 10×$4.00
   },
   Enterprise: {
-    maxVideosPerDay: 20,
-    maxVideosPerMonth: 200,
+    maxVideosPerDay: 15,
+    maxVideosPerMonth: 100,
     videoGenEnabled: true,
     allowedDurations: ['5', '10'],
     allowedAspectRatios: ['16:9', '9:16', '1:1'],
     allowedModes: ['text-to-video', 'image-to-video'],
-    audioEnabled: true,                // Con audio en español latino
-    estimatedMaxCostUSD: 125.00,       // ~150×$0.50 + 50×$0.75 (mix)
+    audioEnabled: true,                // Audio con diálogo en español
+    estimatedMaxCostUSD: 300.00,       // Mix generoso
   },
 };
 
@@ -340,18 +340,17 @@ export function getVideoGenLimits(planName: PlanName | null | undefined): VideoG
 }
 
 /**
- * Calcula el costo de un video según sus parámetros (Minimax Video)
- * Minimax cobra ~$0.50 por video, el audio está incluido
+ * Calcula el costo de un video según sus parámetros (Google Veo 3)
  */
 export function calculateVideoCost(
   duration: VideoGenDuration,
   _audioEnabled: boolean
 ): number {
-  // Minimax Video pricing: ~$0.50 per video regardless of audio
-  // Duration affects quality/complexity but base price is similar
-  const baseCost = 0.50;
-  const durationMultiplier = duration === '10' ? 1.5 : 1.0;
-  return baseCost * durationMultiplier;
+  // Veo 3 pricing: ~$0.50/second
+  // Duration '5' → 6s, '10' → 8s for Veo 3
+  const seconds = duration === '10' ? 8 : 6;
+  const costPerSecond = 0.50;
+  return seconds * costPerSecond;
 }
 
 /**
