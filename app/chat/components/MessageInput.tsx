@@ -1112,31 +1112,33 @@ export const MessageInput = memo(function MessageInput() {
             <div className="px-3 sm:px-4 pt-3 pb-2 border-b border-gray-100">
               {/* First row: Reference upload + Style + Close */}
               <div className="flex items-center gap-2 sm:gap-3">
-                {/* Reference image upload */}
-                <ImageReferenceUpload
-                  onImageUploaded={setImageReferenceUrl}
-                  onImageRemoved={() => setImageReferenceUrl('')}
-                  currentImageUrl={imageReferenceUrl}
-                  disabled={isLoading}
-                />
+                {/* Reference image upload - always visible */}
+                <div className="flex-shrink-0">
+                  <ImageReferenceUpload
+                    onImageUploaded={setImageReferenceUrl}
+                    onImageRemoved={() => setImageReferenceUrl('')}
+                    currentImageUrl={imageReferenceUrl}
+                    disabled={isLoading}
+                  />
+                </div>
 
                 {/* Style preset selector button */}
-                <div className="relative flex-shrink-0">
+                <div className="relative flex-shrink-0 min-w-0">
                   <button
                     type="button"
                     onClick={() => setShowStylePicker(!showStylePicker)}
                     disabled={isLoading}
-                    className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-xl transition-all ${
+                    className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-xl transition-all ${
                       showStylePicker
                         ? `${selectedPreset.bgColor} ${selectedPreset.borderColor} border`
                         : 'bg-gray-100 hover:bg-gray-200'
                     } disabled:opacity-40`}
                   >
-                    <span className="text-base">{selectedPreset.icon}</span>
-                    <span className={`text-xs sm:text-sm font-medium ${showStylePicker ? selectedPreset.color : 'text-gray-700'}`}>
+                    <span className="text-sm sm:text-base">{selectedPreset.icon}</span>
+                    <span className={`text-[10px] sm:text-sm font-medium truncate max-w-[50px] sm:max-w-none ${showStylePicker ? selectedPreset.color : 'text-gray-700'}`}>
                       {selectedPreset.name}
                     </span>
-                    <ChevronDown className={`size-3 sm:size-3.5 transition-transform ${showStylePicker ? 'rotate-180' : ''} ${
+                    <ChevronDown className={`size-3 transition-transform ${showStylePicker ? 'rotate-180' : ''} ${
                       showStylePicker ? selectedPreset.color : 'text-gray-400'
                     }`} />
                   </button>
@@ -1145,8 +1147,8 @@ export const MessageInput = memo(function MessageInput() {
 
                 {/* Strength slider - only shown when reference image is uploaded */}
                 {imageReferenceUrl && (
-                  <div className="flex items-center gap-1.5 sm:gap-2 bg-gray-100 rounded-xl px-2 sm:px-3 py-1.5 flex-shrink-0">
-                    <Blend className="size-3 sm:size-3.5 text-gray-500" />
+                  <div className="flex items-center gap-1 sm:gap-2 bg-gray-100 rounded-xl px-2 py-1.5 flex-shrink-0">
+                    <Blend className="size-3 text-gray-500 hidden sm:block" />
                     <input
                       type="range"
                       min="0.1"
@@ -1155,9 +1157,9 @@ export const MessageInput = memo(function MessageInput() {
                       value={imageStrength}
                       onChange={(e) => setImageStrength(parseFloat(e.target.value))}
                       disabled={isLoading}
-                      className="w-12 sm:w-16 h-1 accent-sky-500"
+                      className="w-10 sm:w-16 h-1 accent-sky-500"
                     />
-                    <span className="text-[10px] sm:text-xs font-medium text-gray-600 w-7 sm:w-8">
+                    <span className="text-[10px] sm:text-xs font-medium text-gray-600">
                       {Math.round(imageStrength * 100)}%
                     </span>
                   </div>
@@ -1167,7 +1169,7 @@ export const MessageInput = memo(function MessageInput() {
                 <button
                   type="button"
                   onClick={() => setImageMode(false)}
-                  className="ml-auto p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition flex-shrink-0"
+                  className="ml-auto p-1 sm:p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition flex-shrink-0"
                 >
                   <X className="size-4" />
                 </button>
@@ -1177,14 +1179,14 @@ export const MessageInput = memo(function MessageInput() {
               <div className="flex items-center gap-2 sm:gap-3 mt-2 flex-wrap">
                 {/* Size selector - hidden when using reference image */}
                 {!imageReferenceUrl && (
-                  <div className="flex items-center gap-0.5 sm:gap-1 bg-gray-100 rounded-xl p-0.5 sm:p-1">
+                  <div className="flex items-center gap-0.5 bg-gray-100 rounded-xl p-0.5 sm:p-1">
                     {SIZE_OPTIONS.filter(s => imageUsage?.allowedSizes?.includes(s.value) || s.value === '1024x1024').map((size) => (
                       <button
                         key={size.value}
                         type="button"
                         onClick={() => setImageSize(size.value)}
                         disabled={isLoading}
-                        className={`px-2 sm:px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-medium transition ${
+                        className={`px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-lg text-[10px] sm:text-xs font-medium transition ${
                           imageSize === size.value
                             ? 'bg-white text-gray-900 shadow-sm'
                             : 'text-gray-500 hover:text-gray-700'
@@ -1197,7 +1199,7 @@ export const MessageInput = memo(function MessageInput() {
                 )}
 
                 {/* Quality selector */}
-                <div className="flex items-center gap-0.5 sm:gap-1 bg-gray-100 rounded-xl p-0.5 sm:p-1">
+                <div className="flex items-center gap-0.5 bg-gray-100 rounded-xl p-0.5 sm:p-1">
                   {QUALITY_OPTIONS.filter(q => imageUsage?.allowedQualities?.includes(q.value) || q.value === 'low').map((q) => {
                     const isSelected = imageQuality === q.value;
                     return (
@@ -1206,7 +1208,7 @@ export const MessageInput = memo(function MessageInput() {
                         type="button"
                         onClick={() => setImageQuality(q.value)}
                         disabled={isLoading}
-                        className={`px-2 sm:px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-medium transition-all duration-150 ${
+                        className={`px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-lg text-[10px] sm:text-xs font-medium transition-all duration-150 ${
                           isSelected
                             ? `bg-white shadow-sm ${q.color}`
                             : 'text-gray-500 hover:text-gray-700'
@@ -1219,17 +1221,17 @@ export const MessageInput = memo(function MessageInput() {
                   })}
                 </div>
 
-                {/* Info indicator inline on mobile */}
+                {/* Info indicator inline */}
                 {imageReferenceUrl && (
                   <div className="flex items-center gap-1 text-[10px] sm:text-xs text-sky-600">
                     <Blend className="size-3" />
-                    <span className="hidden xs:inline">Imagen a imagen</span>
+                    <span>Img a img</span>
                   </div>
                 )}
                 {imageUsage?.streamingEnabled && !imageReferenceUrl && (
                   <div className="flex items-center gap-1 text-[10px] sm:text-xs text-gray-400">
                     <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                    <span className="hidden sm:inline">Vista previa activada</span>
+                    <span className="hidden sm:inline">Vista previa</span>
                   </div>
                 )}
               </div>

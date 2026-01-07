@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
 
 /**
  * FLUX Pro image generation via Fal.ai
- * Supports both text-to-image and image-to-image (with reference)
+ * Supports both text-to-image and image-to-image (with FLUX Kontext)
  */
 async function handleFluxGeneration({
   prompt,
@@ -166,40 +166,39 @@ async function handleFluxGeneration({
   const { width, height } = mapSizeToFlux(size);
 
   // Select FLUX model based on quality and whether we have a reference image
-  // For image-to-image, we use flux/dev/image-to-image
+  // For image-to-image, we use FLUX Kontext (best image editing model)
   const isImageToImage = !!referenceImageUrl;
   const endpoint = isImageToImage
-    ? 'fal-ai/flux/dev/image-to-image'
+    ? getKontextEndpoint(quality)
     : getFluxEndpoint(quality);
 
   try {
-    // Build input based on generation mode
-    const baseInput = {
-      prompt: prompt.slice(0, 2000), // FLUX prompt limit
-      num_images: 1,
-      enable_safety_checker: true,
-      safety_tolerance: '2', // Moderate tolerance
-    };
-
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let input: Record<string, any>;
 
     if (isImageToImage) {
-      // Image-to-image generation with reference
+      // FLUX Kontext for image-to-image editing
+      // Kontext understands both text and images for precise editing
       input = {
-        ...baseInput,
+        prompt: prompt.slice(0, 2000),
         image_url: referenceImageUrl,
-        strength: Math.max(0.1, Math.min(1.0, imageStrength)), // Clamp between 0.1 and 1.0
-        // Note: image-to-image doesn't support custom image_size, it uses the reference image size
+        // Kontext uses guidance_scale instead of strength (higher = more adherence to prompt)
+        guidance_scale: 2 + (imageStrength * 8), // Map 0.1-1.0 to ~2-10 range
+        num_images: 1,
+        safety_tolerance: 2,
+        output_format: 'png',
       };
     } else {
-      // Standard text-to-image generation
+      // Standard text-to-image generation with FLUX Pro
       input = {
-        ...baseInput,
+        prompt: prompt.slice(0, 2000),
         image_size: {
           width,
           height,
         },
+        num_images: 1,
+        enable_safety_checker: true,
+        safety_tolerance: '2',
       };
     }
 
@@ -309,7 +308,7 @@ function mapSizeToFlux(size: ImageGenSize): { width: number; height: number } {
 }
 
 /**
- * Get FLUX endpoint based on quality level
+ * Get FLUX endpoint based on quality level (text-to-image)
  * - low: flux-schnell (fast, ~$0.003/image)
  * - medium: flux-pro (balanced, ~$0.05/megapixel)
  * - high: flux-pro/v1.1 (highest quality, ~$0.05/megapixel)
@@ -320,6 +319,21 @@ function getFluxEndpoint(quality: ImageGenQuality): string {
     case 'medium': return 'fal-ai/flux-pro';
     case 'high': return 'fal-ai/flux-pro/v1.1';
     default: return 'fal-ai/flux-pro';
+  }
+}
+
+/**
+ * Get FLUX Kontext endpoint based on quality level (image-to-image)
+ * FLUX Kontext is the best image editing model - understands text AND images
+ * - low/medium: kontext pro (~$0.04/image)
+ * - high: kontext max (best quality, better prompt adherence)
+ */
+function getKontextEndpoint(quality: ImageGenQuality): string {
+  switch (quality) {
+    case 'low': return 'fal-ai/flux-pro/kontext';
+    case 'medium': return 'fal-ai/flux-pro/kontext';
+    case 'high': return 'fal-ai/flux-pro/kontext/max';
+    default: return 'fal-ai/flux-pro/kontext';
   }
 }
 
