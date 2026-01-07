@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
+import { Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/providers/query-client-provider";
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-space-grotesk",
+  display: "swap",
+});
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||
                 process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` :
@@ -52,9 +59,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={spaceGrotesk.variable}>
       <body
         className="font-sans antialiased"
+        style={{ fontFamily: "var(--font-space-grotesk), system-ui, sans-serif" }}
       >
         <QueryProvider>{children}</QueryProvider>
       </body>

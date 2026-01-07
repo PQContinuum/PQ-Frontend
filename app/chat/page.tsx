@@ -394,7 +394,7 @@ export default function ChatPage() {
         )}
 
         {!hasUserMessages ? (
-          <div className="flex-1 flex flex-col items-center justify-center px-4 relative">
+          <div className="flex-1 flex flex-col items-center px-4 relative pt-16 md:pt-24">
             {/* Mobile menu trigger */}
             <div className="absolute top-4 left-4 md:hidden">
               <SidebarTrigger />
@@ -403,24 +403,93 @@ export default function ChatPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.4 }}
-              className="w-full max-w-3xl space-y-8"
+              transition={{ duration: 0.5 }}
+              className="w-full max-w-3xl flex flex-col items-center"
             >
+              {/* Sistema de identidad - Jerarquía clara */}
               <motion.div
-                className="text-center space-y-2"
-                initial={{ opacity: 0, scale: 0.9 }}
+                className="text-center space-y-6"
+                initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.1, duration: 0.3 }}
+                transition={{ delay: 0.1, duration: 0.4 }}
               >
-                <h1 className="text-2xl md:text-3xl font-bold text-[#111111] leading-relaxed">
-                  Hola! 👋 Soy <span className='text-[#00552b] underline'>Continuum AI </span><br/> ¿Cómo te puedo ayudar hoy?
-                </h1>
+                {/* Logo símbolo */}
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2, duration: 0.4 }}
+                  className="flex justify-center"
+                >
+                  <Image
+                    src="/icon-192x192.png"
+                    alt="Continuum AI"
+                    width={100}
+                    height={100}
+                    className="w-20 h-20 md:w-24 md:h-24 rounded-full"
+                  />
+                </motion.div>
+
+                {/* Nombre del sistema - tipografía espaciada */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.3, duration: 0.4 }}
+                >
+                  <h1 className="text-xl md:text-2xl font-light tracking-[0.3em] text-[#00552b] uppercase">
+                    Continuum AI
+                  </h1>
+                </motion.div>
+
+                {/* Núcleo cognitivo - título principal */}
+                <motion.div
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4, duration: 0.4 }}
+                  className="space-y-2"
+                >
+                  <h2 className="text-2xl md:text-3xl font-semibold text-[#111111] tracking-tight">
+                    Núcleo Cognitivo Avanzado
+                  </h2>
+                  <p className="text-sm md:text-base text-[#4c4c4c] font-light tracking-wide">
+                    Sistema de razonamiento continuo en operación
+                  </p>
+                </motion.div>
+
+                {/* Línea divisoria - glow sutil */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5, duration: 0.8 }}
+                  className="relative w-full max-w-2xl mx-auto h-[1px]"
+                >
+                  {/* Línea base ultra fina */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#22c55e]/30 to-transparent" />
+                  {/* Glow suave */}
+                  <div className="absolute inset-y-0 left-1/4 right-1/4 bg-gradient-to-r from-transparent via-[#22c55e]/50 to-transparent blur-[3px]" />
+                  {/* Glow más amplio y difuso */}
+                  <div className="absolute -inset-y-2 left-1/3 right-1/3 bg-gradient-to-r from-transparent via-[#22c55e]/20 to-transparent blur-[8px]" />
+                </motion.div>
+
+                {/* Instrucción de uso - call to action */}
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.6, duration: 0.4 }}
+                  className="text-lg md:text-xl text-[#111111]/70 font-light leading-relaxed max-w-lg mx-auto"
+                >
+                  Ingrese la intención o el problema
+                  <br className="hidden sm:block" />
+                  <span className="sm:hidden"> </span>
+                  a procesar por el núcleo cognitivo.
+                </motion.p>
               </motion.div>
 
+              {/* Input - centrado */}
               <motion.div
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2, duration: 0.3 }}
+                transition={{ delay: 0.7, duration: 0.4 }}
+                className="w-full mt-10"
               >
                 <MessageInput />
               </motion.div>
