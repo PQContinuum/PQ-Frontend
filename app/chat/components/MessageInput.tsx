@@ -1101,9 +1101,9 @@ export const MessageInput = memo(function MessageInput() {
           onSubmit={submitMessage}
           className={`rounded-[2rem] bg-white shadow-[0_20px_50px_rgba(0,0,0,0.08)] relative transition-all duration-500 ${
             imageMode
-              ? 'border-2 border-sky-400/60 image-mode-glow'
+              ? 'border-0 image-mode-glow'
               : videoMode
-              ? 'border-2 border-violet-400/60 video-mode-glow'
+              ? 'border-0 video-mode-glow'
               : 'border border-black/5'
           }`}
         >
@@ -1157,7 +1157,7 @@ export const MessageInput = memo(function MessageInput() {
                       value={imageStrength}
                       onChange={(e) => setImageStrength(parseFloat(e.target.value))}
                       disabled={isLoading}
-                      className="w-10 sm:w-16 h-1 accent-sky-500"
+                      className="w-10 sm:w-16 h-1 accent-green-500"
                     />
                     <span className="text-[10px] sm:text-xs font-medium text-gray-600">
                       {Math.round(imageStrength * 100)}%
@@ -1223,7 +1223,7 @@ export const MessageInput = memo(function MessageInput() {
 
                 {/* Info indicator inline */}
                 {imageReferenceUrl && (
-                  <div className="flex items-center gap-1 text-[10px] sm:text-xs text-sky-600">
+                  <div className="flex items-center gap-1 text-[10px] sm:text-xs text-green-600">
                     <Blend className="size-3" />
                     <span>Img a img</span>
                   </div>
@@ -1358,7 +1358,7 @@ export const MessageInput = memo(function MessageInput() {
                         disabled={isLoading}
                         className={`px-2.5 py-1 rounded-lg text-xs font-medium transition ${
                           isSelected
-                            ? 'bg-white text-violet-600 shadow-sm'
+                            ? 'bg-white text-green-600 shadow-sm'
                             : 'text-gray-500 hover:text-gray-700'
                         } disabled:opacity-40`}
                         title={dur.description}
@@ -1381,7 +1381,7 @@ export const MessageInput = memo(function MessageInput() {
 
               {/* Progress indicator */}
               {isGeneratingVideo && videoProgress && (
-                <div className="flex items-center gap-2 mt-2 text-xs text-violet-600">
+                <div className="flex items-center gap-2 mt-2 text-xs text-green-600">
                   <Loader2 className="size-3 animate-spin" />
                   <span>{videoProgress}</span>
                 </div>

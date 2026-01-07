@@ -178,7 +178,7 @@ export function VideoImageUpload({
   if (previewUrl && !isUploading) {
     return (
       <div className="relative group">
-        <div className="relative w-12 h-12 rounded-lg overflow-hidden border-2 border-violet-400/60 shadow-sm">
+        <div className="relative w-12 h-12 rounded-lg overflow-hidden border-2 border-green-500/60 shadow-sm">
           <img
             src={previewUrl}
             alt="Imagen para video"
@@ -213,8 +213,8 @@ export function VideoImageUpload({
         w-12 h-12 rounded-lg border-2 border-dashed
         transition-all cursor-pointer
         ${isDragging
-          ? 'border-violet-500 bg-violet-50 scale-105'
-          : 'border-gray-300 hover:border-violet-400 hover:bg-violet-50/50'
+          ? 'border-green-500 bg-green-50 scale-105'
+          : 'border-gray-300 hover:border-green-500 hover:bg-green-50/50'
         }
         ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
         ${error ? 'border-red-300 bg-red-50/50' : ''}
@@ -230,13 +230,13 @@ export function VideoImageUpload({
       />
 
       {isUploading ? (
-        <Loader2 className="size-5 text-violet-500 animate-spin" />
+        <Loader2 className="size-5 text-green-500 animate-spin" />
       ) : error ? (
         <div className="absolute inset-0 flex items-center justify-center p-1">
           <span className="text-[8px] text-red-500 text-center leading-tight">{error}</span>
         </div>
       ) : (
-        <ImagePlus className={`size-5 ${isDragging ? 'text-violet-500' : 'text-gray-400'}`} />
+        <ImagePlus className={`size-5 ${isDragging ? 'text-green-500' : 'text-gray-400'}`} />
       )}
     </div>
   );

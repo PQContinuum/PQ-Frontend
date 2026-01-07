@@ -178,7 +178,7 @@ export function ImageReferenceUpload({
   if (previewUrl && !isUploading) {
     return (
       <div className="relative group flex-shrink-0">
-        <div className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden border-2 border-sky-400/60 shadow-sm">
+        <div className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden border-2 border-green-500/60 shadow-sm">
           <img
             src={previewUrl}
             alt="Imagen de referencia"
@@ -213,8 +213,8 @@ export function ImageReferenceUpload({
         w-10 h-10 sm:w-12 sm:h-12 rounded-lg border-2 border-dashed
         transition-all cursor-pointer
         ${isDragging
-          ? 'border-sky-500 bg-sky-50 scale-105'
-          : 'border-gray-300 hover:border-sky-400 hover:bg-sky-50/50'
+          ? 'border-green-500 bg-green-50 scale-105'
+          : 'border-gray-300 hover:border-green-500 hover:bg-green-50/50'
         }
         ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
         ${error ? 'border-red-300 bg-red-50/50' : ''}
@@ -231,13 +231,13 @@ export function ImageReferenceUpload({
       />
 
       {isUploading ? (
-        <Loader2 className="size-4 sm:size-5 text-sky-500 animate-spin" />
+        <Loader2 className="size-4 sm:size-5 text-green-500 animate-spin" />
       ) : error ? (
         <div className="absolute inset-0 flex items-center justify-center p-1">
           <span className="text-[7px] sm:text-[8px] text-red-500 text-center leading-tight">{error}</span>
         </div>
       ) : (
-        <ImagePlus className={`size-4 sm:size-5 ${isDragging ? 'text-sky-500' : 'text-gray-400'}`} />
+        <ImagePlus className={`size-4 sm:size-5 ${isDragging ? 'text-green-500' : 'text-gray-400'}`} />
       )}
     </div>
   );
