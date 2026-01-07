@@ -9,8 +9,9 @@ import {
   memo,
   useEffect,
 } from 'react';
-import { ArrowUp, MapPin, Paperclip, Plus, Check, Loader2, Image, X, ChevronDown, Lock, Mic, Square, Sparkles, Video } from 'lucide-react';
+import { ArrowUp, MapPin, Paperclip, Plus, Check, Loader2, Image, X, ChevronDown, Lock, Mic, Square, Sparkles, Video, Blend } from 'lucide-react';
 import { VideoImageUpload } from './VideoImageUpload';
+import { ImageReferenceUpload } from './ImageReferenceUpload';
 import { useShallow } from 'zustand/react/shallow';
 import { FileUpload } from './FileUpload';
 import {
@@ -148,6 +149,8 @@ export const MessageInput = memo(function MessageInput() {
   const [imageQuality, setImageQuality] = useState<ImageGenQuality>('low');
   const [imageStylePreset, setImageStylePreset] = useState<string>('auto');
   const [showStylePicker, setShowStylePicker] = useState(false);
+  const [imageReferenceUrl, setImageReferenceUrl] = useState<string>('');
+  const [imageStrength, setImageStrength] = useState<number>(0.75);
 
   const {
     generate: generateImage,
@@ -348,10 +351,12 @@ export const MessageInput = memo(function MessageInput() {
     const prompt = input.trim();
     if (!prompt || isGeneratingImage) return;
 
-    // Add user message showing the prompt
+    // Add user message showing the prompt (and reference image if using image-to-image)
     const userMessageId = createId();
     const assistantMessageId = createId();
-    const userContent = `🖼️ ${prompt}`;
+    const userContent = imageReferenceUrl
+      ? `🖼️ ${prompt}\n\n![Imagen de referencia](${imageReferenceUrl})`
+      : `🖼️ ${prompt}`;
 
     addMessage({
       id: userMessageId,
@@ -410,6 +415,8 @@ export const MessageInput = memo(function MessageInput() {
             quality: imageQuality,
             size: imageSize,
             stylePreset: imageStylePreset,
+            referenceImageUrl: imageReferenceUrl || undefined,
+            imageStrength: imageReferenceUrl ? imageStrength : undefined,
           },
           // Handle partial images
           (partialImg) => {
@@ -420,6 +427,8 @@ export const MessageInput = memo(function MessageInput() {
           quality: imageQuality,
           size: imageSize,
           stylePreset: imageStylePreset,
+          referenceImageUrl: imageReferenceUrl || undefined,
+          imageStrength: imageReferenceUrl ? imageStrength : undefined,
         });
 
     let assistantContent: string;
@@ -460,7 +469,7 @@ export const MessageInput = memo(function MessageInput() {
 
     setStreaming(false);
     stopGeneration();
-  }, [input, imageSize, imageQuality, imageStylePreset, generateImage, generateWithStreaming, isGeneratingImage, addMessage, updateMessage, updateMessageGenerationState, setStreaming, startGeneration, stopGeneration, imageUsage, conversationId, createConversationMutation, setConversationId, queryClient]);
+  }, [input, imageSize, imageQuality, imageStylePreset, imageReferenceUrl, imageStrength, generateImage, generateWithStreaming, isGeneratingImage, addMessage, updateMessage, updateMessageGenerationState, setStreaming, startGeneration, stopGeneration, imageUsage, conversationId, createConversationMutation, setConversationId, queryClient]);
 
   // Handle video generation
   const handleGenerateVideo = useCallback(async () => {
@@ -1100,52 +1109,95 @@ export const MessageInput = memo(function MessageInput() {
         >
           {/* Image mode controls - Beautiful redesign */}
           {imageMode && (
-            <div className="px-4 pt-3 pb-2 border-b border-gray-100">
-              <div className="flex items-center gap-3 flex-wrap">
+            <div className="px-3 sm:px-4 pt-3 pb-2 border-b border-gray-100">
+              {/* First row: Reference upload + Style + Close */}
+              <div className="flex items-center gap-2 sm:gap-3">
+                {/* Reference image upload */}
+                <ImageReferenceUpload
+                  onImageUploaded={setImageReferenceUrl}
+                  onImageRemoved={() => setImageReferenceUrl('')}
+                  currentImageUrl={imageReferenceUrl}
+                  disabled={isLoading}
+                />
+
                 {/* Style preset selector button */}
-                <div className="relative">
+                <div className="relative flex-shrink-0">
                   <button
                     type="button"
                     onClick={() => setShowStylePicker(!showStylePicker)}
                     disabled={isLoading}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all ${
+                    className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-xl transition-all ${
                       showStylePicker
                         ? `${selectedPreset.bgColor} ${selectedPreset.borderColor} border`
                         : 'bg-gray-100 hover:bg-gray-200'
                     } disabled:opacity-40`}
                   >
                     <span className="text-base">{selectedPreset.icon}</span>
-                    <span className={`text-sm font-medium ${showStylePicker ? selectedPreset.color : 'text-gray-700'}`}>
+                    <span className={`text-xs sm:text-sm font-medium ${showStylePicker ? selectedPreset.color : 'text-gray-700'}`}>
                       {selectedPreset.name}
                     </span>
-                    <ChevronDown className={`size-3.5 transition-transform ${showStylePicker ? 'rotate-180' : ''} ${
+                    <ChevronDown className={`size-3 sm:size-3.5 transition-transform ${showStylePicker ? 'rotate-180' : ''} ${
                       showStylePicker ? selectedPreset.color : 'text-gray-400'
                     }`} />
                   </button>
                   {showStylePicker && <StylePresetPicker />}
                 </div>
 
-                {/* Size selector */}
-                <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
-                  {SIZE_OPTIONS.filter(s => imageUsage?.allowedSizes?.includes(s.value) || s.value === '1024x1024').map((size) => (
-                    <button
-                      key={size.value}
-                      type="button"
-                      onClick={() => setImageSize(size.value)}
+                {/* Strength slider - only shown when reference image is uploaded */}
+                {imageReferenceUrl && (
+                  <div className="flex items-center gap-1.5 sm:gap-2 bg-gray-100 rounded-xl px-2 sm:px-3 py-1.5 flex-shrink-0">
+                    <Blend className="size-3 sm:size-3.5 text-gray-500" />
+                    <input
+                      type="range"
+                      min="0.1"
+                      max="1"
+                      step="0.05"
+                      value={imageStrength}
+                      onChange={(e) => setImageStrength(parseFloat(e.target.value))}
                       disabled={isLoading}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition ${
-                        imageSize === size.value
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-500 hover:text-gray-700'
-                      } disabled:opacity-40`}
-                    >
-                      {size.label}
-                    </button>
-                  ))}
-                </div>
+                      className="w-12 sm:w-16 h-1 accent-sky-500"
+                    />
+                    <span className="text-[10px] sm:text-xs font-medium text-gray-600 w-7 sm:w-8">
+                      {Math.round(imageStrength * 100)}%
+                    </span>
+                  </div>
+                )}
 
-                {/* Quality selector - Same style as size selector with colors */}
-                <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+                {/* Close button - always at end */}
+                <button
+                  type="button"
+                  onClick={() => setImageMode(false)}
+                  className="ml-auto p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition flex-shrink-0"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+
+              {/* Second row: Size + Quality */}
+              <div className="flex items-center gap-2 sm:gap-3 mt-2 flex-wrap">
+                {/* Size selector - hidden when using reference image */}
+                {!imageReferenceUrl && (
+                  <div className="flex items-center gap-0.5 sm:gap-1 bg-gray-100 rounded-xl p-0.5 sm:p-1">
+                    {SIZE_OPTIONS.filter(s => imageUsage?.allowedSizes?.includes(s.value) || s.value === '1024x1024').map((size) => (
+                      <button
+                        key={size.value}
+                        type="button"
+                        onClick={() => setImageSize(size.value)}
+                        disabled={isLoading}
+                        className={`px-2 sm:px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-medium transition ${
+                          imageSize === size.value
+                            ? 'bg-white text-gray-900 shadow-sm'
+                            : 'text-gray-500 hover:text-gray-700'
+                        } disabled:opacity-40`}
+                      >
+                        {size.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Quality selector */}
+                <div className="flex items-center gap-0.5 sm:gap-1 bg-gray-100 rounded-xl p-0.5 sm:p-1">
                   {QUALITY_OPTIONS.filter(q => imageUsage?.allowedQualities?.includes(q.value) || q.value === 'low').map((q) => {
                     const isSelected = imageQuality === q.value;
                     return (
@@ -1154,7 +1206,7 @@ export const MessageInput = memo(function MessageInput() {
                         type="button"
                         onClick={() => setImageQuality(q.value)}
                         disabled={isLoading}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-150 ${
+                        className={`px-2 sm:px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-medium transition-all duration-150 ${
                           isSelected
                             ? `bg-white shadow-sm ${q.color}`
                             : 'text-gray-500 hover:text-gray-700'
@@ -1167,23 +1219,20 @@ export const MessageInput = memo(function MessageInput() {
                   })}
                 </div>
 
-                {/* Close button */}
-                <button
-                  type="button"
-                  onClick={() => setImageMode(false)}
-                  className="ml-auto p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition"
-                >
-                  <X className="size-4" />
-                </button>
+                {/* Info indicator inline on mobile */}
+                {imageReferenceUrl && (
+                  <div className="flex items-center gap-1 text-[10px] sm:text-xs text-sky-600">
+                    <Blend className="size-3" />
+                    <span className="hidden xs:inline">Imagen a imagen</span>
+                  </div>
+                )}
+                {imageUsage?.streamingEnabled && !imageReferenceUrl && (
+                  <div className="flex items-center gap-1 text-[10px] sm:text-xs text-gray-400">
+                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                    <span className="hidden sm:inline">Vista previa activada</span>
+                  </div>
+                )}
               </div>
-
-              {/* Streaming indicator */}
-              {imageUsage?.streamingEnabled && (
-                <div className="flex items-center gap-1.5 mt-2 text-xs text-gray-400">
-                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                  <span>Vista previa en tiempo real activada</span>
-                </div>
-              )}
             </div>
           )}
 

@@ -40,6 +40,8 @@ interface GenerateOptions {
   size?: ImageGenSize;
   stylePreset?: string;
   stream?: boolean;
+  referenceImageUrl?: string;
+  imageStrength?: number;
 }
 
 type GenerateResult =
@@ -90,6 +92,8 @@ export function useImageGeneration(): UseImageGenerationReturn {
             size: options.size || '1024x1024',
             stylePreset: options.stylePreset || 'auto',
             stream: false,
+            referenceImageUrl: options.referenceImageUrl,
+            imageStrength: options.imageStrength,
           }),
         });
 
@@ -194,6 +198,8 @@ export function useImageGeneration(): UseImageGenerationReturn {
             size: options.size || '1024x1024',
             stylePreset: options.stylePreset || 'auto',
             stream: true,
+            referenceImageUrl: options.referenceImageUrl,
+            imageStrength: options.imageStrength,
           }),
         });
 

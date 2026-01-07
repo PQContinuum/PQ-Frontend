@@ -44,12 +44,16 @@ export async function POST(request: NextRequest) {
       size = '1024x1024',
       stylePreset = 'auto',
       stream = false,
+      referenceImageUrl,
+      imageStrength = 0.75,
     } = body as {
       prompt: string;
       quality?: ImageGenQuality;
       size?: ImageGenSize;
       stylePreset?: string;
       stream?: boolean;
+      referenceImageUrl?: string;
+      imageStrength?: number;
     };
 
     if (!prompt || typeof prompt !== 'string' || prompt.trim().length < 3) {
@@ -108,8 +112,8 @@ export async function POST(request: NextRequest) {
     // 7. Apply style modifier to prompt
     const enhancedPrompt = applyStyleToPrompt(prompt.trim(), stylePreset);
 
-    // 8. FLUX Pro doesn't support streaming, use direct generation
-    // Generate image using FLUX Pro via Fal.ai
+    // 8. Generate image using FLUX via Fal.ai
+    // Use image-to-image if reference image is provided
     return handleFluxGeneration({
       prompt: enhancedPrompt,
       size,
@@ -120,6 +124,8 @@ export async function POST(request: NextRequest) {
       stylePreset,
       startTime,
       usage,
+      referenceImageUrl,
+      imageStrength,
     });
   } catch (error) {
     console.error('[ImageGen] Error:', error);
@@ -129,6 +135,7 @@ export async function POST(request: NextRequest) {
 
 /**
  * FLUX Pro image generation via Fal.ai
+ * Supports both text-to-image and image-to-image (with reference)
  */
 async function handleFluxGeneration({
   prompt,
@@ -140,6 +147,8 @@ async function handleFluxGeneration({
   stylePreset,
   startTime,
   usage,
+  referenceImageUrl,
+  imageStrength = 0.75,
 }: {
   prompt: string;
   size: ImageGenSize;
@@ -150,27 +159,52 @@ async function handleFluxGeneration({
   stylePreset: string;
   startTime: number;
   usage: Awaited<ReturnType<typeof canGenerateImage>>['usage'];
+  referenceImageUrl?: string;
+  imageStrength?: number;
 }) {
   // Map size to FLUX Pro format
   const { width, height } = mapSizeToFlux(size);
 
-  // Select FLUX model based on quality
-  const endpoint = getFluxEndpoint(quality);
+  // Select FLUX model based on quality and whether we have a reference image
+  // For image-to-image, we use flux/dev/image-to-image
+  const isImageToImage = !!referenceImageUrl;
+  const endpoint = isImageToImage
+    ? 'fal-ai/flux/dev/image-to-image'
+    : getFluxEndpoint(quality);
 
   try {
-    // Call FLUX Pro via Fal.ai
-    const result = await fal.subscribe(endpoint, {
-      input: {
-        prompt: prompt.slice(0, 2000), // FLUX prompt limit
+    // Build input based on generation mode
+    const baseInput = {
+      prompt: prompt.slice(0, 2000), // FLUX prompt limit
+      num_images: 1,
+      enable_safety_checker: true,
+      safety_tolerance: '2', // Moderate tolerance
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let input: Record<string, any>;
+
+    if (isImageToImage) {
+      // Image-to-image generation with reference
+      input = {
+        ...baseInput,
+        image_url: referenceImageUrl,
+        strength: Math.max(0.1, Math.min(1.0, imageStrength)), // Clamp between 0.1 and 1.0
+        // Note: image-to-image doesn't support custom image_size, it uses the reference image size
+      };
+    } else {
+      // Standard text-to-image generation
+      input = {
+        ...baseInput,
         image_size: {
           width,
           height,
         },
-        num_images: 1,
-        enable_safety_checker: true,
-        safety_tolerance: '2', // Moderate tolerance
-      },
-    });
+      };
+    }
+
+    // Call FLUX via Fal.ai
+    const result = await fal.subscribe(endpoint, { input });
 
     const generationTimeMs = Date.now() - startTime;
     const imageUrl = (result.data as { images?: Array<{ url: string }> })?.images?.[0]?.url;
