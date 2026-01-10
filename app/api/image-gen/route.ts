@@ -316,6 +316,14 @@ async function processImageResponse({
   const generationTimeMs = Date.now() - startTime;
 
   // GPT Image returns base64 by default
+  if (!response.data || response.data.length === 0) {
+    console.error('[ImageGen] GPT Image returned empty data');
+    return NextResponse.json(
+      { error: 'No se pudo generar la imagen' },
+      { status: 500 }
+    );
+  }
+
   const imageData = response.data[0];
   const revisedPrompt = imageData?.revised_prompt;
 
