@@ -76,13 +76,13 @@ export function getTTSLimits(planName: PlanName | null | undefined): TTSPlanLimi
 }
 
 // ============================================================================
-// IMAGE GENERATION (FLUX Pro via Fal.ai) LIMITS
+// IMAGE GENERATION (OpenAI GPT Image) LIMITS
 // ============================================================================
 
-// FLUX quality levels: low (schnell ~$0.003), medium (pro ~$0.05/mp), high (pro v1.1 ~$0.05/mp)
+// GPT Image quality levels: low, medium, high
 export type ImageGenQuality = 'low' | 'medium' | 'high';
 
-// FLUX sizes: 1024x1024, 1024x1536 (portrait), 1536x1024 (landscape), auto
+// GPT Image sizes: 1024x1024, 1024x1536 (portrait), 1536x1024 (landscape)
 export type ImageGenSize = '1024x1024' | '1024x1536' | '1536x1024' | 'auto';
 
 // Style presets are managed in lib/image-gen/style-presets.ts
@@ -99,9 +99,9 @@ export type ImageGenPlanLimits = {
   maxImagesPerMonth: number;
   // Si tiene acceso a generación de imágenes
   imageGenEnabled: boolean;
-  // Modelo usado (FLUX Pro via Fal.ai)
-  allowedModels: ('flux-pro')[];
-  // Calidades permitidas (low=schnell, medium=pro, high=pro-v1.1)
+  // Modelo usado (OpenAI GPT Image)
+  allowedModels: ('gpt-image-1')[];
+  // Calidades permitidas (low, medium, high)
   allowedQualities: ImageGenQuality[];
   // Resolución máxima permitida
   maxResolution: ImageGenSize;
@@ -112,54 +112,54 @@ export type ImageGenPlanLimits = {
 };
 
 /**
- * LÍMITES DE GENERACIÓN DE IMÁGENES POR PLAN (FLUX Pro via Fal.ai)
- * =================================================================
- * Basado en análisis financiero FLUX:
- * - Costo low quality (schnell): ~$0.003 USD por imagen
- * - Costo medium quality (pro): ~$0.05 USD por megapixel (~$0.05 para 1024x1024)
- * - Costo high quality (pro v1.1): ~$0.05 USD por megapixel
- * - Objetivo: mantener costo imágenes ≤ 20% del precio del plan
+ * LÍMITES DE GENERACIÓN DE IMÁGENES POR PLAN (OpenAI GPT Image)
+ * ==============================================================
+ * Precios GPT Image (2025):
+ * - 1024x1024: low ~$0.02, medium ~$0.04, high ~$0.08
+ * - 1024x1536 / 1536x1024: low ~$0.04, medium ~$0.08, high ~$0.16
+ * - Soporta image-to-image con referencia
+ * - Objetivo: mantener costo imágenes ≤ 25% del precio del plan
  */
 export const IMAGE_GEN_LIMITS: Record<PlanName, ImageGenPlanLimits> = {
   Free: {
     maxImagesPerDay: 5,
-    maxImagesPerMonth: 30,
+    maxImagesPerMonth: 25,
     imageGenEnabled: true,
-    allowedModels: ['flux-pro'],
-    allowedQualities: ['low'],              // Solo schnell (muy económico)
+    allowedModels: ['gpt-image-1'],
+    allowedQualities: ['low'],              // Solo low quality
     maxResolution: '1024x1024',
     premiumStyles: false,
-    estimatedMaxCostUSD: 0.09,              // 30 × $0.003
+    estimatedMaxCostUSD: 0.50,              // 25 × $0.02
   },
   Basic: {
     maxImagesPerDay: 15,
-    maxImagesPerMonth: 200,
+    maxImagesPerMonth: 150,
     imageGenEnabled: true,
-    allowedModels: ['flux-pro'],
-    allowedQualities: ['low', 'medium'],    // Schnell + Pro
+    allowedModels: ['gpt-image-1'],
+    allowedQualities: ['low', 'medium'],    // Low + Medium
     maxResolution: '1024x1024',
     premiumStyles: false,
-    estimatedMaxCostUSD: 5.00,              // Mix de schnell y pro
+    estimatedMaxCostUSD: 4.50,              // Mix de low y medium
   },
   Professional: {
-    maxImagesPerDay: 40,
-    maxImagesPerMonth: 600,
+    maxImagesPerDay: 35,
+    maxImagesPerMonth: 400,
     imageGenEnabled: true,
-    allowedModels: ['flux-pro'],
+    allowedModels: ['gpt-image-1'],
     allowedQualities: ['low', 'medium', 'high'], // Todas las calidades
     maxResolution: '1536x1024',
     premiumStyles: true,
-    estimatedMaxCostUSD: 20.00,             // Mix de todas las calidades
+    estimatedMaxCostUSD: 24.00,             // Mix de todas las calidades
   },
   Enterprise: {
-    maxImagesPerDay: 150,
-    maxImagesPerMonth: 3000,
+    maxImagesPerDay: 100,
+    maxImagesPerMonth: 1500,
     imageGenEnabled: true,
-    allowedModels: ['flux-pro'],
+    allowedModels: ['gpt-image-1'],
     allowedQualities: ['low', 'medium', 'high'],
     maxResolution: '1536x1024',
     premiumStyles: true,
-    estimatedMaxCostUSD: 100.00,            // Mix generoso de todas las calidades
+    estimatedMaxCostUSD: 100.00,            // Mix generoso
   },
 };
 
@@ -174,35 +174,32 @@ export function getImageGenLimits(planName: PlanName | null | undefined): ImageG
 }
 
 /**
- * Calcula el costo de una imagen según sus parámetros (FLUX Pro via Fal.ai)
- * Precios basados en la documentación de Fal.ai 2025
+ * Calcula el costo de una imagen según sus parámetros (OpenAI GPT Image)
+ * Precios estimados basados en la documentación de OpenAI 2025
  */
 export function calculateImageCost(
   quality: ImageGenQuality,
   size: ImageGenSize
 ): number {
-  // FLUX pricing (approximate USD per image)
-  // low = schnell (~$0.003), medium/high = pro (~$0.05/megapixel)
-  const BASE_COSTS: Record<ImageGenQuality, number> = {
-    'low': 0.003,     // FLUX Schnell - muy rápido y económico
-    'medium': 0.05,   // FLUX Pro - alta calidad
-    'high': 0.055,    // FLUX Pro v1.1 - máxima calidad
+  // GPT Image pricing (estimated USD per image)
+  // 1024x1024: low ~$0.02, medium ~$0.04, high ~$0.08
+  // 1024x1536 / 1536x1024: low ~$0.04, medium ~$0.08, high ~$0.16
+
+  const isSquare = size === '1024x1024' || size === 'auto';
+
+  const COSTS_SQUARE: Record<ImageGenQuality, number> = {
+    'low': 0.02,
+    'medium': 0.04,
+    'high': 0.08,
   };
 
-  // Size multiplier based on megapixels (for pro models)
-  const SIZE_MULTIPLIER: Record<ImageGenSize, number> = {
-    '1024x1024': 1.0,    // 1 megapixel
-    '1024x1536': 1.5,    // 1.5 megapixels
-    '1536x1024': 1.5,    // 1.5 megapixels
-    'auto': 1.0,         // Default to square cost
+  const COSTS_RECTANGLE: Record<ImageGenQuality, number> = {
+    'low': 0.04,
+    'medium': 0.08,
+    'high': 0.16,
   };
 
-  // Schnell has flat pricing, Pro charges per megapixel
-  if (quality === 'low') {
-    return BASE_COSTS[quality]; // Flat rate for schnell
-  }
-
-  return BASE_COSTS[quality] * SIZE_MULTIPLIER[size];
+  return isSquare ? COSTS_SQUARE[quality] : COSTS_RECTANGLE[quality];
 }
 
 /**

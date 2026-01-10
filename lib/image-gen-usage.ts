@@ -15,7 +15,8 @@ import {
  * Image Generation Usage Tracking Library
  * =======================================
  * Tracks and enforces image generation limits per plan.
- * Updated for FLUX Pro via Fal.ai (2025)
+ * Updated for OpenAI GPT Image (gpt-image-1) - 2025
+ * Supports text-to-image and image-to-image generation
  */
 
 export interface ImageGenUsageInfo {
@@ -101,7 +102,7 @@ export async function getImageGenUsage(userId: string): Promise<ImageGenUsageInf
       allowedQualities: limits.allowedQualities,
       allowedSizes: getAllowedSizes(limits.maxResolution),
       maxResolution: limits.maxResolution,
-      // FLUX Pro specific features
+      // GPT Image specific features
       premiumStyles: limits.premiumStyles,
     };
   } catch (error) {
@@ -209,7 +210,7 @@ export async function recordImageGenUsage(
       userId,
       prompt: data.prompt,
       revisedPrompt: data.revisedPrompt,
-      model: data.model || 'flux-pro',
+      model: data.model || 'gpt-image-1',
       quality: data.quality,
       size: data.size,
       style: data.stylePreset || 'auto', // Now stores style preset ID

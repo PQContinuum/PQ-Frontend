@@ -25,7 +25,7 @@ const MediaGeneratingSkeleton = ({ type, aspectRatio = 'square' }: MediaGenerati
   const getDimensions = () => {
     if (type === 'image') {
       // Responsive: full width on mobile, fixed on desktop
-      return 'w-full max-w-[340px] aspect-square';
+      return 'w-full max-w-[512px] aspect-square';
     }
     // Video dimensions based on aspect ratio - responsive
     switch (aspectRatio) {
@@ -244,7 +244,7 @@ const ChatImage = ({ src, alt, ...props }: React.ImgHTMLAttributes<HTMLImageElem
 
   if (hasError) {
     return (
-      <span className="block w-full max-w-[340px] aspect-square rounded-2xl bg-gray-100 flex items-center justify-center">
+      <span className="block w-full max-w-[512px] aspect-square rounded-2xl bg-gray-100 flex items-center justify-center">
         <span className="text-sm text-gray-400">Error al cargar imagen</span>
       </span>
     );
@@ -252,7 +252,7 @@ const ChatImage = ({ src, alt, ...props }: React.ImgHTMLAttributes<HTMLImageElem
 
   return (
     <>
-      <span className="block w-full max-w-[340px]">
+      <span className="block w-full max-w-[512px]">
         {/* Title */}
         <span className="block text-sm font-semibold text-gray-800 mb-2">Imagen creada</span>
 
@@ -675,7 +675,7 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
   if (jobImageUrl) {
     return (
       <div className="flex justify-start w-full">
-        <div className="w-full max-w-[380px] px-2 sm:px-4 py-2">
+        <div className="w-full max-w-[540px] px-2 sm:px-4 py-2">
           <ChatImage src={jobImageUrl} alt="Imagen generada" />
         </div>
       </div>
@@ -686,7 +686,7 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
   if (isGeneratingMedia && generationState?.type === 'image') {
     return (
       <div className="flex justify-start w-full">
-        <div className="w-full max-w-[380px] px-2 sm:px-4 py-2">
+        <div className="w-full max-w-[540px] px-2 sm:px-4 py-2">
           <ImageGeneratingSkeleton />
           {jobProgressMessage && (
             <p className="text-xs text-gray-500 mt-2 text-center">{jobProgressMessage}</p>
