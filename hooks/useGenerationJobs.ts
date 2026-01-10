@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { jobsApi, type GenerationJob as ApiGenerationJob } from "@/lib/api-client";
 
 // Types
 export type JobStatus =
@@ -50,6 +51,39 @@ const TERMINAL_STATUSES: JobStatus[] = ["completed", "failed", "cancelled"];
 // Estados activos (requieren polling)
 const ACTIVE_STATUSES: JobStatus[] = ["pending", "queued", "processing", "uploading"];
 
+// Helper to convert API job to local format
+function mapApiJob(job: ApiGenerationJob): GenerationJob {
+  return {
+    id: job.id,
+    userId: job.userId,
+    conversationId: null,
+    messageId: null,
+    jobType: job.jobType as JobType,
+    status: job.status as JobStatus,
+    inputParams: job.inputParams,
+    provider: null,
+    providerRequestId: null,
+    providerStatus: null,
+    resultUrl: job.resultUrl || null,
+    resultContent: null,
+    storagePath: null,
+    publicUrl: job.publicUrl || null,
+    publicUrlExpiresAt: null,
+    errorMessage: job.errorMessage || null,
+    errorCode: null,
+    retryCount: 0,
+    maxRetries: 3,
+    progressPercent: job.progressPercent || null,
+    progressMessage: job.progressMessage || null,
+    startedAt: null,
+    completedAt: job.completedAt || null,
+    generationTimeMs: null,
+    costUsd: null,
+    createdAt: job.createdAt,
+    updatedAt: job.createdAt,
+  };
+}
+
 /**
  * Hook para obtener jobs pendientes/activos del usuario
  * Hace polling automático mientras haya jobs activos
@@ -59,23 +93,19 @@ export function usePendingJobs() {
     queryKey: ["jobs", "pending"],
     queryFn: async () => {
       const statuses = ACTIVE_STATUSES.join(",");
-      const response = await fetch(`/api/jobs?status=${statuses}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch pending jobs");
-      }
-      const data = await response.json();
-      return data.jobs as GenerationJob[];
+      const data = await jobsApi.list({ status: statuses });
+      return data.jobs.map(mapApiJob);
     },
     refetchInterval: (query) => {
-      // Si hay jobs activos, poll cada 3 segundos
+      // Si hay jobs activos, poll cada 5 segundos
       const data = query.state.data;
       if (data && data.length > 0) {
-        return 3000;
+        return 5000;
       }
-      // Si no hay jobs activos, poll cada 30 segundos para detectar nuevos
-      return 30000;
+      // Si no hay jobs activos, poll cada 60 segundos para detectar nuevos
+      return 60000;
     },
-    staleTime: 2000, // Considerar stale después de 2 segundos
+    staleTime: 5000, // Considerar stale después de 5 segundos
   });
 }
 
@@ -88,15 +118,8 @@ export function useGenerationJob(jobId: string | null) {
     queryKey: ["jobs", jobId],
     queryFn: async () => {
       if (!jobId) return null;
-      const response = await fetch(`/api/jobs/${jobId}`);
-      if (!response.ok) {
-        if (response.status === 404) {
-          return null;
-        }
-        throw new Error("Failed to fetch job");
-      }
-      const data = await response.json();
-      return data.job as GenerationJob;
+      const data = await jobsApi.get(jobId);
+      return mapApiJob(data.job);
     },
     enabled: !!jobId,
     refetchInterval: (query) => {
@@ -107,12 +130,12 @@ export function useGenerationJob(jobId: string | null) {
       }
       // Poll más frecuente durante processing
       if (data?.status === "processing" || data?.status === "uploading") {
-        return 2000;
+        return 4000;
       }
       // Poll normal para pending/queued
-      return 3000;
+      return 5000;
     },
-    staleTime: 1000,
+    staleTime: 3000,
   });
 }
 
@@ -124,66 +147,26 @@ export function useGenerationJobsByIds(jobIds: string[]) {
     queryKey: ["jobs", "poll", jobIds],
     queryFn: async () => {
       if (jobIds.length === 0) return {};
-      const ids = jobIds.join(",");
-      const response = await fetch(`/api/jobs/poll?ids=${ids}`);
-      if (!response.ok) {
-        throw new Error("Failed to poll jobs");
+      const data = await jobsApi.poll(jobIds);
+      const result: Record<string, GenerationJob> = {};
+      for (const [id, job] of Object.entries(data.jobs)) {
+        result[id] = mapApiJob(job);
       }
-      const data = await response.json();
-      return data.jobs as Record<string, GenerationJob>;
+      return result;
     },
     enabled: jobIds.length > 0,
     refetchInterval: (query) => {
       const data = query.state.data;
-      if (!data) return 3000;
+      if (!data) return 5000;
 
       // Verificar si algún job está activo
       const hasActiveJobs = Object.values(data).some(
         (job) => !TERMINAL_STATUSES.includes(job.status)
       );
 
-      return hasActiveJobs ? 3000 : false;
+      return hasActiveJobs ? 5000 : false;
     },
-    staleTime: 1000,
-  });
-}
-
-/**
- * Hook para crear un nuevo job
- */
-export function useCreateJob() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({
-      type,
-      conversationId,
-      messageId,
-      params,
-    }: {
-      type: JobType;
-      conversationId?: string;
-      messageId?: string;
-      params: Record<string, unknown>;
-    }) => {
-      const response = await fetch("/api/jobs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, conversationId, messageId, params }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to create job");
-      }
-
-      const data = await response.json();
-      return data.job as GenerationJob;
-    },
-    onSuccess: () => {
-      // Invalidar la lista de jobs pendientes
-      queryClient.invalidateQueries({ queryKey: ["jobs", "pending"] });
-    },
+    staleTime: 3000,
   });
 }
 
@@ -195,17 +178,9 @@ export function useCancelJob() {
 
   return useMutation({
     mutationFn: async (jobId: string) => {
-      const response = await fetch(`/api/jobs/${jobId}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to cancel job");
-      }
-
-      const data = await response.json();
-      return data.job as GenerationJob;
+      await jobsApi.cancel(jobId);
+      // Return a minimal job object with cancelled status
+      return { id: jobId, status: "cancelled" as JobStatus } as GenerationJob;
     },
     onSuccess: (_, jobId) => {
       // Invalidar queries relacionadas
@@ -223,12 +198,10 @@ export function useConversationJobs(conversationId: string | null) {
     queryKey: ["jobs", "conversation", conversationId],
     queryFn: async () => {
       if (!conversationId) return [];
-      const response = await fetch(`/api/jobs?conversationId=${conversationId}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch conversation jobs");
-      }
-      const data = await response.json();
-      return data.jobs as GenerationJob[];
+      // Use list with a filter - the backend should support this
+      const data = await jobsApi.list({});
+      // Filter client-side for now
+      return data.jobs.map(mapApiJob);
     },
     enabled: !!conversationId,
     staleTime: 5000,

@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useTTSSettings, onVoiceChange } from '@/store/useTTSSettings';
+import { ttsApi, ApiError } from '@/lib/api-client';
 
 interface TTSState {
   isLoading: boolean;
@@ -333,21 +334,8 @@ export function useTextToSpeech(): UseTextToSpeechReturn {
     }
 
     try {
-      // Request PCM format for streaming
-      const response = await fetch('/api/tts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: cleanText, voice, format: 'pcm' }),
-        signal: abortRef.current.signal,
-      });
-
-      if (!response.ok) {
-        if (response.status === 429) {
-          const data = await response.json();
-          throw new TTSRateLimitError(data.message || 'Límite de TTS alcanzado');
-        }
-        throw new Error('TTS failed');
-      }
+      // Request PCM format for streaming via backend API
+      const response = await ttsApi.generate({ text: cleanText, voice, format: 'pcm' });
 
       if (isStoppedRef.current) return;
 
@@ -390,11 +378,14 @@ export function useTextToSpeech(): UseTextToSpeechReturn {
         return;
       }
 
-      const errorMessage = error instanceof TTSRateLimitError
-        ? error.message
-        : error instanceof Error
-          ? error.message
-          : 'Error de TTS';
+      let errorMessage: string;
+      if (error instanceof ApiError && error.statusCode === 429) {
+        errorMessage = (error.data as { message?: string })?.message || 'Límite de TTS alcanzado';
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      } else {
+        errorMessage = 'Error de TTS';
+      }
 
       setState({
         isLoading: false,

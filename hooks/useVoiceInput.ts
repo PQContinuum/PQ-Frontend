@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { transcribeApi } from '@/lib/api-client';
 
 interface UseVoiceInputOptions {
   onTranscript?: (text: string) => void;
@@ -207,27 +208,17 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
         setError(null);
 
         try {
-          const formData = new FormData();
-
           // Determine file extension based on mime type
           const extension = mediaRecorder.mimeType.includes('webm') ? 'webm'
             : mediaRecorder.mimeType.includes('mp4') ? 'm4a'
             : 'wav';
 
-          formData.append('audio', audioBlob, `recording.${extension}`);
-          formData.append('language', 'es');
-
-          const response = await fetch('/api/transcribe', {
-            method: 'POST',
-            body: formData,
+          // Create a File object from the Blob
+          const audioFile = new File([audioBlob], `recording.${extension}`, {
+            type: mediaRecorder.mimeType,
           });
 
-          if (!response.ok) {
-            const data = await response.json();
-            throw new Error(data.error || 'Error al transcribir');
-          }
-
-          const data = await response.json();
+          const data = await transcribeApi.transcribe(audioFile, language);
           const transcript = data.text?.trim();
 
           if (transcript) {
@@ -251,7 +242,7 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
       // Stop recording
       mediaRecorder.stop();
     });
-  }, [onTranscript, onError]);
+  }, [onTranscript, onError, language]);
 
   const cancelRecording = useCallback(() => {
     // Clear timers

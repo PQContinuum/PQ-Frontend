@@ -23,6 +23,7 @@ import {
 } from '@/hooks/use-conversations';
 import type { ConversationWithMessages } from '@/hooks/use-conversations';
 import { useQueryClient } from '@tanstack/react-query';
+import { conversationsApi } from '@/lib/api-client';
 
 // Helper para transformar mensajes de API a ChatMessage con generationState
 function mapApiMessagesToChatMessages(
@@ -105,9 +106,7 @@ export const ConversationHistory = memo(function ConversationHistory() {
       queryClient.fetchQuery<ConversationWithMessages>({
         queryKey: conversationKeys.detail(id),
         queryFn: async () => {
-          const response = await fetch(`/api/conversations/${id}`);
-          if (!response.ok) throw new Error('Failed to load conversation');
-          const data = await response.json();
+          const data = await conversationsApi.get(id);
           return data.conversation as ConversationWithMessages;
         },
         staleTime: 1000 * 60 * 10,
@@ -141,9 +140,7 @@ export const ConversationHistory = memo(function ConversationHistory() {
         const conversation = await queryClient.fetchQuery<ConversationWithMessages>({
           queryKey: conversationKeys.detail(id),
           queryFn: async () => {
-            const response = await fetch(`/api/conversations/${id}`);
-            if (!response.ok) throw new Error('Failed to load conversation');
-            const data = await response.json();
+            const data = await conversationsApi.get(id);
             return data.conversation as ConversationWithMessages;
           },
           staleTime: 1000 * 60 * 10,
@@ -217,13 +214,7 @@ export const ConversationHistory = memo(function ConversationHistory() {
     }
 
     try {
-      const response = await fetch(`/api/conversations/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: newTitle.trim() }),
-      });
-
-      if (!response.ok) throw new Error('Failed to rename conversation');
+      await conversationsApi.update(id, { title: newTitle.trim() });
 
       // Invalidar cache para refrescar
       queryClient.invalidateQueries({ queryKey: conversationKeys.all });

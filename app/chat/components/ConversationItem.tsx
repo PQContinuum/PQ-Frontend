@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import type { Conversation } from '@/db/schema';
+import type { Conversation } from '@/lib/api-client';
 
 interface ConversationItemProps {
   conversation: Conversation;

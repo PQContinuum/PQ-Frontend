@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { ImagePlus, X, Loader2, CheckCircle2 } from 'lucide-react';
+import { imageGenApi } from '@/lib/api-client';
 
 interface ImageReferenceUploadProps {
   onImageUploaded: (url: string) => void;
@@ -103,22 +104,8 @@ export function ImageReferenceUpload({
       };
       reader.readAsDataURL(fileToUpload);
 
-      const formData = new FormData();
-      formData.append('file', fileToUpload);
-
-      // Use the same endpoint as video (it's generic for image uploads)
-      const response = await fetch('/api/image-gen/upload-reference', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Error al subir imagen');
-      }
-
-      onImageUploaded(data.url);
+      const data = await imageGenApi.uploadReference(fileToUpload);
+      onImageUploaded(data.imageUrl);
     } catch (err) {
       console.error('[ImageReferenceUpload] Error:', err);
       setError(err instanceof Error ? err.message : 'Error al subir');

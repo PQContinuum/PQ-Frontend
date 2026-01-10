@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { Mail, Lock, Loader2 } from 'lucide-react';
+import { billingApi } from '@/lib/api-client';
 
 export default function AuthPage() {
   const [email, setEmail] = useState('');
@@ -64,13 +65,16 @@ export default function AuthPage() {
         if (error) throw error;
 
         // Verificar subscription del usuario
-        const response = await fetch('/api/check-subscription');
-        const data = await response.json();
-
-        if (data.needsPayment) {
+        try {
+          const data = await billingApi.getSubscription();
+          if (!data.hasSubscription) {
+            router.push('/payment');
+          } else {
+            router.push('/chat');
+          }
+        } catch {
+          // Si falla la verificación, ir a payment por seguridad
           router.push('/payment');
-        } else {
-          router.push('/chat');
         }
         router.refresh();
       }

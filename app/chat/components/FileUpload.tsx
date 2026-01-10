@@ -16,6 +16,7 @@ import {
   Table,
   Code,
 } from 'lucide-react';
+import { attachmentsApi } from '@/lib/api-client';
 
 interface Attachment {
   id: string;
@@ -334,21 +335,15 @@ export function FileUpload({ conversationId, onAttachmentsChange }: FileUploadPr
 
       for (let i = 0; i < Math.min(files.length, 10); i++) {
         const file = files[i];
-        const formData = new FormData();
-        formData.append('file', file);
-
-        const response = await fetch(`/api/conversations/${conversationId}/attachments`, {
-          method: 'POST',
-          body: formData,
+        const data = await attachmentsApi.upload(conversationId, file);
+        // Map the API response to Attachment type
+        uploadedAttachments.push({
+          id: data.id,
+          fileName: data.fileName,
+          fileType: data.fileType as 'image' | 'document',
+          fileSize: 0, // Not returned by API, but not critical
+          url: data.signedUrl,
         });
-
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || 'Upload failed');
-        }
-
-        const data = await response.json();
-        uploadedAttachments.push(data.attachment);
       }
 
       const newAttachments = [...attachments, ...uploadedAttachments];

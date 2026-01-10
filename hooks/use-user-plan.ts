@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { userApi, ApiError } from "@/lib/api-client";
 
 type UserPlan = {
   userId: string | null;
@@ -20,23 +21,31 @@ export function useUserPlan() {
   return useQuery<UserPlan>({
     queryKey: ["user-plan"],
     queryFn: async () => {
-      const response = await fetch("/api/user-plan");
-
-      if (response.status === 401) {
+      try {
+        const data = await userApi.getPlan();
         return {
-          userId: null,
-          email: null,
-          planName: "Free",
-          status: "unauthenticated",
-          currentPeriodEnd: undefined,
-          subscription: undefined,
+          userId: (data as unknown as { userId?: string }).userId || null,
+          email: (data as unknown as { email?: string }).email || null,
+          planName: data.planName as UserPlan["planName"],
+          status: data.status || "active",
+          currentPeriodEnd: data.currentPeriodEnd
+            ? new Date(data.currentPeriodEnd)
+            : undefined,
+          subscription: (data as unknown as { subscription?: unknown }).subscription,
         };
+      } catch (error) {
+        if (error instanceof ApiError && error.statusCode === 401) {
+          return {
+            userId: null,
+            email: null,
+            planName: "Free",
+            status: "unauthenticated",
+            currentPeriodEnd: undefined,
+            subscription: undefined,
+          };
+        }
+        throw error;
       }
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch user plan");
-      }
-      return response.json();
     },
     staleTime: 1000 * 60 * 5, // 5 minutos
     refetchOnWindowFocus: true,
