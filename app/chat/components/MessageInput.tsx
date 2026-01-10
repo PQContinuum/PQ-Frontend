@@ -898,9 +898,11 @@ export const MessageInput = memo(function MessageInput() {
   );
 
   const handleKeyDown = (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
+    // Enter solo hace salto de línea, no envía el mensaje
+    // El mensaje se envía únicamente con el botón
     if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault();
-      submitMessage();
+      // Permitir el comportamiento por defecto (salto de línea)
+      return;
     }
   };
 
