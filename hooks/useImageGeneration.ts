@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { imageGenApi, apiPostStream, API_BASE_URL, getAuthHeaders } from '@/lib/api-client';
+import { imageGenApi } from '@/lib/api-client';
 import type { ImageGenQuality, ImageGenSize } from '@/lib/memory/plan-limits';
 
 interface ImageGenState {
@@ -140,159 +140,17 @@ export function useImageGeneration(): UseImageGenerationReturn {
     []
   );
 
-  // Generate with streaming (partial images)
+  // Generate with streaming (falls back to regular generation since gpt-image-1 doesn't support partial images)
   const generateWithStreaming = useCallback(
     async (
       prompt: string,
       options: GenerateOptions = {},
-      onPartialImage?: (image: string, index: number) => void
+      _onPartialImage?: (image: string, index: number) => void
     ): Promise<GenerateResult> => {
-      if (!prompt.trim()) {
-        const errorMsg = 'El prompt es requerido';
-        setState((s) => ({ ...s, error: errorMsg }));
-        return { success: false, error: errorMsg };
-      }
-
-      setState({ isGenerating: true, error: null, image: null, partialImage: null, partialIndex: -1 });
-
-      try {
-        const response = await apiPostStream('/image-gen/stream', {
-          prompt: prompt.trim(),
-          quality: options.quality || 'low',
-          size: options.size || '1024x1024',
-          stylePreset: options.stylePreset || 'auto',
-          referenceImageUrl: options.referenceImageUrl,
-          imageStrength: options.imageStrength,
-        });
-
-        // Check if it's a streaming response
-        const contentType = response.headers.get('content-type');
-        if (!contentType?.includes('text/event-stream')) {
-          // Non-streaming fallback (plan doesn't support streaming)
-          const data = await response.json();
-          const imageResult = {
-            url: data.image?.url || data.imageUrl,
-            revisedPrompt: data.image?.revisedPrompt || data.revisedPrompt,
-            size: options.size || '1024x1024',
-            quality: options.quality || 'low',
-            stylePreset: options.stylePreset,
-          };
-
-          setState({
-            isGenerating: false,
-            error: null,
-            image: imageResult,
-            partialImage: null,
-            partialIndex: -1,
-          });
-
-          return { success: true, url: imageResult.url, revisedPrompt: imageResult.revisedPrompt };
-        }
-
-        // Process streaming response
-        const reader = response.body?.getReader();
-        if (!reader) {
-          throw new Error('No response body');
-        }
-
-        const decoder = new TextDecoder();
-        let buffer = '';
-        let finalResult: GenerateResult | null = null;
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || '';
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6);
-              if (data === '[DONE]') continue;
-
-              try {
-                const parsed = JSON.parse(data);
-
-                if (parsed.event === 'partial' && parsed.image) {
-                  // Update partial image state
-                  setState((s) => ({
-                    ...s,
-                    partialImage: parsed.image,
-                    partialIndex: parsed.index,
-                  }));
-                  // Callback for external handling
-                  onPartialImage?.(parsed.image, parsed.index);
-                }
-
-                if (parsed.event === 'complete' && parsed.image) {
-                  const imageResult = {
-                    url: parsed.image.url,
-                    revisedPrompt: parsed.image.revisedPrompt,
-                    size: parsed.image.size,
-                    quality: parsed.image.quality,
-                    stylePreset: parsed.image.stylePreset,
-                  };
-
-                  setState({
-                    isGenerating: false,
-                    error: null,
-                    image: imageResult,
-                    partialImage: null,
-                    partialIndex: -1,
-                  });
-
-                  if (parsed.usage) {
-                    setUsage((prev) =>
-                      prev
-                        ? {
-                            ...prev,
-                            remainingToday: parsed.usage.remainingToday,
-                            remainingMonth: parsed.usage.remainingMonth,
-                            todayCount: prev.dailyLimit - parsed.usage.remainingToday,
-                            monthCount: prev.monthlyLimit - parsed.usage.remainingMonth,
-                          }
-                        : null
-                    );
-                  }
-
-                  finalResult = { success: true, url: imageResult.url, revisedPrompt: imageResult.revisedPrompt };
-                }
-
-                if (parsed.event === 'error') {
-                  const errorMsg = parsed.error || 'Error al generar imagen';
-                  setState({
-                    isGenerating: false,
-                    error: errorMsg,
-                    image: null,
-                    partialImage: null,
-                    partialIndex: -1,
-                  });
-                  finalResult = { success: false, error: errorMsg };
-                }
-              } catch {
-                // Ignore parse errors
-              }
-            }
-          }
-        }
-
-        return finalResult || { success: false, error: 'No se recibió respuesta' };
-      } catch (error) {
-        console.error('[useImageGeneration] Streaming error:', error);
-        const errorMsg = error instanceof Error ? error.message : 'Error de conexión';
-        setState({
-          isGenerating: false,
-          error: errorMsg,
-          image: null,
-          partialImage: null,
-          partialIndex: -1,
-        });
-        return { success: false, error: errorMsg };
-      }
+      // gpt-image-1 doesn't support partial image streaming, so we use regular generation
+      return generate(prompt, options);
     },
-    []
+    [generate]
   );
 
   // Fetch usage statistics
@@ -313,7 +171,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
           planName: data.usage.planName,
           streamingEnabled: false,
           partialImages: 0,
-          premiumStyles: false,
+          premiumStyles: data.usage.premiumStyles ?? false,
         });
       }
     } catch (error) {

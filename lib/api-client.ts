@@ -478,8 +478,11 @@ export interface ImageGenUsage {
   monthlyCount: number;
   dailyLimit: number;
   monthlyLimit: number;
+  remainingToday: number;
+  remainingMonth: number;
   allowedQualities: string[];
   allowedSizes: string[];
+  premiumStyles: boolean;
   planName: string;
 }
 
@@ -631,12 +634,22 @@ export const userApi = {
   getProfile: () => apiGet<{ user: unknown; profile: unknown }>("/users/me"),
 
   /**
-   * Get current user's plan
+   * Get current user's plan from backend
+   * The backend now returns planName directly from the subscriptions table
    */
-  getPlan: () => apiGet<UserPlan>("/users/me").then((data) => ({
-    ...data,
-    planName: (data as unknown as { planName?: string }).planName || "Free",
-  })),
+  getPlan: async () => {
+    const data = await apiGet<{
+      user: unknown;
+      profile: unknown;
+      hasActiveSubscription: boolean;
+      planName: "Free" | "Basic" | "Professional" | "Enterprise";
+    }>("/users/me");
+
+    return {
+      planName: data.planName || "Free",
+      status: data.hasActiveSubscription ? "active" : "inactive",
+    } as UserPlan;
+  },
 };
 
 export const billingApi = {

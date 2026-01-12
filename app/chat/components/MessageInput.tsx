@@ -1181,6 +1181,19 @@ export const MessageInput = memo(function MessageInput() {
                   </div>
                 )}
               </div>
+
+              {/* Usage and info */}
+              <div className="flex items-center justify-between mt-2">
+                <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                  <Image className="size-3" />
+                  <span>GPT Image</span>
+                </div>
+                {imageUsage && (
+                  <span className="text-xs text-gray-400">
+                    {imageUsage.remainingToday}/{imageUsage.dailyLimit} hoy
+                  </span>
+                )}
+              </div>
             </div>
           )}
 
