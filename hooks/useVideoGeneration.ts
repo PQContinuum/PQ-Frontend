@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { videoGenApi } from '@/lib/api-client';
 import { useGenerationJob, getJobStatusMessage, type GenerationJob } from './useGenerationJobs';
 import type {
   VideoGenDuration,
@@ -174,50 +175,14 @@ export function useVideoGeneration(): UseVideoGenerationReturn {
       });
 
       try {
-        const response = await fetch('/api/video-gen', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            prompt: prompt.trim(),
-            mode: options.mode || 'text-to-video',
-            imageUrl: options.imageUrl,
-            duration: options.duration || '5',
-            aspectRatio: options.aspectRatio || '16:9',
-            generateAudio: options.generateAudio ?? (usage?.audioEnabled ?? true),
-            conversationId: options.conversationId,
-            messageId: options.messageId,
-          }),
+        const data = await videoGenApi.generate({
+          prompt: prompt.trim(),
+          mode: options.mode || 'text-to-video',
+          imageUrl: options.imageUrl,
+          duration: options.duration || '5',
+          aspectRatio: options.aspectRatio || '16:9',
+          generateAudio: options.generateAudio ?? (usage?.audioEnabled ?? true),
         });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          const errorMsg = data.error || data.message || 'Error al generar video';
-          setState({
-            isGenerating: false,
-            error: errorMsg,
-            progress: null,
-            jobId: null,
-            video: null,
-          });
-
-          // Update usage if returned
-          if (data.usage) {
-            setUsage((prev) =>
-              prev
-                ? {
-                    ...prev,
-                    todayCount: data.usage.todayCount ?? prev.todayCount,
-                    monthCount: data.usage.monthCount ?? prev.monthCount,
-                    remainingToday: Math.max(0, prev.dailyLimit - (data.usage.todayCount ?? prev.todayCount)),
-                    remainingMonth: Math.max(0, prev.monthlyLimit - (data.usage.monthCount ?? prev.monthCount)),
-                  }
-                : null
-            );
-          }
-
-          return { success: false, error: errorMsg };
-        }
 
         // Job created successfully - update state with jobId
         // The useEffect above will handle polling and state updates
@@ -235,10 +200,10 @@ export function useVideoGeneration(): UseVideoGenerationReturn {
             prev
               ? {
                   ...prev,
-                  remainingToday: data.usage.remainingToday,
-                  remainingMonth: data.usage.remainingMonth,
-                  todayCount: prev.dailyLimit - data.usage.remainingToday,
-                  monthCount: prev.monthlyLimit - data.usage.remainingMonth,
+                  remainingToday: prev.dailyLimit - data.usage.dailyCount,
+                  remainingMonth: prev.monthlyLimit - data.usage.monthlyCount,
+                  todayCount: data.usage.dailyCount,
+                  monthCount: data.usage.monthlyCount,
                 }
               : null
           );
@@ -250,7 +215,9 @@ export function useVideoGeneration(): UseVideoGenerationReturn {
         console.error('[useVideoGeneration] Error:', error);
         // Network error - but the job might have been created on the server
         // We return a more graceful message that indicates we should check pending jobs
-        const errorMsg = 'Error de conexión. Tu video puede estar generándose en segundo plano.';
+        const errorMsg = error instanceof Error
+          ? error.message
+          : 'Error de conexión. Tu video puede estar generándose en segundo plano.';
         setState({
           isGenerating: false,
           error: errorMsg,
@@ -267,12 +234,21 @@ export function useVideoGeneration(): UseVideoGenerationReturn {
   // Fetch usage statistics
   const fetchUsage = useCallback(async () => {
     try {
-      const response = await fetch('/api/video-gen');
-      if (response.ok) {
-        const data = await response.json();
-        if (data.usage) {
-          setUsage(data.usage);
-        }
+      const data = await videoGenApi.getUsage();
+      if (data.usage) {
+        setUsage({
+          todayCount: data.usage.dailyCount,
+          monthCount: data.usage.monthlyCount,
+          dailyLimit: data.usage.dailyLimit,
+          monthlyLimit: data.usage.monthlyLimit,
+          remainingToday: data.usage.dailyLimit - data.usage.dailyCount,
+          remainingMonth: data.usage.monthlyLimit - data.usage.monthlyCount,
+          allowedDurations: data.usage.allowedDurations as VideoGenDuration[],
+          allowedAspectRatios: data.usage.allowedAspectRatios as VideoGenAspectRatio[],
+          allowedModes: data.usage.allowedModes as VideoGenMode[],
+          audioEnabled: data.usage.audioEnabled,
+          planName: data.usage.planName,
+        });
       }
     } catch (error) {
       console.error('[useVideoGeneration] Error fetching usage:', error);

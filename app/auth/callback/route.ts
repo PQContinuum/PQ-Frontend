@@ -1,6 +1,7 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
-import { needsPayment, createFreeSubscription } from '@/lib/subscription';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.continuumai.llc/api/v1';
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
@@ -11,15 +12,28 @@ export async function GET(request: Request) {
     const supabase = await createSupabaseServerClient();
     const { data } = await supabase.auth.exchangeCodeForSession(code);
 
-    // Si es un nuevo usuario, crear subscription Free por defecto
-    if (data?.user) {
-      await createFreeSubscription(data.user.id);
+    if (data?.session?.access_token) {
+      try {
+        // Llamar al backend externo para sincronizar usuario y obtener plan
+        // GET /users/me crea el usuario si no existe y devuelve el plan
+        const response = await fetch(`${API_BASE_URL}/users/me`, {
+          headers: {
+            'Authorization': `Bearer ${data.session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        });
 
-      // Verificar si necesita pagar
-      const needsPay = await needsPayment(data.user.id);
+        if (response.ok) {
+          const userData = await response.json();
 
-      if (needsPay) {
-        // Usuario nuevo o Free → ir a payment
+          // Si es Free o no tiene subscription activa, redirigir a payment
+          if (!userData.hasActiveSubscription || userData.planName === 'Free') {
+            return NextResponse.redirect(`${origin}/payment`);
+          }
+        }
+      } catch (error) {
+        console.error('Error syncing user with backend:', error);
+        // En caso de error, redirigir a payment por seguridad
         return NextResponse.redirect(`${origin}/payment`);
       }
     }

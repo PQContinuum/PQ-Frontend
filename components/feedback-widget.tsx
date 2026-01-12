@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { cn } from "@/lib/utils";
+import { feedbackApi } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -71,25 +72,19 @@ export function FeedbackWidget({ className, variant = "sidebar", isCollapsed: is
 
     startTransition(async () => {
       try {
-        const response = await fetch("/api/feedback", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            category,
-            sentiment,
-            message: message.trim(),
-            pageUrl: window.location.href,
-            userAgent: navigator.userAgent,
-          }),
+        await feedbackApi.submit({
+          category,
+          sentiment,
+          message: message.trim(),
+          pageUrl: window.location.href,
+          metadata: { userAgent: navigator.userAgent },
         });
 
-        if (response.ok) {
-          setIsSuccess(true);
-          setTimeout(() => {
-            setIsOpen(false);
-            resetForm();
-          }, 1500);
-        }
+        setIsSuccess(true);
+        setTimeout(() => {
+          setIsOpen(false);
+          resetForm();
+        }, 1500);
       } catch (error) {
         console.error("Failed to submit feedback:", error);
       }

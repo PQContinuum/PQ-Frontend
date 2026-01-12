@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { billingApi } from '@/lib/api-client';
 
 function PaymentSuccessContent() {
   const router = useRouter();
@@ -15,8 +16,8 @@ function PaymentSuccessContent() {
   );
   const [sessionData, setSessionData] = useState<{
     status: string | null;
-    customer_email: string | null;
-    payment_status: string | null;
+    customerEmail: string | null;
+    paymentStatus: string | null;
   } | null>(null);
 
   useEffect(() => {
@@ -24,17 +25,15 @@ function PaymentSuccessContent() {
 
     const checkSession = async () => {
       try {
-        const response = await fetch(`/api/session-status?session_id=${sessionId}`);
-        const data = await response.json();
+        const data = await billingApi.getSessionStatus(sessionId!);
 
-        if (data.error) {
-          setStatus('error');
-          return;
-        }
+        setSessionData({
+          status: data.status,
+          customerEmail: data.customerEmail || null,
+          paymentStatus: data.paymentStatus,
+        });
 
-        setSessionData(data);
-
-        if (data.status === 'complete' && data.payment_status === 'paid') {
+        if (data.status === 'complete' && data.paymentStatus === 'paid') {
           setStatus('success');
         } else {
           setStatus('error');
@@ -112,10 +111,10 @@ function PaymentSuccessContent() {
         {status === 'success' && sessionData && (
           <CardContent className="space-y-2 text-center">
             <p className="text-sm text-neutral-400">
-              Email: <span className="text-white">{sessionData.customer_email}</span>
+              Email: <span className="text-white">{sessionData.customerEmail}</span>
             </p>
             <p className="text-sm text-neutral-400">
-              Estado: <span className="text-[#00552b]/50 font-semibold">{sessionData.payment_status}</span>
+              Estado: <span className="text-[#00552b]/50 font-semibold">{sessionData.paymentStatus}</span>
             </p>
           </CardContent>
         )}

@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { ImagePlus, X, Loader2, CheckCircle2 } from 'lucide-react';
+import { videoGenApi } from '@/lib/api-client';
 
 interface VideoImageUploadProps {
   onImageUploaded: (url: string) => void;
@@ -103,21 +104,8 @@ export function VideoImageUpload({
       };
       reader.readAsDataURL(fileToUpload);
 
-      const formData = new FormData();
-      formData.append('file', fileToUpload);
-
-      const response = await fetch('/api/video-gen/upload-image', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Error al subir imagen');
-      }
-
-      onImageUploaded(data.url);
+      const data = await videoGenApi.uploadImage(fileToUpload);
+      onImageUploaded(data.imageUrl);
     } catch (err) {
       console.error('[VideoImageUpload] Error completo:', err);
       console.error('[VideoImageUpload] Tipo de archivo:', file.type, 'Nombre:', file.name);

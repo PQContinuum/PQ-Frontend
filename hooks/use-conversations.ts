@@ -1,10 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { Conversation } from '@/db/schema';
-import type { MessageWithAttachments } from '@/db/queries/conversations';
+import { conversationsApi, type Conversation, type ConversationWithMessages } from '@/lib/api-client';
 
-export type ConversationWithMessages = Conversation & {
-  messages: MessageWithAttachments[];
-};
+export type { Conversation, ConversationWithMessages };
 
 // Query keys
 export const conversationKeys = {
@@ -17,57 +14,25 @@ export const conversationKeys = {
 
 // Fetch todas las conversaciones
 async function fetchConversations(): Promise<Conversation[]> {
-  const response = await fetch('/api/conversations');
-
-  if (!response.ok) {
-    if (response.status === 401) {
-      throw new Error('Unauthorized');
-    }
-    throw new Error('Failed to fetch conversations');
-  }
-
-  const data = await response.json();
+  const data = await conversationsApi.list();
   return data.conversations;
 }
 
 // Fetch conversación específica
 async function fetchConversation(id: string): Promise<ConversationWithMessages> {
-  const response = await fetch(`/api/conversations/${id}`);
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch conversation');
-  }
-
-  const data = await response.json();
-  return data.conversation as ConversationWithMessages;
+  const data = await conversationsApi.get(id);
+  return data.conversation;
 }
 
 // Crear conversación
-async function createConversation(params: { title: string }) {
-  const response = await fetch('/api/conversations', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to create conversation');
-  }
-
-  const data = await response.json();
+async function createConversation(params: { title: string; geoCulturalContext?: string }) {
+  const data = await conversationsApi.create(params);
   return data.conversation;
 }
 
 // Eliminar conversación
 async function deleteConversation(id: string) {
-  const response = await fetch(`/api/conversations/${id}`, {
-    method: 'DELETE',
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to delete conversation');
-  }
-
+  await conversationsApi.delete(id);
   return { id };
 }
 
