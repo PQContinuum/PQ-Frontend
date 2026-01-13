@@ -2,14 +2,18 @@
 
 import * as React from 'react';
 import { motion } from 'framer-motion';
-import { User, CreditCard, Sparkles, Clock } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { User, CreditCard, Sparkles, Clock, Database, Upload, MessageSquare } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { ChatGPTImportDialog } from './ChatGPTImportDialog';
+
+// ChatGPT brand color
+const CHATGPT_GREEN = '#10a37f';
 
 interface SettingsDialogProps {
   open: boolean;
@@ -68,8 +72,8 @@ export function SettingsDialog({
   userEmail,
   userPlan,
 }: SettingsDialogProps) {
-  const [activeTab, setActiveTab] = React.useState<'account' | 'plans'>('account');
-  const router = useRouter();
+  const [activeTab, setActiveTab] = React.useState<'account' | 'plans' | 'data'>('account');
+  const [importDialogOpen, setImportDialogOpen] = React.useState(false);
   const planColors = getPlanColors(userPlan);
 
   return (
@@ -106,6 +110,18 @@ export function SettingsDialog({
               >
                 <CreditCard className="size-4" />
                 <span>Planes</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('data')}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                  activeTab === 'data'
+                    ? 'bg-white text-[#00552b] shadow-sm'
+                    : 'text-[#4c4c4c] hover:bg-white/50'
+                }`}
+              >
+                <Database className="size-4" />
+                <span>Datos</span>
               </button>
             </nav>
           </div>
@@ -302,9 +318,108 @@ export function SettingsDialog({
                   )}
                 </motion.div>
               )}
+
+              {activeTab === 'data' && (
+                <motion.div
+                  key="data"
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="space-y-6"
+                >
+                  <div>
+                    <h3 className="text-lg font-bold text-[#111111] mb-1">
+                      Gestión de Datos
+                    </h3>
+                    <p className="text-sm text-[#4c4c4c]">
+                      Importa y exporta tus conversaciones
+                    </p>
+                  </div>
+
+                  {/* Import from ChatGPT */}
+                  <div className="bg-white rounded-xl p-5 border border-black/10 shadow-sm">
+                    <div className="flex items-start gap-4">
+                      <div
+                        className="p-3 rounded-xl shrink-0"
+                        style={{ backgroundColor: `${CHATGPT_GREEN}15` }}
+                      >
+                        <MessageSquare
+                          className="size-6"
+                          style={{ color: CHATGPT_GREEN }}
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-bold text-[#111111] mb-1">
+                          Importar desde ChatGPT
+                        </h4>
+                        <p className="text-xs text-[#4c4c4c] mb-4 leading-relaxed">
+                          Importa todas tus conversaciones de ChatGPT a Continuum AI.
+                          Soporta archivos ZIP (export completo) o JSON (conversations.json).
+                        </p>
+                        <Button
+                          onClick={() => setImportDialogOpen(true)}
+                          className="gap-2"
+                          style={{ backgroundColor: CHATGPT_GREEN }}
+                        >
+                          <Upload className="size-4" />
+                          Importar conversaciones
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Export Data - Coming Soon */}
+                  <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
+                    <div className="flex items-start gap-4">
+                      <div className="bg-gray-200 p-3 rounded-xl shrink-0">
+                        <Database className="size-6 text-gray-500" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-bold text-[#111111] mb-1">
+                          Exportar tus datos
+                        </h4>
+                        <p className="text-xs text-[#4c4c4c] mb-4 leading-relaxed">
+                          Descarga todas tus conversaciones y datos de Continuum AI.
+                        </p>
+                        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-neutral-500">
+                          <Clock className="size-3" />
+                          Coming Soon
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Data Info */}
+                  <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                    <h5 className="text-xs font-bold text-blue-700 uppercase tracking-wide mb-2">
+                      Sobre tus datos
+                    </h5>
+                    <ul className="space-y-2 text-xs text-blue-800">
+                      <li className="flex items-start gap-2">
+                        <span className="text-blue-600 mt-0.5">•</span>
+                        <span>Tus conversaciones se almacenan de forma segura y encriptada</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-blue-600 mt-0.5">•</span>
+                        <span>Puedes eliminar cualquier conversación en cualquier momento</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-blue-600 mt-0.5">•</span>
+                        <span>Al importar, los datos originales de ChatGPT no se modifican</span>
+                      </li>
+                    </ul>
+                  </div>
+                </motion.div>
+              )}
             </div>
           </div>
         </div>
+
+        {/* ChatGPT Import Dialog */}
+        <ChatGPTImportDialog
+          open={importDialogOpen}
+          onOpenChange={setImportDialogOpen}
+        />
       </DialogContent>
     </Dialog>
   );

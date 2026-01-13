@@ -357,6 +357,26 @@ export const conversationsApi = {
     apiPost<{ facts: unknown[]; extracted: number }>(
       `/conversations/${conversationId}/extract-facts`
     ),
+
+  /**
+   * Import conversations from ChatGPT export
+   */
+  importFromChatGPT: (data: {
+    conversations: unknown[];
+    skipDuplicates?: boolean;
+    preserveTimestamps?: boolean;
+  }) =>
+    apiPost<{
+      success: boolean;
+      conversationsImported: number;
+      conversationsSkipped: number;
+      totalMessagesImported: number;
+      errors: Array<{
+        conversationTitle: string;
+        error: string;
+        conversationId?: string;
+      }>;
+    }>('/conversations/import/chatgpt', data),
 };
 
 // ============================================================================
