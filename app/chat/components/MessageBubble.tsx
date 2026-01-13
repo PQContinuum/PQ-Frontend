@@ -547,16 +547,16 @@ const CodeBlock = ({
   };
 
   return (
-    <div className="group relative">
+    <div className="group relative max-w-full overflow-hidden">
       <button
         type="button"
         onClick={handleCopy}
-        className="absolute right-3 top-3 rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-medium text-[#111111] opacity-0 shadow-sm transition group-hover:opacity-100"
+        className="absolute right-3 top-3 rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-medium text-[#111111] opacity-0 shadow-sm transition group-hover:opacity-100 z-10"
       >
         {copied ? 'Copied' : 'Copy'}
       </button>
-      <pre className="overflow-x-auto rounded-2xl border border-black/10 bg-[#f7f7f7] p-4 text-sm text-[#111111]">
-        <code className={`language-${language}`}>{value}</code>
+      <pre className="overflow-x-auto rounded-2xl border border-black/10 bg-[#f7f7f7] p-4 text-sm text-[#111111] max-w-full">
+        <code className={`language-${language} whitespace-pre-wrap break-all`}>{value}</code>
       </pre>
     </div>
   );
@@ -953,20 +953,20 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
   }
 
   return (
-    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
-      <div className="flex flex-col gap-1">
+    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} w-full`}>
+      <div className="flex flex-col gap-1 max-w-[85%] md:max-w-[75%] min-w-0">
         <div
-          className={`inline-flex max-w-full rounded-4xl border px-4 py-2 text-[15px] leading-relaxed ${
+          className={`rounded-4xl border px-4 py-2 text-[15px] leading-relaxed overflow-hidden ${
             isUser
               ? 'border-transparent bg-[#00552b] text-white font-medium'
               : 'border-transparent bg-transparent text-black'
           }`}
         >
-          <div className="flex w-full flex-col gap-2">
+          <div className="flex w-full flex-col gap-2 min-w-0">
             {isUser && attachments && attachments.length > 0 && (
               <AttachmentsPreview attachments={attachments} />
             )}
-            <div className="markdown prose prose-sm max-w-none text-current prose-headings:text-[#111111] prose-strong:text-[#111111]">
+            <div className="markdown prose prose-sm max-w-full text-current prose-headings:text-[#111111] prose-strong:text-[#111111] break-words overflow-hidden">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 rehypePlugins={[rehypeHighlight]}
@@ -999,11 +999,11 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
                       {...props}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="font-medium text-[#111111] underline underline-offset-4"
+                      className="font-medium text-[#111111] underline underline-offset-4 break-all"
                     />
                   ),
-                  ul: (props) => <ul {...props} className="list-disc pl-6" />,
-                  ol: (props) => <ol {...props} className="list-decimal pl-6" />,
+                  ul: (props) => <ul {...props} className="list-disc pl-6 overflow-hidden" />,
+                  ol: (props) => <ol {...props} className="list-decimal pl-6 overflow-hidden" />,
                   img: (props) => <ChatImage {...props} />,
                 }}
               >

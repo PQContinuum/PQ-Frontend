@@ -17,10 +17,19 @@ export interface ChatGPTAuthor {
 }
 
 /**
- * Content part of a message (can be text, image, etc.)
+ * Content part of a message (can be text, image, audio, etc.)
  */
 export interface ChatGPTContentPart {
-  content_type: 'text' | 'image_asset_pointer' | 'code' | 'execution_output' | 'tether_browsing_display' | 'tether_quote' | 'system_error';
+  content_type:
+    | 'text'
+    | 'image_asset_pointer'
+    | 'audio_asset_pointer'
+    | 'real_time_user_audio_video_asset_pointer'
+    | 'code'
+    | 'execution_output'
+    | 'tether_browsing_display'
+    | 'tether_quote'
+    | 'system_error';
   text?: string;
   asset_pointer?: string;
   language?: string;
@@ -28,6 +37,13 @@ export interface ChatGPTContentPart {
   title?: string;
   url?: string;
   domain?: string;
+  // Audio-specific fields
+  audio_asset_pointer?: {
+    asset_pointer: string;
+    content_type?: string;
+    size_bytes?: number;
+    format?: string;
+  };
 }
 
 /**
@@ -195,6 +211,26 @@ export interface ChatGPTImportResult {
 }
 
 /**
+ * Media mapping entry - maps ChatGPT asset_pointer to uploaded attachment
+ */
+export interface MediaMappingEntry {
+  assetPointer: string; // e.g., "sediment://file_XXX"
+  attachmentId: string; // UUID returned from upload
+  mediaType: 'image' | 'audio';
+}
+
+/**
+ * Extracted media file from ZIP
+ */
+export interface ExtractedMediaFile {
+  assetPointer: string;
+  file: File;
+  mediaType: 'image' | 'audio';
+  fileName: string;
+  size: number;
+}
+
+/**
  * Request body for the import endpoint
  */
 export interface ChatGPTImportRequest {
@@ -202,6 +238,7 @@ export interface ChatGPTImportRequest {
   skipDuplicates?: boolean;
   preserveTimestamps?: boolean;
   fileMetadata?: ImportFileMetadata;
+  mediaMapping?: MediaMappingEntry[];
 }
 
 // ============================================================================
@@ -277,6 +314,7 @@ export type ImportDialogState =
   | 'initial'      // Show instructions and upload area
   | 'parsing'      // Processing the uploaded file
   | 'preview'      // Show preview and options
+  | 'uploading'    // Uploading media files
   | 'importing'    // Import in progress
   | 'completed'    // Show results
   | 'error';       // Show error state
@@ -285,4 +323,10 @@ export interface ImportProgress {
   current: number;
   total: number;
   message: string;
+}
+
+export interface UploadProgress {
+  current: number;
+  total: number;
+  currentFile: string;
 }

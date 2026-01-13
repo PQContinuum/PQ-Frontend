@@ -17,6 +17,9 @@ import {
   FileArchive,
   SkipForward,
   AlertTriangle,
+  Image,
+  Music,
+  HardDrive,
 } from 'lucide-react';
 import {
   Dialog,
@@ -41,7 +44,19 @@ import type {
   ChatGPTImportResult,
   ChatGPTMappingNode,
   ImportFileMetadata,
+  ExtractedMediaFile,
+  MediaMappingEntry,
+  UploadProgress,
 } from '@/types/chatgpt-export.types';
+import {
+  extractChatGPTZip,
+  getMediaSummary,
+  formatFileSize as formatMediaSize,
+} from '@/lib/chatgpt-media-extractor';
+import {
+  uploadMediaFiles,
+  type FailedUpload,
+} from '@/lib/import-media-uploader';
 
 interface ChatGPTImportDialogProps {
   open: boolean;
@@ -140,6 +155,14 @@ export function ChatGPTImportDialog({ open, onOpenChange }: ChatGPTImportDialogP
   } | null>(null);
   const [importResult, setImportResult] = useState<ChatGPTImportResult | null>(null);
 
+  // Media state
+  const [extractedMedia, setExtractedMedia] = useState<ExtractedMediaFile[]>([]);
+  const [missingMedia, setMissingMedia] = useState<string[]>([]);
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
+  const [mediaMapping, setMediaMapping] = useState<MediaMappingEntry[]>([]);
+  const [failedUploads, setFailedUploads] = useState<FailedUpload[]>([]);
+  const [zipFile, setZipFile] = useState<File | null>(null);
+
   // Import options
   const [skipDuplicates, setSkipDuplicates] = useState(true);
   const [preserveTimestamps, setPreserveTimestamps] = useState(true);
@@ -154,6 +177,13 @@ export function ChatGPTImportDialog({ open, onOpenChange }: ChatGPTImportDialogP
     setImportResult(null);
     setSkipDuplicates(true);
     setPreserveTimestamps(true);
+    // Reset media state
+    setExtractedMedia([]);
+    setMissingMedia([]);
+    setUploadProgress(null);
+    setMediaMapping([]);
+    setFailedUploads([]);
+    setZipFile(null);
   }, []);
 
   const handleClose = useCallback(() => {
@@ -182,23 +212,28 @@ export function ChatGPTImportDialog({ open, onOpenChange }: ChatGPTImportDialogP
       let jsonData: ChatGPTExportConversation[];
 
       if (file.name.endsWith('.zip')) {
-        // Dynamically import JSZip to avoid SSR issues
-        const JSZip = (await import('jszip')).default;
+        // Store zip file for later media upload
+        setZipFile(file);
 
-        // Extract ZIP file
-        const zip = await JSZip.loadAsync(file);
-        const conversationsFile = zip.file('conversations.json');
+        // Use the media extractor to get conversations AND media files
+        const extractionResult = await extractChatGPTZip(file);
+        jsonData = extractionResult.conversations;
 
-        if (!conversationsFile) {
-          throw new Error('El archivo ZIP no contiene "conversations.json". Asegúrate de subir el archivo ZIP completo exportado desde ChatGPT.');
-        }
+        // Store extracted media info
+        setExtractedMedia(extractionResult.mediaFiles);
+        setMissingMedia(extractionResult.missingFiles);
 
-        const jsonString = await conversationsFile.async('string');
-        jsonData = JSON.parse(jsonString);
+        console.log(
+          `[ChatGPT Import] Extracted ${extractionResult.mediaFiles.length} media files, ` +
+          `${extractionResult.missingFiles.length} missing`
+        );
       } else if (file.name.endsWith('.json')) {
-        // Parse JSON directly
+        // Parse JSON directly (no media extraction possible)
         const jsonString = await file.text();
         jsonData = JSON.parse(jsonString);
+        setZipFile(null);
+        setExtractedMedia([]);
+        setMissingMedia([]);
       } else {
         throw new Error('Formato de archivo no soportado. Por favor sube un archivo .zip o .json');
       }
@@ -260,14 +295,43 @@ export function ChatGPTImportDialog({ open, onOpenChange }: ChatGPTImportDialogP
   const handleImport = useCallback(async () => {
     if (!parsedData) return;
 
-    setDialogState('importing');
+    let uploadedMediaMapping: MediaMappingEntry[] = [];
 
     try {
+      // PHASE 1: Upload media files if there are any
+      if (extractedMedia.length > 0) {
+        setDialogState('uploading');
+        setUploadProgress({ current: 0, total: extractedMedia.length, currentFile: '' });
+
+        const uploadResult = await uploadMediaFiles(
+          extractedMedia,
+          setUploadProgress
+        );
+
+        uploadedMediaMapping = uploadResult.mediaMapping;
+        setMediaMapping(uploadedMediaMapping);
+        setFailedUploads(uploadResult.failedUploads);
+
+        console.log(
+          `[ChatGPT Import] Uploaded ${uploadResult.totalUploaded}/${extractedMedia.length} files`
+        );
+
+        if (uploadResult.failedUploads.length > 0) {
+          console.warn(
+            `[ChatGPT Import] ${uploadResult.failedUploads.length} files failed to upload`
+          );
+        }
+      }
+
+      // PHASE 2: Import conversations with media mapping
+      setDialogState('importing');
+
       const result = await importMutation.mutateAsync({
         conversations: parsedData.conversations,
         skipDuplicates,
         preserveTimestamps,
         fileMetadata: fileMetadata || undefined,
+        mediaMapping: uploadedMediaMapping.length > 0 ? uploadedMediaMapping : undefined,
       });
 
       // Log the result for debugging
@@ -280,7 +344,7 @@ export function ChatGPTImportDialog({ open, onOpenChange }: ChatGPTImportDialogP
       setError(err instanceof Error ? err.message : 'Error al importar las conversaciones');
       setDialogState('error');
     }
-  }, [parsedData, skipDuplicates, preserveTimestamps, fileMetadata, importMutation]);
+  }, [parsedData, skipDuplicates, preserveTimestamps, fileMetadata, importMutation, extractedMedia]);
 
   // Normalize result for display
   const normalizedResult = importResult ? normalizeImportResult(importResult) : null;
@@ -408,13 +472,13 @@ export function ChatGPTImportDialog({ open, onOpenChange }: ChatGPTImportDialogP
                   </div>
                 </div>
 
-                {/* Note about images */}
-                <div className="flex items-start gap-3 p-4 bg-amber-50 rounded-xl border border-amber-200">
-                  <AlertCircle className="size-5 text-amber-600 shrink-0 mt-0.5" />
-                  <div className="text-sm text-amber-800">
-                    <p className="font-medium">Nota importante</p>
-                    <p className="mt-1 text-amber-700">
-                      Las imágenes incluidas en tus conversaciones de ChatGPT no se importan debido a limitaciones del formato de exportación.
+                {/* Note about media */}
+                <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-xl border border-blue-200">
+                  <CheckCircle2 className="size-5 text-blue-600 shrink-0 mt-0.5" />
+                  <div className="text-sm text-blue-800">
+                    <p className="font-medium">Importación de multimedia</p>
+                    <p className="mt-1 text-blue-700">
+                      Las imágenes y audios de tus conversaciones se importarán automáticamente si subes el archivo ZIP completo exportado desde ChatGPT.
                     </p>
                   </div>
                 </div>
@@ -496,6 +560,56 @@ export function ChatGPTImportDialog({ open, onOpenChange }: ChatGPTImportDialogP
                     </p>
                   </div>
                 </div>
+
+                {/* Media Summary - Only show if there are media files */}
+                {extractedMedia.length > 0 && (() => {
+                  const mediaSummary = getMediaSummary(extractedMedia);
+                  return (
+                    <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-xl p-4 border border-purple-200/50">
+                      <div className="flex items-center gap-2 mb-3">
+                        <HardDrive className="size-4 text-purple-600" />
+                        <span className="text-xs font-semibold text-purple-600 uppercase tracking-wide">
+                          Archivos multimedia
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-around">
+                        {mediaSummary.images > 0 && (
+                          <div className="text-center">
+                            <div className="flex items-center gap-1.5 justify-center mb-1">
+                              <Image className="size-4 text-purple-600" />
+                              <span className="text-2xl font-bold text-[#111111]">
+                                {mediaSummary.images}
+                              </span>
+                            </div>
+                            <span className="text-xs text-purple-600">Imágenes</span>
+                          </div>
+                        )}
+                        {mediaSummary.audio > 0 && (
+                          <div className="text-center">
+                            <div className="flex items-center gap-1.5 justify-center mb-1">
+                              <Music className="size-4 text-purple-600" />
+                              <span className="text-2xl font-bold text-[#111111]">
+                                {mediaSummary.audio}
+                              </span>
+                            </div>
+                            <span className="text-xs text-purple-600">Audios</span>
+                          </div>
+                        )}
+                        <div className="text-center">
+                          <span className="text-lg font-bold text-[#111111]">
+                            {formatMediaSize(mediaSummary.totalSize)}
+                          </span>
+                          <p className="text-xs text-purple-600">Total</p>
+                        </div>
+                      </div>
+                      {missingMedia.length > 0 && (
+                        <p className="text-xs text-amber-600 mt-2 text-center">
+                          {missingMedia.length} archivos no encontrados en el ZIP
+                        </p>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* Conversation Preview List */}
                 <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
@@ -587,6 +701,39 @@ export function ChatGPTImportDialog({ open, onOpenChange }: ChatGPTImportDialogP
               </motion.div>
             )}
 
+            {/* UPLOADING STATE: Media upload progress */}
+            {dialogState === 'uploading' && uploadProgress && (
+              <motion.div
+                key="uploading"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="flex flex-col items-center justify-center py-12"
+              >
+                <div className="relative mb-6">
+                  <div className="absolute inset-0 bg-purple-500/20 rounded-full blur-xl animate-pulse" />
+                  <div className="relative bg-purple-100 p-4 rounded-full">
+                    <Upload className="size-8 text-purple-600 animate-bounce" />
+                  </div>
+                </div>
+                <p className="text-lg font-semibold text-[#111111] mb-2">
+                  Subiendo archivos multimedia...
+                </p>
+                <p className="text-sm text-[#4c4c4c] mb-4 text-center">
+                  {uploadProgress.current} de {uploadProgress.total} archivos
+                </p>
+                <div className="w-full max-w-xs mb-2">
+                  <Progress
+                    value={(uploadProgress.current / uploadProgress.total) * 100}
+                    className="h-2"
+                  />
+                </div>
+                <p className="text-xs text-[#4c4c4c] truncate max-w-xs">
+                  {uploadProgress.currentFile}
+                </p>
+              </motion.div>
+            )}
+
             {/* IMPORTING STATE: Progress */}
             {dialogState === 'importing' && (
               <motion.div
@@ -651,6 +798,37 @@ export function ChatGPTImportDialog({ open, onOpenChange }: ChatGPTImportDialogP
                     </p>
                   </div>
                 </div>
+
+                {/* Media Upload Results */}
+                {mediaMapping.length > 0 && (
+                  <div className="bg-purple-50 rounded-xl p-4 border border-purple-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <HardDrive className="size-4 text-purple-600" />
+                      <span className="text-sm font-bold text-purple-700">
+                        Archivos multimedia importados
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-4 text-sm">
+                      <div className="flex items-center gap-1.5">
+                        <Image className="size-4 text-purple-600" />
+                        <span className="text-purple-700">
+                          {mediaMapping.filter(m => m.mediaType === 'image').length} imágenes
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Music className="size-4 text-purple-600" />
+                        <span className="text-purple-700">
+                          {mediaMapping.filter(m => m.mediaType === 'audio').length} audios
+                        </span>
+                      </div>
+                    </div>
+                    {failedUploads.length > 0 && (
+                      <p className="text-xs text-amber-600 mt-2">
+                        {failedUploads.length} archivos no se pudieron subir
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {/* Skipped breakdown */}
                 {normalizedResult.totalSkipped > 0 && (

@@ -49,7 +49,7 @@ export const ChatWindow = memo(function ChatWindow() {
   return (
     <div
       ref={containerRef}
-      className="space-y-4"
+      className="space-y-4 overflow-x-hidden"
     >
       {messages.map((message, index) => (
         <div key={message.id}>

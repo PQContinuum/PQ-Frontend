@@ -6,6 +6,7 @@ import type {
   ChatGPTImportResult,
   ImportFileMetadata,
   ImportHistoryResponse,
+  MediaMappingEntry,
 } from '@/types/chatgpt-export.types';
 
 // ============================================================================
@@ -26,6 +27,7 @@ interface ImportChatGPTParams {
   skipDuplicates?: boolean;
   preserveTimestamps?: boolean;
   fileMetadata?: ImportFileMetadata;
+  mediaMapping?: MediaMappingEntry[];
 }
 
 /**
@@ -42,6 +44,7 @@ export function useChatGPTImport() {
         skipDuplicates: params.skipDuplicates ?? true,
         preserveTimestamps: params.preserveTimestamps ?? true,
         fileMetadata: params.fileMetadata,
+        mediaMapping: params.mediaMapping,
       });
       return result;
     },
