@@ -42,10 +42,11 @@ export function HeroSection() {
         {/* Logo */}
         <div className="mb-8 flex justify-center animate-fade-in">
           <Image
-            src="/images/logo.svg"
+            src="/apple-touch-icon.png"
             alt="Continuum AI Logo"
             width={100}
             height={100}
+            className="rounded-2xl"
           />
         </div>
 

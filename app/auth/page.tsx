@@ -135,11 +135,11 @@ export default function AuthPage() {
               transition={{ duration: 0.5 }}
             >
               <Image
-                src="/images/logo.svg"
-                alt="PQ Logo"
+                src="/apple-touch-icon.png"
+                alt="Continuum AI Logo"
                 width={60}
                 height={60}
-                className="size-16"
+                className="size-16 rounded-xl"
               />
             </motion.div>
             <h1 className="text-2xl font-bold text-[#111111]">

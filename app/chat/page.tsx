@@ -234,11 +234,11 @@ export default function ChatPage() {
           >
             <div className="flex aspect-square size-12 items-center justify-center rounded-lg">
               <Image
-                src="/images/logo.svg"
-                alt="PQ Logo"
+                src="/apple-touch-icon.png"
+                alt="Continuum AI Logo"
                 width={36}
                 height={36}
-                className="size-10"
+                className="size-10 rounded-lg"
               />
             </div>
             <span className="text-xl font-bold text-[#111111] group-data-[collapsible=icon]:hidden">

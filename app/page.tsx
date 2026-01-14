@@ -24,10 +24,11 @@ export default function HomePage() {
       <footer className="bg-black text-white border-t border-white/10">
         <div className="container mx-auto px-6 py-10 flex flex-col items-center gap-4">
           <Image
-            src="/images/logo.svg"
+            src="/apple-touch-icon.png"
             alt="Continuum AI"
             width={60}
             height={60}
+            className="rounded-xl"
             priority
           />
           <p className="text-sm text-white/80">

@@ -26,7 +26,7 @@ import {
   TrendingUp,
   Users,
 } from "lucide-react";
-import { Logo } from "@/components/logo";
+import Image from "next/image";
 import type { Route } from "./nav-main";
 import DashboardNavigation from "@/components/nav-main";
 import { NotificationsPopover } from "@/components/nav-notifications";
@@ -171,10 +171,21 @@ const dashboardRoutes: Route[] = [
   },
 ];
 
+// Logo component for team switcher
+const TeamLogo = ({ className }: { className?: string }) => (
+  <Image
+    src="/apple-touch-icon.png"
+    alt="Team Logo"
+    width={16}
+    height={16}
+    className={`rounded ${className || ""}`}
+  />
+);
+
 const teams = [
-  { id: "1", name: "Alpha Inc.", logo: Logo, plan: "Free" },
-  { id: "2", name: "Beta Corp.", logo: Logo, plan: "Free" },
-  { id: "3", name: "Gamma Tech", logo: Logo, plan: "Free" },
+  { id: "1", name: "Alpha Inc.", logo: TeamLogo, plan: "Free" },
+  { id: "2", name: "Beta Corp.", logo: TeamLogo, plan: "Free" },
+  { id: "3", name: "Gamma Tech", logo: TeamLogo, plan: "Free" },
 ];
 
 export function DashboardSidebar() {
@@ -192,10 +203,16 @@ export function DashboardSidebar() {
         )}
       >
         <a href="#" className="flex items-center gap-2">
-          <Logo className="h-8 w-8" />
+          <Image
+            src="/apple-touch-icon.png"
+            alt="Continuum AI Logo"
+            width={32}
+            height={32}
+            className="rounded-lg"
+          />
           {!isCollapsed && (
             <span className="font-semibold text-black dark:text-white">
-              Acme
+              Continuum AI
             </span>
           )}
         </a>
