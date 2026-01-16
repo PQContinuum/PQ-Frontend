@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export function FinalCTASection() {
   const [isLoading, setIsLoading] = useState(false);
@@ -14,7 +14,7 @@ export function FinalCTASection() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const supabase = createSupabaseBrowserClient();
+        const supabase = getSupabaseBrowserClient();
         const { data: { user } } = await supabase.auth.getUser();
         setRedirectPath(user ? "/chat" : "/auth");
       } catch (error) {

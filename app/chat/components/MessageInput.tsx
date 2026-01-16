@@ -12,6 +12,8 @@ import {
 import { ArrowUp, MapPin, Paperclip, Plus, Check, Loader2, Image, X, ChevronDown, Lock, Mic, Square, Sparkles, Video, Blend } from 'lucide-react';
 import { VideoImageUpload } from './VideoImageUpload';
 import { ImageReferenceUpload } from './ImageReferenceUpload';
+import { GalleryOptionsPanel } from './GalleryOptionsPanel';
+import type { GalleryOptions } from '@/lib/api-client';
 import { useShallow } from 'zustand/react/shallow';
 import { FileUpload } from './FileUpload';
 import {
@@ -152,6 +154,7 @@ export const MessageInput = memo(function MessageInput() {
   const [showStylePicker, setShowStylePicker] = useState(false);
   const [imageReferenceUrl, setImageReferenceUrl] = useState<string>('');
   const [imageStrength, setImageStrength] = useState<number>(0.75);
+  const [imageGalleryOptions, setImageGalleryOptions] = useState<GalleryOptions>({ isPublic: false });
 
   const {
     generate: generateImage,
@@ -166,6 +169,7 @@ export const MessageInput = memo(function MessageInput() {
   const [videoDuration, setVideoDuration] = useState<VideoDuration>('5');
   const [videoModeType, setVideoModeType] = useState<VideoMode>('text-to-video');
   const [videoImageUrl, setVideoImageUrl] = useState<string>('');
+  const [videoGalleryOptions, setVideoGalleryOptions] = useState<GalleryOptions>({ isPublic: false });
 
   const {
     generate: generateVideo,
@@ -413,6 +417,7 @@ export const MessageInput = memo(function MessageInput() {
             stylePreset: imageStylePreset,
             referenceImageUrl: imageReferenceUrl || undefined,
             imageStrength: imageReferenceUrl ? imageStrength : undefined,
+            galleryOptions: imageGalleryOptions,
           },
           // Handle partial images
           (partialImg) => {
@@ -425,6 +430,7 @@ export const MessageInput = memo(function MessageInput() {
           stylePreset: imageStylePreset,
           referenceImageUrl: imageReferenceUrl || undefined,
           imageStrength: imageReferenceUrl ? imageStrength : undefined,
+          galleryOptions: imageGalleryOptions,
         });
 
     let assistantContent: string;
@@ -459,7 +465,7 @@ export const MessageInput = memo(function MessageInput() {
 
     setStreaming(false);
     stopGeneration();
-  }, [input, imageSize, imageQuality, imageStylePreset, imageReferenceUrl, imageStrength, generateImage, generateWithStreaming, isGeneratingImage, addMessage, updateMessage, updateMessageGenerationState, setStreaming, startGeneration, stopGeneration, imageUsage, conversationId, createConversationMutation, setConversationId, queryClient]);
+  }, [input, imageSize, imageQuality, imageStylePreset, imageReferenceUrl, imageStrength, imageGalleryOptions, generateImage, generateWithStreaming, isGeneratingImage, addMessage, updateMessage, updateMessageGenerationState, setStreaming, startGeneration, stopGeneration, imageUsage, conversationId, createConversationMutation, setConversationId, queryClient]);
 
   // Handle video generation
   const handleGenerateVideo = useCallback(async () => {
@@ -532,6 +538,7 @@ export const MessageInput = memo(function MessageInput() {
       aspectRatio: videoAspectRatio,
       generateAudio: true,
       conversationId: currentConversationId || undefined,
+      galleryOptions: videoGalleryOptions,
       // No pasamos messageId porque el mensaje aún no existe en BD
     });
 
@@ -584,7 +591,7 @@ export const MessageInput = memo(function MessageInput() {
     // system handles it independently.
     setStreaming(false);
     stopGeneration();
-  }, [input, videoModeType, videoImageUrl, videoDuration, videoAspectRatio, generateVideo, isGeneratingVideo, addMessage, updateMessage, updateMessageGenerationState, setStreaming, startGeneration, stopGeneration, conversationId, createConversationMutation, setConversationId, queryClient]);
+  }, [input, videoModeType, videoImageUrl, videoDuration, videoAspectRatio, videoGalleryOptions, generateVideo, isGeneratingVideo, addMessage, updateMessage, updateMessageGenerationState, setStreaming, startGeneration, stopGeneration, conversationId, createConversationMutation, setConversationId, queryClient]);
 
   const submitMessage = useCallback(
     async (event?: FormEvent<HTMLFormElement>) => {
@@ -1194,6 +1201,17 @@ export const MessageInput = memo(function MessageInput() {
                   </span>
                 )}
               </div>
+
+              {/* Gallery Options */}
+              <div className="mt-3">
+                <GalleryOptionsPanel
+                  options={imageGalleryOptions}
+                  onChange={setImageGalleryOptions}
+                  mediaType="image"
+                  disabled={isLoading}
+                  compact
+                />
+              </div>
             </div>
           )}
 
@@ -1357,6 +1375,17 @@ export const MessageInput = memo(function MessageInput() {
                     {videoUsage.remainingToday}/{videoUsage.dailyLimit} hoy
                   </span>
                 )}
+              </div>
+
+              {/* Gallery Options */}
+              <div className="mt-3">
+                <GalleryOptionsPanel
+                  options={videoGalleryOptions}
+                  onChange={setVideoGalleryOptions}
+                  mediaType="video"
+                  disabled={isLoading}
+                  compact
+                />
               </div>
             </div>
           )}

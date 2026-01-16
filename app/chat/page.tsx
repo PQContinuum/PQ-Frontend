@@ -55,7 +55,7 @@ import { TTSSettingsModal } from './components/TTSSettingsModal';
 import { PendingJobsBanner } from './components/PendingJobsBanner';
 import { FeedbackWidget } from '@/components/feedback-widget';
 import { useMessages, useReplaceMessages, useSetConversationId } from './store';
-import { createSupabaseBrowserClient } from '@/lib/supabase';
+import { getSupabaseBrowserClient } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { useUserPlan } from '@/hooks/use-user-plan';
 
@@ -161,7 +161,7 @@ export default function ChatPage() {
 
   React.useEffect(() => {
     const getUserData = async () => {
-      const supabase = createSupabaseBrowserClient();
+      const supabase = getSupabaseBrowserClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (user?.email) {
         setUserEmail(user.email);
@@ -192,7 +192,7 @@ export default function ChatPage() {
   const handleLogout = React.useCallback(async () => {
     setIsLoggingOut(true);
     try {
-      const supabase = createSupabaseBrowserClient();
+      const supabase = getSupabaseBrowserClient();
       await supabase.auth.signOut();
       router.push('/auth');
       router.refresh();
