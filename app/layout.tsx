@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     siteName: "Continuum AI",
     images: [
       {
-        url: "/images/preview1.png",
+        url: "/images/preview1.jpg",
         width: 1200,
         height: 630,
         alt: "Continuum AI Preview",
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Continuum AI",
     description: "Asistente AI para un pensamiento natural.",
-    images: ["/images/preview1.png"],
+    images: ["/images/preview1.jpg"],
   },
 
   icons: {

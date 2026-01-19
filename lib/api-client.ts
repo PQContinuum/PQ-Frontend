@@ -65,7 +65,72 @@ export async function getAuthHeadersForUpload(): Promise<HeadersInit> {
 // ERROR HANDLING
 // ============================================================================
 
+/**
+ * Translates API error messages into user-friendly Spanish messages
+ */
+function getUserFriendlyErrorMessage(
+  statusCode: number,
+  originalMessage: string
+): string {
+  // Payment/Plan related errors (403)
+  if (statusCode === 403) {
+    const planKeywords = [
+      'plan',
+      'suscripción',
+      'subscription',
+      'pago',
+      'payment',
+      'premium',
+      'upgrade',
+      'requiere',
+      'requires',
+    ];
+    const lowerMessage = originalMessage.toLowerCase();
+    if (planKeywords.some((keyword) => lowerMessage.includes(keyword))) {
+      return 'Esta función no está disponible en tu plan actual. Actualiza tu suscripción para acceder a todas las funciones.';
+    }
+    return 'No tienes permisos para realizar esta acción.';
+  }
+
+  // Validation errors (400)
+  if (statusCode === 400) {
+    const lowerMessage = originalMessage.toLowerCase();
+    if (lowerMessage.includes('validation') || lowerMessage.includes('invalid')) {
+      return 'Los datos enviados no son válidos. Por favor, revisa el formulario e intenta de nuevo.';
+    }
+    if (lowerMessage.includes('messages')) {
+      return 'Error al procesar el mensaje. Por favor, intenta de nuevo.';
+    }
+    return 'Solicitud inválida. Por favor, verifica los datos e intenta de nuevo.';
+  }
+
+  // Authentication errors (401)
+  if (statusCode === 401) {
+    return 'Tu sesión ha expirado. Por favor, inicia sesión de nuevo.';
+  }
+
+  // Not found (404)
+  if (statusCode === 404) {
+    return 'El recurso solicitado no existe o fue eliminado.';
+  }
+
+  // Rate limiting (429)
+  if (statusCode === 429) {
+    return 'Has realizado demasiadas solicitudes. Por favor, espera un momento antes de intentar de nuevo.';
+  }
+
+  // Server errors (500+)
+  if (statusCode >= 500) {
+    return 'Error del servidor. Por favor, intenta de nuevo más tarde.';
+  }
+
+  // Return original message if no specific translation
+  return originalMessage;
+}
+
 export class ApiError extends Error {
+  public userMessage: string;
+
   constructor(
     public statusCode: number,
     public statusText: string,
@@ -74,6 +139,7 @@ export class ApiError extends Error {
   ) {
     super(message);
     this.name = "ApiError";
+    this.userMessage = getUserFriendlyErrorMessage(statusCode, message);
   }
 }
 
@@ -289,6 +355,9 @@ export interface GenerationJob {
   progressMessage?: string;
   createdAt: string;
   completedAt?: string;
+  // Optimized preview fields for fast loading
+  thumbnailUrl?: string;
+  previewUrl?: string;
 }
 
 export interface UserPlan {

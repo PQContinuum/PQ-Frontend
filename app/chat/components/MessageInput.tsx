@@ -35,7 +35,7 @@ import {
 import { useCreateConversation } from '@/hooks/use-conversations';
 import { useQueryClient } from '@tanstack/react-query';
 import { conversationKeys } from '@/hooks/use-conversations';
-import { chatApi, conversationsApi } from '@/lib/api-client';
+import { chatApi, conversationsApi, ApiError } from '@/lib/api-client';
 import { usePreciseLocation } from '@/hooks/use-precise-location';
 import { LocationPermissionDialog } from './LocationPermissionDialog';
 import { LocationMapConfirmDialog } from './LocationMapConfirmDialog';
@@ -817,8 +817,10 @@ export const MessageInput = memo(function MessageInput() {
             }
           }
         } else {
-          const message =
-            err instanceof Error
+          // Use userMessage from ApiError for user-friendly error messages
+          const message = err instanceof ApiError
+            ? err.userMessage
+            : err instanceof Error
               ? err.message
               : 'Ocurrió un problema al contactar con el asistente.';
           updateMessage(assistantMessageId, () => message);

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { imageGenApi, GalleryOptions } from '@/lib/api-client';
+import { imageGenApi, GalleryOptions, ApiError } from '@/lib/api-client';
 import type { ImageGenQuality, ImageGenSize } from '@/lib/memory/plan-limits';
 
 interface ImageGenState {
@@ -133,7 +133,12 @@ export function useImageGeneration(): UseImageGenerationReturn {
         return { success: true, url: imageResult.url, revisedPrompt: imageResult.revisedPrompt };
       } catch (error) {
         console.error('[useImageGeneration] Error:', error);
-        const errorMsg = error instanceof Error ? error.message : 'Error al generar imagen';
+        // Use userMessage from ApiError for user-friendly error messages
+        const errorMsg = error instanceof ApiError
+          ? error.userMessage
+          : error instanceof Error
+            ? error.message
+            : 'Error al generar imagen';
         setState({
           isGenerating: false,
           error: errorMsg,

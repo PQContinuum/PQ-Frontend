@@ -152,12 +152,15 @@ interface ChatVideoProps {
   jobId?: string | null;
   isPublic?: boolean;
   prompt?: string;
+  thumbnailUrl?: string | null; // Poster image for fast initial load
+  previewUrl?: string | null; // Animated preview (hover)
 }
 
-const ChatVideo = ({ src, jobId, isPublic, prompt }: ChatVideoProps) => {
+const ChatVideo = ({ src, jobId, isPublic, prompt, thumbnailUrl, previewUrl }: ChatVideoProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [isHovering, setIsHovering] = useState(false);
   const [galleryStatus, setGalleryStatus] = useState<{ isPublic: boolean; title?: string } | null>(
     isPublic !== undefined ? { isPublic } : null
   );
@@ -204,19 +207,44 @@ const ChatVideo = ({ src, jobId, isPublic, prompt }: ChatVideoProps) => {
           {galleryStatus && <GalleryBadge isPublic={galleryStatus.isPublic} />}
         </span>
 
-        <span className="relative block group">
+        <span
+          className="relative block group"
+          onMouseEnter={() => setIsHovering(true)}
+          onMouseLeave={() => setIsHovering(false)}
+        >
+          {/* Skeleton loader while video loads */}
           {isLoading && (
-            <span className="absolute inset-0 block rounded-2xl bg-gray-100 animate-pulse aspect-video" />
+            <span className="absolute inset-0 block rounded-2xl overflow-hidden aspect-video">
+              {/* Show thumbnail or animated preview while loading */}
+              {thumbnailUrl ? (
+                <img
+                  src={isHovering && previewUrl ? previewUrl : thumbnailUrl}
+                  alt="Video preview"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="w-full h-full block bg-gray-100 animate-pulse" />
+              )}
+              {/* Play button overlay */}
+              <span className="absolute inset-0 flex items-center justify-center">
+                <span className="size-16 bg-white/90 rounded-full shadow-lg flex items-center justify-center">
+                  <svg className="size-7 text-gray-800 ml-1" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </span>
+              </span>
+            </span>
           )}
           <video
             src={src}
             controls
+            poster={thumbnailUrl || undefined}
             className={`w-full rounded-2xl shadow-lg transition-opacity duration-300 ${
               isLoading ? 'opacity-0' : 'opacity-100'
             }`}
             onLoadedData={() => setIsLoading(false)}
             onError={() => setHasError(true)}
-            preload="metadata"
+            preload={thumbnailUrl ? "none" : "metadata"}
           />
 
           {/* Hover overlay with action buttons */}
@@ -842,6 +870,8 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
             jobId={jobId}
             isPublic={jobInputData?.isPublic}
             prompt={jobInputData?.prompt}
+            thumbnailUrl={job?.thumbnailUrl}
+            previewUrl={job?.previewUrl}
           />
         </div>
       </div>
