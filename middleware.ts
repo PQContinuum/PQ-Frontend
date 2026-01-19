@@ -1,67 +1,80 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient } from "@supabase/ssr"
+import { NextResponse, type NextRequest } from "next/server"
 
-type CookieOptions = Parameters<NextResponse['cookies']['set']>[2];
+// Check if request is from production domain
+function isProductionDomain(request: NextRequest): boolean {
+  const host = request.headers.get("host") || ""
+  return host.endsWith("continuumai.app")
+}
 
 export async function middleware(request: NextRequest) {
-  const response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
-  });
+  let supabaseResponse = NextResponse.next({
+    request,
+  })
+
+  const isProduction = isProductionDomain(request)
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value;
+        getAll() {
+          return request.cookies.getAll()
         },
-        set(name: string, value: string, options?: CookieOptions) {
-          response.cookies.set(name, value, options);
-        },
-        remove(name: string, options?: CookieOptions) {
-          response.cookies.set(name, '', { ...options, maxAge: 0 });
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          )
+          supabaseResponse = NextResponse.next({
+            request,
+          })
+          cookiesToSet.forEach(({ name, value, options }) => {
+            const cookieOptions = {
+              ...options,
+              sameSite: "lax" as const,
+              secure: isProduction,
+              ...(isProduction && { domain: ".continuumai.app" }),
+            }
+            supabaseResponse.cookies.set(name, value, cookieOptions)
+          })
         },
       },
+      auth: {
+        persistSession: true,
+        detectSessionInUrl: true,
+        storageKey: "continuum-session",
+      },
     }
-  );
+  )
 
+  // Refresh session if expired
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await supabase.auth.getUser()
 
-  const protectedRoutes = ['/chat', '/payment'];
+  const protectedRoutes = ['/chat', '/payment']
   const isProtectedRoute = protectedRoutes.some(route =>
     request.nextUrl.pathname.startsWith(route)
-  );
+  )
 
   // Si el usuario no está autenticado y está intentando acceder a rutas protegidas
   if (!user && isProtectedRoute) {
-    const redirectUrl = new URL('/auth', request.url);
-    return NextResponse.redirect(redirectUrl);
+    const redirectUrl = new URL('/auth', request.url)
+    return NextResponse.redirect(redirectUrl)
   }
 
   // Si el usuario está autenticado y está en /auth, redirigir a /chat
   if (user && request.nextUrl.pathname === '/auth') {
-    const redirectUrl = new URL('/chat', request.url);
-    return NextResponse.redirect(redirectUrl);
+    const redirectUrl = new URL('/chat', request.url)
+    return NextResponse.redirect(redirectUrl)
   }
 
-  return response;
+  return supabaseResponse
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
-};
+}

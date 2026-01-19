@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { imageGenApi } from '@/lib/api-client';
+import { imageGenApi, GalleryOptions, ApiError } from '@/lib/api-client';
 import type { ImageGenQuality, ImageGenSize } from '@/lib/memory/plan-limits';
 
 interface ImageGenState {
@@ -43,6 +43,8 @@ interface GenerateOptions {
   stream?: boolean;
   referenceImageUrl?: string;
   imageStrength?: number;
+  // Gallery options for public/private sharing
+  galleryOptions?: GalleryOptions;
 }
 
 type GenerateResult =
@@ -91,6 +93,11 @@ export function useImageGeneration(): UseImageGenerationReturn {
           stylePreset: options.stylePreset || 'auto',
           referenceImageUrl: options.referenceImageUrl,
           imageStrength: options.imageStrength,
+          // Gallery options for public/private sharing
+          isPublic: options.galleryOptions?.isPublic,
+          title: options.galleryOptions?.title,
+          description: options.galleryOptions?.description,
+          tags: options.galleryOptions?.tags,
         });
 
         const imageResult = {
@@ -126,7 +133,12 @@ export function useImageGeneration(): UseImageGenerationReturn {
         return { success: true, url: imageResult.url, revisedPrompt: imageResult.revisedPrompt };
       } catch (error) {
         console.error('[useImageGeneration] Error:', error);
-        const errorMsg = error instanceof Error ? error.message : 'Error al generar imagen';
+        // Use userMessage from ApiError for user-friendly error messages
+        const errorMsg = error instanceof ApiError
+          ? error.userMessage
+          : error instanceof Error
+            ? error.message
+            : 'Error al generar imagen';
         setState({
           isGenerating: false,
           error: errorMsg,

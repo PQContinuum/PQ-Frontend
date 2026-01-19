@@ -1,44 +1,46 @@
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
-import type { CookieOptions } from "@supabase/ssr";
+import { createServerClient } from "@supabase/ssr"
+import { cookies, headers } from "next/headers"
 
-const getSupabaseConfig = () => {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
-  const anonKey =
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY;
+// Check if request is from production domain
+async function isProductionDomain(): Promise<boolean> {
+  const headersList = await headers()
+  const host = headersList.get("host") || ""
+  return host.endsWith("continuumai.app")
+}
 
-  if (!url || !anonKey) {
-    throw new Error(
-      "Supabase environment variables are not configured. Please set SUPABASE_URL and SUPABASE_ANON_KEY."
-    );
-  }
+export async function createSupabaseServerClient() {
+  const cookieStore = await cookies()
+  const isProduction = await isProductionDomain()
 
-  return { url, anonKey };
-};
-
-export const createSupabaseServerClient = async () => {
-  const { url, anonKey } = getSupabaseConfig();
-  const cookieStore = await cookies();
-
-  return createServerClient(url, anonKey, {
-    cookies: {
-      get(name: string) {
-        return cookieStore.get(name)?.value;
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              const cookieOptions = {
+                ...options,
+                sameSite: "lax" as const,
+                secure: isProduction,
+                ...(isProduction && { domain: ".continuumai.app" }),
+              }
+              cookieStore.set(name, value, cookieOptions)
+            })
+          } catch {
+            // Called from Server Component - ignore
+          }
+        },
       },
-      set(name: string, value: string, options: CookieOptions) {
-        try {
-          cookieStore.set(name, value, options);
-        } catch {
-          // Server Component - can't set cookies
-        }
+      auth: {
+        persistSession: true,
+        detectSessionInUrl: true,
+        storageKey: "continuum-session",
       },
-      remove(name: string, options: CookieOptions) {
-        try {
-          cookieStore.set(name, "", { ...options, maxAge: 0 });
-        } catch {
-          // Server Component - can't remove cookies
-        }
-      },
-    },
-  });
-};
+    }
+  )
+}

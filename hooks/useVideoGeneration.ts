@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { videoGenApi } from '@/lib/api-client';
+import { videoGenApi, GalleryOptions, ApiError } from '@/lib/api-client';
 import { useGenerationJob, getJobStatusMessage, type GenerationJob } from './useGenerationJobs';
 import type {
   VideoGenDuration,
@@ -51,6 +51,8 @@ interface GenerateOptions {
   generateAudio?: boolean;
   conversationId?: string;
   messageId?: string;
+  // Gallery options for public/private sharing
+  galleryOptions?: GalleryOptions;
 }
 
 type GenerateResult =
@@ -182,6 +184,11 @@ export function useVideoGeneration(): UseVideoGenerationReturn {
           duration: options.duration || '5',
           aspectRatio: options.aspectRatio || '16:9',
           generateAudio: options.generateAudio ?? (usage?.audioEnabled ?? true),
+          // Gallery options for public/private sharing
+          isPublic: options.galleryOptions?.isPublic,
+          title: options.galleryOptions?.title,
+          description: options.galleryOptions?.description,
+          tags: options.galleryOptions?.tags,
         });
 
         // Job created successfully - update state with jobId
@@ -213,11 +220,13 @@ export function useVideoGeneration(): UseVideoGenerationReturn {
 
       } catch (error) {
         console.error('[useVideoGeneration] Error:', error);
+        // Use userMessage from ApiError for user-friendly error messages
         // Network error - but the job might have been created on the server
-        // We return a more graceful message that indicates we should check pending jobs
-        const errorMsg = error instanceof Error
-          ? error.message
-          : 'Error de conexión. Tu video puede estar generándose en segundo plano.';
+        const errorMsg = error instanceof ApiError
+          ? error.userMessage
+          : error instanceof Error
+            ? error.message
+            : 'Error de conexión. Tu video puede estar generándose en segundo plano.';
         setState({
           isGenerating: false,
           error: errorMsg,

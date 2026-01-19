@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles, Loader2 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { useState, useEffect } from "react";
 
 export function HeroSection() {
@@ -15,7 +15,7 @@ export function HeroSection() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const supabase = createSupabaseBrowserClient();
+        const supabase = getSupabaseBrowserClient();
         const { data: { user } } = await supabase.auth.getUser();
         setRedirectPath(user ? "/chat" : "/auth");
       } catch (error) {

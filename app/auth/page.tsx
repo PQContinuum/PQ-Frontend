@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { createSupabaseBrowserClient } from '@/lib/supabase';
+import { getSupabaseBrowserClient } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
@@ -38,7 +38,7 @@ export default function AuthPage() {
     setError(null);
     setMessage(null);
 
-    const supabase = createSupabaseBrowserClient();
+    const supabase = getSupabaseBrowserClient();
 
     try {
       if (isSignUp) {
@@ -89,29 +89,16 @@ export default function AuthPage() {
     setLoading(true);
     setError(null);
 
-    const supabase = createSupabaseBrowserClient();
+    const supabase = getSupabaseBrowserClient();
 
-    try {
-      const redirectUrl = `${window.location.origin}/auth/callback`;
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
 
-      // Debug: Mostrar la URL de redirect en consola
-      console.log('🔍 DEBUG - Redirect URL:', redirectUrl);
-      console.log('🔍 DEBUG - Origin:', window.location.origin);
-
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: redirectUrl,
-        },
-      });
-
-      // Debug: Mostrar la URL OAuth generada
-      if (data?.url) {
-        console.log('🔍 DEBUG - OAuth URL generada:', data.url);
-      }
-
-      if (error) throw error;
-    } catch (error: unknown) {
+    if (error) {
       console.error('❌ Error en Google OAuth:', error);
       setError(getErrorMessage(error, 'Error al autenticar con Google'));
       setLoading(false);

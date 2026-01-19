@@ -43,6 +43,9 @@ export interface GenerationJob {
   costUsd: string | null;
   createdAt: string;
   updatedAt: string;
+  // Optimized preview fields for fast loading
+  thumbnailUrl: string | null;
+  previewUrl: string | null;
 }
 
 // Estados terminales (no requieren polling)
@@ -81,6 +84,9 @@ function mapApiJob(job: ApiGenerationJob): GenerationJob {
     costUsd: null,
     createdAt: job.createdAt,
     updatedAt: job.createdAt,
+    // Optimized preview fields
+    thumbnailUrl: job.thumbnailUrl || null,
+    previewUrl: job.previewUrl || null,
   };
 }
 

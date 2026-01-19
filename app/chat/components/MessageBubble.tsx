@@ -1,16 +1,19 @@
 'use client';
 
-import { useState, type ComponentPropsWithoutRef, useMemo, useEffect } from 'react';
+import { useState, type ComponentPropsWithoutRef, useMemo, useEffect, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
 import remarkGfm from 'remark-gfm';
+import { motion, AnimatePresence } from 'framer-motion';
 
 import type { ChatMessage } from '@/app/chat/store';
 import { GeoCulturalResponse } from './GeoCulturalResponse';
 import { AttachmentsPreview } from './AttachmentsPreview';
 import { SpeechButton } from './SpeechButton';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import { useGenerationJob, getJobStatusMessage } from '@/hooks/useGenerationJobs';
+import { useGenerationJob, getJobStatusMessage, parseJobInputParams } from '@/hooks/useGenerationJobs';
+import { ShareToGalleryModal } from './ShareToGalleryModal';
+import { galleryApi } from '@/lib/api-client';
 
 import 'highlight.js/styles/github.css';
 
@@ -109,10 +112,58 @@ const MediaGeneratingSkeleton = ({ type, aspectRatio = 'square' }: MediaGenerati
 const ImageGeneratingSkeleton = () => <MediaGeneratingSkeleton type="image" />;
 const VideoGeneratingSkeleton = () => <MediaGeneratingSkeleton type="video" aspectRatio="landscape" />;
 
-// Custom video component with controls and download functionality
-const ChatVideo = ({ src }: { src: string }) => {
+// Gallery status badge component
+interface GalleryBadgeProps {
+  isPublic: boolean;
+  className?: string;
+}
+
+const GalleryBadge = ({ isPublic, className = '' }: GalleryBadgeProps) => (
+  <motion.span
+    initial={{ opacity: 0, scale: 0.8 }}
+    animate={{ opacity: 1, scale: 1 }}
+    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium backdrop-blur-sm ${
+      isPublic
+        ? 'bg-[#00552b]/80 text-white'
+        : 'bg-black/60 text-white/90'
+    } ${className}`}
+  >
+    {isPublic ? (
+      <>
+        <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>Galería</span>
+      </>
+    ) : (
+      <>
+        <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+        <span>Privado</span>
+      </>
+    )}
+  </motion.span>
+);
+
+// Custom video component with controls, download, and gallery functionality
+interface ChatVideoProps {
+  src: string;
+  jobId?: string | null;
+  isPublic?: boolean;
+  prompt?: string;
+  thumbnailUrl?: string | null; // Poster image for fast initial load
+  previewUrl?: string | null; // Animated preview (hover)
+}
+
+const ChatVideo = ({ src, jobId, isPublic, prompt, thumbnailUrl, previewUrl }: ChatVideoProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [isHovering, setIsHovering] = useState(false);
+  const [galleryStatus, setGalleryStatus] = useState<{ isPublic: boolean; title?: string } | null>(
+    isPublic !== undefined ? { isPublic } : null
+  );
 
   const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -134,6 +185,11 @@ const ChatVideo = ({ src }: { src: string }) => {
     }
   };
 
+  const handleShareSuccess = useCallback((data: { isPublic: boolean; title?: string; shareUrl?: string }) => {
+    setGalleryStatus({ isPublic: data.isPublic, title: data.title });
+    setShowShareModal(false);
+  }, []);
+
   if (hasError) {
     return (
       <span className="block w-full max-w-[560px] aspect-video rounded-2xl bg-gray-100 flex items-center justify-center">
@@ -143,55 +199,128 @@ const ChatVideo = ({ src }: { src: string }) => {
   }
 
   return (
-    <span className="block w-full max-w-[560px]">
-      {/* Title */}
-      <span className="block text-sm font-semibold text-gray-800 mb-2">Video creado</span>
+    <>
+      <span className="block w-full max-w-[560px]">
+        {/* Title with gallery badge */}
+        <span className="flex items-center justify-between mb-2">
+          <span className="text-sm font-semibold text-gray-800">Video creado</span>
+          {galleryStatus && <GalleryBadge isPublic={galleryStatus.isPublic} />}
+        </span>
 
-      <span className="relative block group">
-        {isLoading && (
-          <span className="absolute inset-0 block rounded-2xl bg-gray-100 animate-pulse aspect-video" />
-        )}
-        <video
-          src={src}
-          controls
-          className={`w-full rounded-2xl shadow-lg transition-opacity duration-300 ${
-            isLoading ? 'opacity-0' : 'opacity-100'
-          }`}
-          onLoadedData={() => setIsLoading(false)}
-          onError={() => setHasError(true)}
-          preload="metadata"
-        />
-
-        {/* Hover overlay with download button */}
-        {!isLoading && (
-          <span className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={handleDownload}
-                  className="p-2 bg-black/60 hover:bg-black/80 rounded-lg backdrop-blur-sm transition"
-                >
-                  <svg className="size-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        <span
+          className="relative block group"
+          onMouseEnter={() => setIsHovering(true)}
+          onMouseLeave={() => setIsHovering(false)}
+        >
+          {/* Skeleton loader while video loads */}
+          {isLoading && (
+            <span className="absolute inset-0 block rounded-2xl overflow-hidden aspect-video">
+              {/* Show thumbnail or animated preview while loading */}
+              {thumbnailUrl ? (
+                <img
+                  src={isHovering && previewUrl ? previewUrl : thumbnailUrl}
+                  alt="Video preview"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="w-full h-full block bg-gray-100 animate-pulse" />
+              )}
+              {/* Play button overlay */}
+              <span className="absolute inset-0 flex items-center justify-center">
+                <span className="size-16 bg-white/90 rounded-full shadow-lg flex items-center justify-center">
+                  <svg className="size-7 text-gray-800 ml-1" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z" />
                   </svg>
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>Descargar video</TooltipContent>
-            </Tooltip>
-          </span>
-        )}
+                </span>
+              </span>
+            </span>
+          )}
+          <video
+            src={src}
+            controls
+            poster={thumbnailUrl || undefined}
+            className={`w-full rounded-2xl shadow-lg transition-opacity duration-300 ${
+              isLoading ? 'opacity-0' : 'opacity-100'
+            }`}
+            onLoadedData={() => setIsLoading(false)}
+            onError={() => setHasError(true)}
+            preload={thumbnailUrl ? "none" : "metadata"}
+          />
+
+          {/* Hover overlay with action buttons */}
+          {!isLoading && (
+            <span className="absolute top-2 right-2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+              {/* Share to Gallery button */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setShowShareModal(true); }}
+                    className="p-2 bg-[#00552b]/80 hover:bg-[#00552b] rounded-lg backdrop-blur-sm transition"
+                  >
+                    <svg className="size-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>{galleryStatus?.isPublic ? 'Editar en galería' : 'Compartir en galería'}</TooltipContent>
+              </Tooltip>
+
+              {/* Download button */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={handleDownload}
+                    className="p-2 bg-black/60 hover:bg-black/80 rounded-lg backdrop-blur-sm transition"
+                  >
+                    <svg className="size-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>Descargar video</TooltipContent>
+              </Tooltip>
+            </span>
+          )}
+        </span>
       </span>
-    </span>
+
+      {/* Share to Gallery Modal */}
+      <AnimatePresence>
+        {showShareModal && (
+          <ShareToGalleryModal
+            isOpen={showShareModal}
+            onClose={() => setShowShareModal(false)}
+            mediaType="video"
+            mediaUrl={src}
+            jobId={jobId || undefined}
+            prompt={prompt}
+            isCurrentlyPublic={galleryStatus?.isPublic}
+            currentTitle={galleryStatus?.title}
+            onSuccess={handleShareSuccess}
+          />
+        )}
+      </AnimatePresence>
+    </>
   );
 };
 
-// Custom image component with lightbox, download, and share functionality
-const ChatImage = ({ src, alt, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) => {
+// Custom image component with lightbox, download, share, and gallery functionality
+interface ChatImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
+  jobId?: string | null;
+  isPublic?: boolean;
+  prompt?: string;
+}
+
+const ChatImage = ({ src, alt, jobId, isPublic, prompt, ...props }: ChatImageProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [showLightbox, setShowLightbox] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showGalleryModal, setShowGalleryModal] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [galleryStatus, setGalleryStatus] = useState<{ isPublic: boolean; title?: string } | null>(
+    isPublic !== undefined ? { isPublic } : null
+  );
 
   const imageUrl = typeof src === 'string' ? src : '';
 
@@ -228,7 +357,7 @@ const ChatImage = ({ src, alt, ...props }: React.ImgHTMLAttributes<HTMLImageElem
 
   const handleShare = (platform: string) => {
     if (!imageUrl) return;
-    const text = encodeURIComponent('Mira esta imagen que generé con IA ✨');
+    const text = encodeURIComponent('Mira esta imagen que genere con IA');
     const url = encodeURIComponent(imageUrl);
 
     const shareUrls: Record<string, string> = {
@@ -242,6 +371,11 @@ const ChatImage = ({ src, alt, ...props }: React.ImgHTMLAttributes<HTMLImageElem
     }
   };
 
+  const handleGallerySuccess = useCallback((data: { isPublic: boolean; title?: string; shareUrl?: string }) => {
+    setGalleryStatus({ isPublic: data.isPublic, title: data.title });
+    setShowGalleryModal(false);
+  }, []);
+
   if (hasError) {
     return (
       <span className="block w-full max-w-[512px] aspect-square rounded-2xl bg-gray-100 flex items-center justify-center">
@@ -253,8 +387,11 @@ const ChatImage = ({ src, alt, ...props }: React.ImgHTMLAttributes<HTMLImageElem
   return (
     <>
       <span className="block w-full max-w-[512px]">
-        {/* Title */}
-        <span className="block text-sm font-semibold text-gray-800 mb-2">Imagen creada</span>
+        {/* Title with gallery badge */}
+        <span className="flex items-center justify-between mb-2">
+          <span className="text-sm font-semibold text-gray-800">Imagen creada</span>
+          {galleryStatus && <GalleryBadge isPublic={galleryStatus.isPublic} />}
+        </span>
 
         <span className="relative block group cursor-pointer">
           {isLoading && (
@@ -284,7 +421,26 @@ const ChatImage = ({ src, alt, ...props }: React.ImgHTMLAttributes<HTMLImageElem
             {/* Bottom gradient for visibility */}
             <span className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 via-black/20 to-transparent pointer-events-none" />
 
-            {/* Action buttons */}
+            {/* Top right action buttons */}
+            <span className="absolute top-2 right-2 flex items-center gap-1.5">
+              {/* Gallery button */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setShowGalleryModal(true); }}
+                    className="p-2 bg-[#00552b]/80 hover:bg-[#00552b] rounded-lg backdrop-blur-sm transition"
+                  >
+                    <svg className="size-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>{galleryStatus?.isPublic ? 'Editar en galeria' : 'Compartir en galeria'}</TooltipContent>
+              </Tooltip>
+            </span>
+
+            {/* Bottom action buttons */}
             <span className="absolute inset-x-0 bottom-0 flex items-center justify-between p-3">
               {/* Download button - left */}
               <Tooltip>
@@ -340,6 +496,13 @@ const ChatImage = ({ src, alt, ...props }: React.ImgHTMLAttributes<HTMLImageElem
             </svg>
           </button>
 
+          {/* Gallery status badge in lightbox */}
+          {galleryStatus && (
+            <span className="absolute top-4 left-4">
+              <GalleryBadge isPublic={galleryStatus.isPublic} className="text-xs px-3 py-1" />
+            </span>
+          )}
+
           {/* Large image */}
           <img
             src={src}
@@ -350,6 +513,16 @@ const ChatImage = ({ src, alt, ...props }: React.ImgHTMLAttributes<HTMLImageElem
 
           {/* Bottom actions */}
           <span className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3">
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setShowGalleryModal(true); }}
+              className="flex items-center gap-2 px-4 py-2 bg-[#00552b] rounded-full text-sm font-medium text-white hover:bg-[#00442b] transition shadow-lg"
+            >
+              <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              {galleryStatus?.isPublic ? 'En galeria' : 'Galeria'}
+            </button>
             <button
               type="button"
               onClick={handleDownload}
@@ -374,7 +547,7 @@ const ChatImage = ({ src, alt, ...props }: React.ImgHTMLAttributes<HTMLImageElem
         </span>
       )}
 
-      {/* Share Modal */}
+      {/* Share Modal (Social sharing) */}
       {showShareModal && (
         <span
           className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-[fade-in_0.2s_ease-out]"
@@ -428,7 +601,7 @@ const ChatImage = ({ src, alt, ...props }: React.ImgHTMLAttributes<HTMLImageElem
                 </span>
                 <span className="flex-1">
                   <span className="block text-sm font-medium text-gray-900">
-                    {copied ? '¡Copiado!' : 'Copiar enlace'}
+                    {copied ? 'Copiado!' : 'Copiar enlace'}
                   </span>
                   <span className="block text-xs text-gray-500">Comparte el enlace directo</span>
                 </span>
@@ -493,6 +666,23 @@ const ChatImage = ({ src, alt, ...props }: React.ImgHTMLAttributes<HTMLImageElem
           </span>
         </span>
       )}
+
+      {/* Gallery Modal */}
+      <AnimatePresence>
+        {showGalleryModal && (
+          <ShareToGalleryModal
+            isOpen={showGalleryModal}
+            onClose={() => setShowGalleryModal(false)}
+            mediaType="image"
+            mediaUrl={imageUrl}
+            jobId={jobId || undefined}
+            prompt={prompt}
+            isCurrentlyPublic={galleryStatus?.isPublic}
+            currentTitle={galleryStatus?.title}
+            onSuccess={handleGallerySuccess}
+          />
+        )}
+      </AnimatePresence>
     </>
   );
 };
@@ -618,6 +808,16 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
   // Get progress message from job
   const jobProgressMessage = job ? getJobStatusMessage(job) : null;
 
+  // Extract job input params for gallery info
+  const jobInputData = useMemo(() => {
+    if (!job) return null;
+    const params = parseJobInputParams(job);
+    return {
+      prompt: params.prompt as string | undefined,
+      isPublic: params.isPublic as boolean | undefined,
+    };
+  }, [job]);
+
   const { geoCulturalData, geoCulturalText, isLoadingGeoCultural, videoUrl } = useMemo(() => {
     if (isUser || !message.content) return { geoCulturalData: null, geoCulturalText: null, isLoadingGeoCultural: false, videoUrl: null };
 
@@ -665,7 +865,14 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
     return (
       <div className="flex justify-start">
         <div className="inline-flex rounded-4xl border border-transparent bg-transparent text-black px-4 py-2">
-          <ChatVideo src={jobVideoUrl} />
+          <ChatVideo
+            src={jobVideoUrl}
+            jobId={jobId}
+            isPublic={jobInputData?.isPublic}
+            prompt={jobInputData?.prompt}
+            thumbnailUrl={job?.thumbnailUrl}
+            previewUrl={job?.previewUrl}
+          />
         </div>
       </div>
     );
@@ -676,7 +883,13 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
     return (
       <div className="flex justify-start w-full">
         <div className="w-full max-w-[540px] px-2 sm:px-4 py-2">
-          <ChatImage src={jobImageUrl} alt="Imagen generada" />
+          <ChatImage
+            src={jobImageUrl}
+            alt="Imagen generada"
+            jobId={jobId}
+            isPublic={jobInputData?.isPublic}
+            prompt={jobInputData?.prompt}
+          />
         </div>
       </div>
     );
@@ -726,7 +939,12 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
     return (
       <div className="flex justify-start">
         <div className="inline-flex rounded-4xl border border-transparent bg-transparent text-black px-4 py-2">
-          <ChatVideo src={videoUrl} />
+          <ChatVideo
+            src={videoUrl}
+            jobId={jobId}
+            isPublic={jobInputData?.isPublic}
+            prompt={jobInputData?.prompt}
+          />
         </div>
       </div>
     );
