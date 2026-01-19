@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Globe,
@@ -62,23 +62,20 @@ export function GalleryOptionsPanel({
   const isPublic = options.isPublic ?? false;
   const tags = options.tags ?? [];
 
-  // Auto-expand when public is toggled on
-  useEffect(() => {
-    if (isPublic && !isExpanded) {
-      setIsExpanded(true);
-    }
-  }, [isPublic, isExpanded]);
-
   const handleTogglePublic = useCallback(() => {
     if (disabled) return;
     const newIsPublic = !isPublic;
+    // Auto-expand when toggling to public
+    if (newIsPublic && !isExpanded) {
+      setIsExpanded(true);
+    }
     onChange({
       ...options,
       isPublic: newIsPublic,
       // Clear fields if making private
       ...(newIsPublic ? {} : { title: undefined, description: undefined, tags: undefined }),
     });
-  }, [disabled, isPublic, options, onChange]);
+  }, [disabled, isPublic, isExpanded, options, onChange]);
 
   const handleTitleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
