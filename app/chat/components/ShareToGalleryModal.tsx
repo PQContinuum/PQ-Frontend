@@ -32,15 +32,15 @@ interface ShareToGalleryModalProps {
   isOpen: boolean;
   onClose: () => void;
   mediaType: "video" | "image";
-  mediaId: string;
+  jobId?: string;
   mediaUrl: string;
   thumbnailUrl?: string;
-  prompt: string;
+  prompt?: string;
   currentTitle?: string;
   currentDescription?: string;
   currentTags?: string[];
   isCurrentlyPublic?: boolean;
-  onShareSuccess?: () => void;
+  onSuccess?: (data: { isPublic: boolean; title?: string; shareUrl?: string }) => void;
 }
 
 const MAX_TAGS = 5;
@@ -69,7 +69,7 @@ export function ShareToGalleryModal({
   isOpen,
   onClose,
   mediaType,
-  mediaId,
+  jobId,
   mediaUrl,
   thumbnailUrl,
   prompt,
@@ -77,7 +77,7 @@ export function ShareToGalleryModal({
   currentDescription = "",
   currentTags = [],
   isCurrentlyPublic = false,
-  onShareSuccess,
+  onSuccess,
 }: ShareToGalleryModalProps) {
   const [title, setTitle] = useState(currentTitle);
   const [description, setDescription] = useState(currentDescription);
@@ -141,14 +141,17 @@ export function ShareToGalleryModal({
         tags: tags.length > 0 ? tags : undefined,
       };
 
-      if (mediaType === "video") {
-        await galleryApi.updateVideoVisibility(mediaId, data);
-      } else {
-        await galleryApi.updateImageVisibility(mediaId, data);
+      if (jobId) {
+        if (mediaType === "video") {
+          await galleryApi.updateVideoVisibility(jobId, data);
+        } else {
+          await galleryApi.updateImageVisibility(jobId, data);
+        }
       }
 
       setIsSuccess(true);
-      onShareSuccess?.();
+      const shareUrl = jobId ? `${window.location.origin}/gallery/${mediaType}/${jobId}` : undefined;
+      onSuccess?.({ isPublic: true, title: title.trim(), shareUrl });
 
       // Close after a brief success animation
       setTimeout(() => {
@@ -171,13 +174,15 @@ export function ShareToGalleryModal({
         isPublic: false,
       };
 
-      if (mediaType === "video") {
-        await galleryApi.updateVideoVisibility(mediaId, data);
-      } else {
-        await galleryApi.updateImageVisibility(mediaId, data);
+      if (jobId) {
+        if (mediaType === "video") {
+          await galleryApi.updateVideoVisibility(jobId, data);
+        } else {
+          await galleryApi.updateImageVisibility(jobId, data);
+        }
       }
 
-      onShareSuccess?.();
+      onSuccess?.({ isPublic: false });
       onClose();
     } catch (err) {
       console.error("Error making private:", err);
@@ -188,7 +193,8 @@ export function ShareToGalleryModal({
   };
 
   const handleCopyLink = () => {
-    const galleryUrl = `${window.location.origin}/gallery/${mediaType}/${mediaId}`;
+    if (!jobId) return;
+    const galleryUrl = `${window.location.origin}/gallery/${mediaType}/${jobId}`;
     navigator.clipboard.writeText(galleryUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -306,10 +312,12 @@ export function ShareToGalleryModal({
                 )}
 
                 {/* Prompt Preview */}
-                <div className="p-3 rounded-lg bg-muted/50 border border-border/50">
-                  <p className="text-xs text-muted-foreground mb-1">Original Prompt</p>
-                  <p className="text-sm text-foreground line-clamp-2">{prompt}</p>
-                </div>
+                {prompt && (
+                  <div className="p-3 rounded-lg bg-muted/50 border border-border/50">
+                    <p className="text-xs text-muted-foreground mb-1">Original Prompt</p>
+                    <p className="text-sm text-foreground line-clamp-2">{prompt}</p>
+                  </div>
+                )}
 
                 {/* Title Input */}
                 <div className="space-y-1.5">
