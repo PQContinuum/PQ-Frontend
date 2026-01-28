@@ -657,31 +657,6 @@ export const MessageInput = memo(function MessageInput() {
           }
         }
 
-        if (currentConversationId) {
-          try {
-            await conversationsApi.createMessage(currentConversationId, {
-              role: 'user',
-              content: value,
-            });
-
-            // Link attachments if any
-            if (attachments.length > 0) {
-              // Note: attachments linking would need a custom endpoint
-              // For now we skip this as the API client doesn't have this method
-              console.log('[Chat] Attachments would be linked:', attachments.map(a => a.id));
-            }
-
-            queryClient.invalidateQueries({
-              queryKey: conversationKeys.detail(currentConversationId),
-            });
-            queryClient.invalidateQueries({
-              queryKey: conversationKeys.lists(),
-            });
-          } catch (error) {
-            console.error('Error saving user message:', error);
-          }
-        }
-
         const freshGeoCulturalContext = geoCulturalMode && userLocation
           ? { ...userLocation, timestamp: Date.now() }
           : null;
@@ -689,6 +664,7 @@ export const MessageInput = memo(function MessageInput() {
         const response = await chatApi.stream({
           message: value,
           messages: payloadMessages,
+          conversationId: currentConversationId || undefined,
           geoCulturalContext: freshGeoCulturalContext || undefined,
           attachmentIds: attachments.map(a => a.id),
         });
@@ -771,50 +747,33 @@ export const MessageInput = memo(function MessageInput() {
           }
         }
 
-        if (currentConversationId && assistantContent) {
-          try {
-            await conversationsApi.createMessage(currentConversationId, {
-              role: 'assistant',
-              content: assistantContent,
-            });
+        // Invalidate queries to refresh sidebar and conversation details
+        // (Messages are saved by the backend in /api/v1/chat endpoint)
+        if (currentConversationId) {
+          queryClient.invalidateQueries({ queryKey: conversationKeys.detail(currentConversationId) });
+          queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
 
-            queryClient.invalidateQueries({ queryKey: conversationKeys.detail(currentConversationId) });
-            queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
+          // Background fact extraction
+          conversationsApi.extractFacts(currentConversationId)
+            .catch(err => console.debug('Background fact extraction:', err instanceof Error ? err.message : 'error'));
 
-            // Background fact extraction
-            conversationsApi.extractFacts(currentConversationId)
-              .catch(err => console.debug('Background fact extraction:', err instanceof Error ? err.message : 'error'));
-
-            // Save geocultural context
-            if (freshGeoCulturalContext) {
-              conversationsApi.update(currentConversationId, {
-                geoCulturalContext: JSON.stringify(freshGeoCulturalContext),
-              }).catch(err => console.debug('Background geocultural context save:', err instanceof Error ? err.message : 'error'));
-            }
-
-          } catch (error) {
-            console.error('Error saving assistant message:', error);
+          // Save geocultural context
+          if (freshGeoCulturalContext) {
+            conversationsApi.update(currentConversationId, {
+              geoCulturalContext: JSON.stringify(freshGeoCulturalContext),
+            }).catch(err => console.debug('Background geocultural context save:', err instanceof Error ? err.message : 'error'));
           }
         }
       } catch (err) {
         console.error('[Chat] Error during message submission:', err);
 
+        // Keep partial content if we received any during streaming
         if (assistantContent && assistantContent.length > 0) {
           console.log('[Chat] Keeping partial content despite error');
-
+          // Invalidate to sync with whatever the backend saved
           if (currentConversationId) {
-            try {
-              await conversationsApi.createMessage(currentConversationId, {
-                role: 'assistant',
-                content: assistantContent,
-              });
-
-              queryClient.invalidateQueries({ queryKey: conversationKeys.detail(currentConversationId) });
-              queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
-              console.log('[Chat] Partial content saved successfully');
-            } catch (saveError) {
-              console.error('[Chat] Error saving partial content:', saveError);
-            }
+            queryClient.invalidateQueries({ queryKey: conversationKeys.detail(currentConversationId) });
+            queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
           }
         } else {
           // Use userMessage from ApiError for user-friendly error messages
