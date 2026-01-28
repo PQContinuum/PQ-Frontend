@@ -719,12 +719,10 @@ export const transcribeApi = {
    */
   transcribe: (audioFile: File, language?: string) => {
     const formData = new FormData();
-    formData.append("file", audioFile);
-    if (language) {
-      formData.append("language", language);
-    }
+    formData.append("audio", audioFile);
+    const queryParams = language ? `?language=${encodeURIComponent(language)}` : "";
     return apiPostFormData<{ text: string; language: string }>(
-      "/transcribe",
+      `/transcribe${queryParams}`,
       formData
     );
   },
