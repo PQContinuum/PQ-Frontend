@@ -53,8 +53,9 @@ import { ConversationHistory } from './components/ConversationHistory';
 import { SettingsDialog } from './components/SettingsDialog';
 import { TTSSettingsModal } from './components/TTSSettingsModal';
 import { PendingJobsBanner } from './components/PendingJobsBanner';
+import { ScrollNavigation } from './components/ScrollNavigation';
 import { FeedbackWidget } from '@/components/feedback-widget';
-import { useMessages, useReplaceMessages, useSetConversationId } from './store';
+import { useMessages, useReplaceMessages, useSetConversationId, useIsStreaming } from './store';
 import { getSupabaseBrowserClient } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { useUserPlan } from '@/hooks/use-user-plan';
@@ -146,6 +147,7 @@ export default function ChatPage() {
   const messages = useMessages();
   const replaceMessages = useReplaceMessages();
   const setConversationId = useSetConversationId();
+  const isStreaming = useIsStreaming();
   const [isCreatingNew, setIsCreatingNew] = React.useState(false);
   const [userEmail, setUserEmail] = React.useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = React.useState(false);
@@ -155,6 +157,7 @@ export default function ChatPage() {
   const { data: userPlan } = useUserPlan();
   const [selectValue, setSelectValue] = React.useState<string>('');
   const router = useRouter();
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
 
   // Verificar si hay mensajes de usuario (no solo el mensaje de bienvenida)
   const hasUserMessages = messages.some((msg) => msg.role === 'user');
@@ -333,7 +336,7 @@ export default function ChatPage() {
         <SidebarRail />
       </Sidebar>
 
-      <SidebarInset className="flex flex-col">
+      <SidebarInset className="flex flex-col h-screen overflow-hidden">
         {hasUserMessages && (
           <motion.header
             initial={{ opacity: 0, y: -20 }}
@@ -498,7 +501,8 @@ export default function ChatPage() {
         ) : (
           <>
             <motion.div
-              className="flex-1 overflow-y-auto"
+              ref={scrollContainerRef}
+              className="flex-1 min-h-0 overflow-y-auto"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.3 }}
@@ -511,6 +515,11 @@ export default function ChatPage() {
                 <ChatWindow />
               </motion.div>
             </motion.div>
+
+            <ScrollNavigation
+              scrollContainerRef={scrollContainerRef}
+              hasNewMessages={isStreaming}
+            />
 
             <motion.div
               initial={{ y: 100, opacity: 0 }}
