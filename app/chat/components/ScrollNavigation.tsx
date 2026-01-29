@@ -118,12 +118,11 @@ export const ScrollNavigation = memo(function ScrollNavigation({
   // También verificar cuando cambian los mensajes
   useEffect(() => {
     if (hasNewMessages) {
-      requestAnimationFrame(checkScrollPosition);
-      if (showBottomButton) {
-        setHighlightBottom(true);
-      }
+      requestAnimationFrame(() => {
+        checkScrollPosition();
+      });
     }
-  }, [hasNewMessages, showBottomButton, checkScrollPosition]);
+  }, [hasNewMessages, checkScrollPosition]);
 
   const scrollToTop = useCallback(() => {
     scrollContainerRef.current?.scrollTo({
