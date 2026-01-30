@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useCallback, memo, useState } from 'react';
-import { Loader2, CheckSquare, X, Trash2 } from 'lucide-react';
-import { useConversationId, useSetConversationId, useReplaceMessages, useSetGeoCulturalMode, useSetUserLocation } from '../store';
+import React, { useCallback, memo, useState, useMemo } from 'react';
+import { Loader2, CheckSquare, X, Trash2, FolderPlus, MessageSquare } from 'lucide-react';
+import { useConversationId, useSetConversationId, useReplaceMessages, useSetGeoCulturalMode, useSetUserLocation, useSetPendingProjectId } from '../store';
 import type { ChatMessage, MessageGenerationState } from '../store';
-import { SidebarMenuItem, useSidebar } from '@/components/ui/sidebar';
+import { SidebarMenuItem, SidebarMenuButton, useSidebar } from '@/components/ui/sidebar';
 import { ConversationItem } from './ConversationItem';
+import { ProjectItem } from './ProjectItem';
+import { ProjectCreateDialog } from './ProjectCreateDialog';
 import {
   Dialog,
   DialogContent,
@@ -22,6 +24,11 @@ import {
   usePrefetchConversation,
   conversationKeys,
 } from '@/hooks/use-conversations';
+import {
+  useProjects,
+  useDeleteProject,
+  useUpdateProject,
+} from '@/hooks/use-projects';
 import type { ConversationWithMessages } from '@/hooks/use-conversations';
 import { useQueryClient } from '@tanstack/react-query';
 import { conversationsApi } from '@/lib/api-client';
@@ -63,53 +70,81 @@ export const ConversationHistory = memo(function ConversationHistory() {
   const replaceMessages = useReplaceMessages();
   const setGeoCulturalMode = useSetGeoCulturalMode();
   const setUserLocation = useSetUserLocation();
+  const setPendingProjectId = useSetPendingProjectId();
 
   const { state } = useSidebar();
   const queryClient = useQueryClient();
-  const { data: conversations = [], isLoading, isError } = useConversations();
+  const { data: conversations = [], isLoading: isLoadingConversations, isError: isErrorConversations } = useConversations();
+  const { data: projects = [], isLoading: isLoadingProjects } = useProjects();
   const deleteMutation = useDeleteConversation();
   const bulkDeleteMutation = useDeleteConversations();
+  const deleteProjectMutation = useDeleteProject();
+  const updateProjectMutation = useUpdateProject();
   const prefetchConversation = usePrefetchConversation();
+
   const [renamingId, setRenamingId] = React.useState<string | null>(null);
   const [newTitle, setNewTitle] = React.useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [conversationToDelete, setConversationToDelete] = React.useState<string | null>(null);
+  const [projectToDelete, setProjectToDelete] = React.useState<string | null>(null);
+  const [deleteProjectDialogOpen, setDeleteProjectDialogOpen] = React.useState(false);
 
   // Selection mode state
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedConversations, setSelectedConversations] = useState<Set<string>>(new Set());
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
 
+  // Project state
+  const [createProjectOpen, setCreateProjectOpen] = useState(false);
+  const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
+  const [renamingProjectId, setRenamingProjectId] = useState<string | null>(null);
+  const [newProjectName, setNewProjectName] = useState('');
+
+  // Group conversations by project
+  const { projectConversations, unorganizedConversations } = useMemo(() => {
+    const byProject: Record<string, typeof conversations> = {};
+    const unorganized: typeof conversations = [];
+
+    conversations.forEach((conv) => {
+      if (conv.projectId) {
+        if (!byProject[conv.projectId]) {
+          byProject[conv.projectId] = [];
+        }
+        byProject[conv.projectId].push(conv);
+      } else {
+        unorganized.push(conv);
+      }
+    });
+
+    return {
+      projectConversations: byProject,
+      unorganizedConversations: unorganized,
+    };
+  }, [conversations]);
+
   const handleSelectConversation = useCallback(async (id: string) => {
-    // Cambio inmediato para UX instantánea
     setConversationId(id);
 
-    // Intentar usar cache primero (instantáneo)
     const cachedConversation = queryClient.getQueryData<ConversationWithMessages>(
       conversationKeys.detail(id)
     );
 
     if (cachedConversation) {
-      // Usar cache inmediatamente - mapear metadata a generationState
       replaceMessages(mapApiMessagesToChatMessages(cachedConversation.messages));
 
-      // Restaurar contexto geocultural si existe
       if (cachedConversation.geoCulturalContext) {
         try {
           const geoCulturalData = JSON.parse(cachedConversation.geoCulturalContext);
           setGeoCulturalMode(true);
           setUserLocation(geoCulturalData);
-          console.log('[GeoCultural] Restored context from cached conversation:', geoCulturalData);
         } catch (error) {
           console.error('[GeoCultural] Error parsing cached geocultural context:', error);
         }
       } else {
-        // Limpiar contexto si la conversación no lo tiene
         setGeoCulturalMode(false);
         setUserLocation(null);
       }
 
-      // Revalidar en background sin bloquear UI
       queryClient.fetchQuery<ConversationWithMessages>({
         queryKey: conversationKeys.detail(id),
         queryFn: async () => {
@@ -118,12 +153,10 @@ export const ConversationHistory = memo(function ConversationHistory() {
         },
         staleTime: 1000 * 60 * 10,
       }).then((freshConversation) => {
-        // Actualizar solo si hay cambios
         if (JSON.stringify(freshConversation.messages) !== JSON.stringify(cachedConversation.messages)) {
           replaceMessages(mapApiMessagesToChatMessages(freshConversation.messages));
         }
 
-        // Actualizar contexto geocultural si cambió
         if (freshConversation.geoCulturalContext !== cachedConversation.geoCulturalContext) {
           if (freshConversation.geoCulturalContext) {
             try {
@@ -142,7 +175,6 @@ export const ConversationHistory = memo(function ConversationHistory() {
         console.error('Background revalidation error:', error);
       });
     } else {
-      // Sin cache, fetch normal
       try {
         const conversation = await queryClient.fetchQuery<ConversationWithMessages>({
           queryKey: conversationKeys.detail(id),
@@ -153,21 +185,17 @@ export const ConversationHistory = memo(function ConversationHistory() {
           staleTime: 1000 * 60 * 10,
         });
 
-        // Mapear metadata a generationState
         replaceMessages(mapApiMessagesToChatMessages(conversation.messages));
 
-        // Restaurar contexto geocultural si existe
         if (conversation.geoCulturalContext) {
           try {
             const geoCulturalData = JSON.parse(conversation.geoCulturalContext);
             setGeoCulturalMode(true);
             setUserLocation(geoCulturalData);
-            console.log('[GeoCultural] Restored context from fetched conversation:', geoCulturalData);
           } catch (error) {
             console.error('[GeoCultural] Error parsing geocultural context:', error);
           }
         } else {
-          // Limpiar contexto si la conversación no lo tiene
           setGeoCulturalMode(false);
           setUserLocation(null);
         }
@@ -182,10 +210,7 @@ export const ConversationHistory = memo(function ConversationHistory() {
     prefetchConversation(id);
   }, [prefetchConversation]);
 
-  const handleDeleteConversation = useCallback((
-    e: React.MouseEvent,
-    id: string
-  ) => {
+  const handleDeleteConversation = useCallback((e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     setConversationToDelete(id);
     setDeleteDialogOpen(true);
@@ -222,8 +247,6 @@ export const ConversationHistory = memo(function ConversationHistory() {
 
     try {
       await conversationsApi.update(id, { title: newTitle.trim() });
-
-      // Invalidar cache para refrescar
       queryClient.invalidateQueries({ queryKey: conversationKeys.all });
       setRenamingId(null);
     } catch (error) {
@@ -266,13 +289,11 @@ export const ConversationHistory = memo(function ConversationHistory() {
       const idsToDelete = Array.from(selectedConversations);
       await bulkDeleteMutation.mutateAsync(idsToDelete);
 
-      // Si la conversación activa está entre las eliminadas, limpiar el chat
       if (conversationId && selectedConversations.has(conversationId)) {
         setConversationId(null);
         replaceMessages([]);
       }
 
-      // Salir del modo de selección
       setIsSelectionMode(false);
       setSelectedConversations(new Set());
     } catch (error) {
@@ -287,6 +308,79 @@ export const ConversationHistory = memo(function ConversationHistory() {
     setSelectedConversations(new Set());
   }, []);
 
+  // Project handlers
+  const handleToggleProjectExpand = useCallback((projectId: string) => {
+    setExpandedProjects((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(projectId)) {
+        newSet.delete(projectId);
+      } else {
+        newSet.add(projectId);
+      }
+      return newSet;
+    });
+  }, []);
+
+  const handleDeleteProject = useCallback((projectId: string) => {
+    setProjectToDelete(projectId);
+    setDeleteProjectDialogOpen(true);
+  }, []);
+
+  const confirmDeleteProject = useCallback(async () => {
+    if (!projectToDelete) return;
+
+    try {
+      await deleteProjectMutation.mutateAsync(projectToDelete);
+
+      // If active conversation was in this project, keep it (it will now be unorganized)
+    } catch (error) {
+      console.error('Error deleting project:', error);
+    } finally {
+      setDeleteProjectDialogOpen(false);
+      setProjectToDelete(null);
+    }
+  }, [projectToDelete, deleteProjectMutation]);
+
+  const handleRenameProject = useCallback((projectId: string, currentName: string) => {
+    setRenamingProjectId(projectId);
+    setNewProjectName(currentName);
+  }, []);
+
+  const handleSaveProjectName = useCallback(async (projectId: string) => {
+    if (!newProjectName.trim()) {
+      setRenamingProjectId(null);
+      return;
+    }
+
+    try {
+      await updateProjectMutation.mutateAsync({
+        id: projectId,
+        name: newProjectName.trim(),
+      });
+      setRenamingProjectId(null);
+    } catch (error) {
+      console.error('Error renaming project:', error);
+    }
+  }, [newProjectName, updateProjectMutation]);
+
+  const handleCreateChatInProject = useCallback((projectId: string) => {
+    // Clear current conversation and set pending project
+    setConversationId(null);
+    replaceMessages([]);
+    setPendingProjectId(projectId);
+    setGeoCulturalMode(false);
+    setUserLocation(null);
+
+    // Expand the project if not already
+    setExpandedProjects((prev) => {
+      const newSet = new Set(prev);
+      newSet.add(projectId);
+      return newSet;
+    });
+  }, [setConversationId, replaceMessages, setPendingProjectId, setGeoCulturalMode, setUserLocation]);
+
+  const isLoading = isLoadingConversations || isLoadingProjects;
+
   if (isLoading) {
     return (
       <SidebarMenuItem>
@@ -297,7 +391,7 @@ export const ConversationHistory = memo(function ConversationHistory() {
     );
   }
 
-  if (isError) {
+  if (isErrorConversations) {
     return (
       <SidebarMenuItem>
         <div className="px-4 py-8 text-center text-sm text-red-600">
@@ -307,19 +401,39 @@ export const ConversationHistory = memo(function ConversationHistory() {
     );
   }
 
-  if (conversations.length === 0) {
+  const hasContent = conversations.length > 0 || projects.length > 0;
+
+  if (!hasContent) {
     return state === 'expanded' ? (
-      <SidebarMenuItem>
-        <div className="px-4 py-8 text-center text-sm text-[#4c4c4c]">
-          No hay conversaciones recientes
-        </div>
-      </SidebarMenuItem>
+      <>
+        {/* Create Project Button */}
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            onClick={() => setCreateProjectOpen(true)}
+            className="text-[#4c4c4c] hover:text-[#00552b] hover:bg-[#00552b]/5"
+          >
+            <FolderPlus className="size-4" />
+            <span>Crear proyecto</span>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+
+        <SidebarMenuItem>
+          <div className="px-4 py-8 text-center text-sm text-[#4c4c4c]">
+            No hay conversaciones recientes
+          </div>
+        </SidebarMenuItem>
+
+        <ProjectCreateDialog
+          open={createProjectOpen}
+          onOpenChange={setCreateProjectOpen}
+        />
+      </>
     ) : null;
   }
 
   return (
     <>
-      {/* Single delete dialog */}
+      {/* Dialogs */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -329,10 +443,7 @@ export const ConversationHistory = memo(function ConversationHistory() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setDeleteDialogOpen(false)}
-            >
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
               Cancelar
             </Button>
             <Button
@@ -353,7 +464,6 @@ export const ConversationHistory = memo(function ConversationHistory() {
         </DialogContent>
       </Dialog>
 
-      {/* Bulk delete dialog */}
       <Dialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -363,10 +473,7 @@ export const ConversationHistory = memo(function ConversationHistory() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setBulkDeleteDialogOpen(false)}
-            >
+            <Button variant="outline" onClick={() => setBulkDeleteDialogOpen(false)}>
               Cancelar
             </Button>
             <Button
@@ -387,59 +494,139 @@ export const ConversationHistory = memo(function ConversationHistory() {
         </DialogContent>
       </Dialog>
 
-      {/* Selection mode header */}
-      {state === 'expanded' && (
-        <div className="flex items-center justify-between px-2 py-2 border-b border-gray-100">
-          {isSelectionMode ? (
-            <>
-              <button
-                onClick={handleCancelSelectionMode}
-                className="flex items-center gap-1.5 text-sm text-[#4c4c4c] hover:text-[#00552b] transition-colors"
-              >
-                <X className="size-4" />
-                <span>Cancelar</span>
-              </button>
-              <button
-                onClick={handleBulkDeleteClick}
-                disabled={selectedConversations.size === 0}
-                className="flex items-center gap-1.5 text-sm text-red-600 hover:text-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Trash2 className="size-4" />
-                <span>Eliminar ({selectedConversations.size})</span>
-              </button>
-            </>
-          ) : (
-            <button
-              onClick={handleToggleSelectionMode}
-              className="flex items-center gap-1.5 text-sm text-[#4c4c4c] hover:text-[#00552b] transition-colors ml-auto"
+      <Dialog open={deleteProjectDialogOpen} onOpenChange={setDeleteProjectDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Eliminar proyecto</DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que deseas eliminar este proyecto? Las conversaciones dentro del proyecto no se eliminarán, solo se desorganizarán.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteProjectDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDeleteProject}
+              disabled={deleteProjectMutation.isPending}
             >
-              <CheckSquare className="size-4" />
-              <span>Seleccionar</span>
-            </button>
-          )}
-        </div>
+              {deleteProjectMutation.isPending ? (
+                <>
+                  <Loader2 className="size-4 animate-spin mr-2" />
+                  Eliminando...
+                </>
+              ) : (
+                'Eliminar proyecto'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <ProjectCreateDialog
+        open={createProjectOpen}
+        onOpenChange={setCreateProjectOpen}
+      />
+
+      {state === 'expanded' && (
+        <>
+          {/* Create Project Button */}
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={() => setCreateProjectOpen(true)}
+              className="text-[#4c4c4c] hover:text-[#00552b] hover:bg-[#00552b]/5"
+            >
+              <FolderPlus className="size-4" />
+              <span>Crear proyecto</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+
+          {/* Selection mode header */}
+          <div className="flex items-center justify-between px-2 py-2 border-b border-gray-100">
+            {isSelectionMode ? (
+              <>
+                <button
+                  onClick={handleCancelSelectionMode}
+                  className="flex items-center gap-1.5 text-sm text-[#4c4c4c] hover:text-[#00552b] transition-colors"
+                >
+                  <X className="size-4" />
+                  <span>Cancelar</span>
+                </button>
+                <button
+                  onClick={handleBulkDeleteClick}
+                  disabled={selectedConversations.size === 0}
+                  className="flex items-center gap-1.5 text-sm text-red-600 hover:text-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Trash2 className="size-4" />
+                  <span>Eliminar ({selectedConversations.size})</span>
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={handleToggleSelectionMode}
+                className="flex items-center gap-1.5 text-sm text-[#4c4c4c] hover:text-[#00552b] transition-colors ml-auto"
+              >
+                <CheckSquare className="size-4" />
+                <span>Seleccionar</span>
+              </button>
+            )}
+          </div>
+        </>
       )}
 
-      {conversations.map((conversation) => (
-        <ConversationItem
-          key={conversation.id}
-          conversation={conversation}
-          isActive={conversationId === conversation.id}
-          isRenaming={renamingId === conversation.id}
-          isDeleting={deleteMutation.isPending && deleteMutation.variables === conversation.id}
-          newTitle={newTitle}
-          onSelect={handleSelectConversation}
-          onMouseEnter={handleMouseEnter}
-          onDelete={handleDeleteConversation}
-          onStartRename={handleStartRename}
-          onRename={handleRenameConversation}
-          onCancelRename={handleCancelRename}
-          onTitleChange={setNewTitle}
+      {/* Projects */}
+      {projects.map((project) => (
+        <ProjectItem
+          key={project.id}
+          project={project}
+          conversations={projectConversations[project.id] || []}
+          isExpanded={expandedProjects.has(project.id)}
+          activeConversationId={conversationId}
+          isDeleting={deleteProjectMutation.isPending && deleteProjectMutation.variables === project.id}
+          onToggleExpand={handleToggleProjectExpand}
+          onSelectConversation={handleSelectConversation}
+          onMouseEnterConversation={handleMouseEnter}
+          onDeleteProject={handleDeleteProject}
+          onRenameProject={handleRenameProject}
+          onCreateChat={handleCreateChatInProject}
           isSelectionMode={isSelectionMode}
-          isSelected={selectedConversations.has(conversation.id)}
-          onToggleSelect={handleToggleSelect}
+          selectedConversations={selectedConversations}
+          onToggleSelectConversation={handleToggleSelect}
         />
       ))}
+
+      {/* Unorganized Conversations (Reciente) */}
+      {unorganizedConversations.length > 0 && (
+        <>
+          {projects.length > 0 && (
+            <div className="px-2 py-2 text-xs font-medium text-[#4c4c4c] flex items-center gap-2">
+              <MessageSquare className="size-3" />
+              <span>Reciente</span>
+            </div>
+          )}
+          {unorganizedConversations.map((conversation) => (
+            <ConversationItem
+              key={conversation.id}
+              conversation={conversation}
+              isActive={conversationId === conversation.id}
+              isRenaming={renamingId === conversation.id}
+              isDeleting={deleteMutation.isPending && deleteMutation.variables === conversation.id}
+              newTitle={newTitle}
+              onSelect={handleSelectConversation}
+              onMouseEnter={handleMouseEnter}
+              onDelete={handleDeleteConversation}
+              onStartRename={handleStartRename}
+              onRename={handleRenameConversation}
+              onCancelRename={handleCancelRename}
+              onTitleChange={setNewTitle}
+              isSelectionMode={isSelectionMode}
+              isSelected={selectedConversations.has(conversation.id)}
+              onToggleSelect={handleToggleSelect}
+            />
+          ))}
+        </>
+      )}
     </>
   );
 });

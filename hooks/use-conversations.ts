@@ -25,7 +25,7 @@ async function fetchConversation(id: string): Promise<ConversationWithMessages> 
 }
 
 // Crear conversación
-async function createConversation(params: { title: string; geoCulturalContext?: string }) {
+async function createConversation(params: { title: string; geoCulturalContext?: string; projectId?: string }) {
   const data = await conversationsApi.create(params);
   return data.conversation;
 }

@@ -31,10 +31,13 @@ import {
   useConversationId,
   useGeoCulturalMode,
   useUserLocation,
+  usePendingProjectId,
+  useSetPendingProjectId,
 } from '@/app/chat/store';
 import { useCreateConversation } from '@/hooks/use-conversations';
 import { useQueryClient } from '@tanstack/react-query';
 import { conversationKeys } from '@/hooks/use-conversations';
+import { useProjects } from '@/hooks/use-projects';
 import { chatApi, conversationsApi, ApiError } from '@/lib/api-client';
 import { usePreciseLocation } from '@/hooks/use-precise-location';
 import { LocationPermissionDialog } from './LocationPermissionDialog';
@@ -250,8 +253,16 @@ export const MessageInput = memo(function MessageInput() {
   );
   const isStreaming = useIsStreaming();
   const conversationId = useConversationId();
+  const pendingProjectId = usePendingProjectId();
+  const setPendingProjectId = useSetPendingProjectId();
 
   const createConversationMutation = useCreateConversation();
+  const { data: projects = [] } = useProjects();
+
+  // Get pending project info for visual feedback
+  const pendingProject = pendingProjectId
+    ? projects.find(p => p.id === pendingProjectId)
+    : null;
 
   const handleLocationToggle = useCallback(() => {
     if (geoCulturalMode) {
@@ -385,9 +396,13 @@ export const MessageInput = memo(function MessageInput() {
     if (!currentConversationId) {
       try {
         const title = prompt.length > 50 ? `🖼️ ${prompt.substring(0, 47)}...` : `🖼️ ${prompt}`;
-        const conversation = await createConversationMutation.mutateAsync({ title });
+        const conversation = await createConversationMutation.mutateAsync({
+          title,
+          projectId: pendingProjectId || undefined,
+        });
         currentConversationId = conversation.id;
         setConversationId(conversation.id);
+        if (pendingProjectId) setPendingProjectId(null);
       } catch (error) {
         console.error('Error creating conversation for image:', error);
       }
@@ -465,7 +480,7 @@ export const MessageInput = memo(function MessageInput() {
 
     setStreaming(false);
     stopGeneration();
-  }, [input, imageSize, imageQuality, imageStylePreset, imageReferenceUrl, imageStrength, imageGalleryOptions, generateImage, generateWithStreaming, isGeneratingImage, addMessage, updateMessage, updateMessageGenerationState, setStreaming, startGeneration, stopGeneration, imageUsage, conversationId, createConversationMutation, setConversationId, queryClient]);
+  }, [input, imageSize, imageQuality, imageStylePreset, imageReferenceUrl, imageStrength, imageGalleryOptions, generateImage, generateWithStreaming, isGeneratingImage, addMessage, updateMessage, updateMessageGenerationState, setStreaming, startGeneration, stopGeneration, imageUsage, conversationId, createConversationMutation, setConversationId, queryClient, pendingProjectId, setPendingProjectId]);
 
   // Handle video generation
   const handleGenerateVideo = useCallback(async () => {
@@ -503,9 +518,13 @@ export const MessageInput = memo(function MessageInput() {
     if (!currentConversationId) {
       try {
         const title = prompt.length > 50 ? `🎬 ${prompt.substring(0, 47)}...` : `🎬 ${prompt}`;
-        const conversation = await createConversationMutation.mutateAsync({ title });
+        const conversation = await createConversationMutation.mutateAsync({
+          title,
+          projectId: pendingProjectId || undefined,
+        });
         currentConversationId = conversation.id;
         setConversationId(conversation.id);
+        if (pendingProjectId) setPendingProjectId(null);
       } catch (error) {
         console.error('Error creating conversation for video:', error);
       }
@@ -591,7 +610,7 @@ export const MessageInput = memo(function MessageInput() {
     // system handles it independently.
     setStreaming(false);
     stopGeneration();
-  }, [input, videoModeType, videoImageUrl, videoDuration, videoAspectRatio, videoGalleryOptions, generateVideo, isGeneratingVideo, addMessage, updateMessage, updateMessageGenerationState, setStreaming, startGeneration, stopGeneration, conversationId, createConversationMutation, setConversationId, queryClient]);
+  }, [input, videoModeType, videoImageUrl, videoDuration, videoAspectRatio, videoGalleryOptions, generateVideo, isGeneratingVideo, addMessage, updateMessage, updateMessageGenerationState, setStreaming, startGeneration, stopGeneration, conversationId, createConversationMutation, setConversationId, queryClient, pendingProjectId, setPendingProjectId]);
 
   const submitMessage = useCallback(
     async (event?: FormEvent<HTMLFormElement>) => {
@@ -648,10 +667,12 @@ export const MessageInput = memo(function MessageInput() {
 
             const conversation = await createConversationMutation.mutateAsync({
               title,
+              projectId: pendingProjectId || undefined,
             });
 
             currentConversationId = conversation.id;
             setConversationId(conversation.id);
+            if (pendingProjectId) setPendingProjectId(null);
           } catch (error) {
             console.error('Error creating conversation:', error);
           }
@@ -806,6 +827,8 @@ export const MessageInput = memo(function MessageInput() {
       setShowFileUpload,
       imageMode,
       handleGenerateImage,
+      pendingProjectId,
+      setPendingProjectId,
     ],
   );
 
@@ -945,6 +968,37 @@ export const MessageInput = memo(function MessageInput() {
       )}
 
       <div className="space-y-3">
+        {/* Pending Project Indicator - Elegant minimal design */}
+        {pendingProject && (
+          <div className="flex items-center justify-center animate-in fade-in zoom-in-95 duration-200">
+            <div
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-sm transition-all hover:scale-[1.02]"
+              style={{
+                backgroundColor: `${pendingProject.color}08`,
+                border: `1px solid ${pendingProject.color}20`,
+              }}
+            >
+              <div
+                className="w-1.5 h-1.5 rounded-full"
+                style={{ backgroundColor: pendingProject.color || '#00552b' }}
+              />
+              <span
+                className="text-xs font-medium"
+                style={{ color: pendingProject.color || '#00552b' }}
+              >
+                {pendingProject.name}
+              </span>
+              <button
+                onClick={() => setPendingProjectId(null)}
+                className="ml-0.5 p-0.5 rounded-full hover:bg-black/5 transition-colors"
+                title="Cancelar"
+              >
+                <X className="size-3 text-gray-400 hover:text-gray-600" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {geoCulturalMode && (
           <div className="flex items-center justify-between gap-3 px-4 py-2 bg-gradient-to-r from-[#00552b]/10 to-[#00aa56]/10 rounded-2xl border border-[#00552b]/20">
             <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -1428,8 +1482,10 @@ export const MessageInput = memo(function MessageInput() {
                       try {
                         const conversation = await createConversationMutation.mutateAsync({
                           title: 'Nueva conversación',
+                          projectId: pendingProjectId || undefined,
                         });
                         setConversationId(conversation.id);
+                        if (pendingProjectId) setPendingProjectId(null);
                         setShowFileUpload(true);
                       } catch (error) {
                         console.error('Error creating conversation:', error);

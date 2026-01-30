@@ -305,10 +305,28 @@ export async function apiPostStream(
 export interface Conversation {
   id: string;
   userId: string;
+  projectId: string | null;
   title: string;
   geoCulturalContext: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface Project {
+  id: string;
+  userId: string;
+  name: string;
+  description: string | null;
+  icon: string | null;
+  color: string | null;
+  category: 'general' | 'work' | 'personal' | 'school' | 'investments' | 'writing' | 'travel' | 'research' | 'coding';
+  customInstructions: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProjectWithConversations extends Project {
+  conversations: Conversation[];
 }
 
 export interface MessageAttachment {
@@ -386,7 +404,7 @@ export const conversationsApi = {
   /**
    * Create a new conversation
    */
-  create: (data: { title: string; geoCulturalContext?: string }) =>
+  create: (data: { title: string; geoCulturalContext?: string; projectId?: string }) =>
     apiPost<{ conversation: Conversation }>("/conversations", data),
 
   /**
@@ -452,6 +470,74 @@ export const conversationsApi = {
         conversationId?: string;
       }>;
     }>('/conversations/import/chatgpt', data),
+};
+
+// ============================================================================
+// PROJECTS API
+// ============================================================================
+
+export const projectsApi = {
+  /**
+   * Get all projects for current user
+   */
+  list: () =>
+    apiGet<{ projects: Project[] }>("/projects"),
+
+  /**
+   * Get a single project with its conversations
+   */
+  get: (id: string) =>
+    apiGet<{ project: ProjectWithConversations }>(`/projects/${id}`),
+
+  /**
+   * Create a new project
+   */
+  create: (data: {
+    name: string;
+    description?: string;
+    icon?: string;
+    color?: string;
+    category?: Project['category'];
+    customInstructions?: string;
+  }) =>
+    apiPost<{ project: Project }>("/projects", data),
+
+  /**
+   * Update a project
+   */
+  update: (id: string, data: {
+    name?: string;
+    description?: string;
+    icon?: string;
+    color?: string;
+    category?: Project['category'];
+    customInstructions?: string;
+  }) =>
+    apiPatch<{ project: Project }>(`/projects/${id}`, data),
+
+  /**
+   * Delete a project
+   */
+  delete: (id: string) =>
+    apiDelete<{ success: boolean }>(`/projects/${id}`),
+
+  /**
+   * Add a conversation to a project
+   */
+  addConversation: (projectId: string, conversationId: string) =>
+    apiPost<{ success: boolean }>(`/projects/${projectId}/conversations`, { conversationId }),
+
+  /**
+   * Remove a conversation from a project
+   */
+  removeConversation: (projectId: string, conversationId: string) =>
+    apiDelete<{ success: boolean }>(`/projects/${projectId}/conversations/${conversationId}`),
+
+  /**
+   * Get conversations without a project
+   */
+  getUnorganized: () =>
+    apiGet<{ conversations: Conversation[] }>("/projects/unorganized"),
 };
 
 // ============================================================================

@@ -69,6 +69,7 @@ type ChatStore = {
   isStreaming: boolean;
   typingStateIndex: number;
   conversationId: string | null;
+  pendingProjectId: string | null; // Project to associate when creating new conversation
   geoCulturalMode: boolean;
   userLocation: UserLocation | null;
 
@@ -84,6 +85,7 @@ type ChatStore = {
   replaceMessages: (messages: ChatMessage[]) => void;
   setStreaming: (value: boolean) => void;
   setConversationId: (id: string | null) => void;
+  setPendingProjectId: (id: string | null) => void;
   setGeoCulturalMode: (value: boolean) => void;
   setUserLocation: (location: UserLocation | null) => void;
   startGeneration: (mode: GenerationMode, messageId: string) => void;
@@ -145,6 +147,7 @@ const createChatStore = create<ChatStore>()(
       isStreaming: false,
       typingStateIndex: 0,
       conversationId: null,
+      pendingProjectId: null,
       geoCulturalMode: false,
       userLocation: null,
 
@@ -217,6 +220,9 @@ const createChatStore = create<ChatStore>()(
       setConversationId: (id) =>
         set({ conversationId: id }, false, 'setConversationId'),
 
+      setPendingProjectId: (id) =>
+        set({ pendingProjectId: id }, false, 'setPendingProjectId'),
+
       setGeoCulturalMode: (value) =>
         set({ geoCulturalMode: value }, false, 'setGeoCulturalMode'),
 
@@ -253,6 +259,7 @@ const createChatStore = create<ChatStore>()(
             isStreaming: false,
             typingStateIndex: 0,
             conversationId: null,
+            pendingProjectId: null,
             geoCulturalMode: false,
             userLocation: null,
             generationMode: 'none',
@@ -282,6 +289,8 @@ export const useUpdateMessageGenerationState = () => useChatStore((state) => sta
 export const useReplaceMessages = () => useChatStore((state) => state.replaceMessages);
 export const useSetStreaming = () => useChatStore((state) => state.setStreaming);
 export const useSetConversationId = () => useChatStore((state) => state.setConversationId);
+export const usePendingProjectId = () => useChatStore((state) => state.pendingProjectId);
+export const useSetPendingProjectId = () => useChatStore((state) => state.setPendingProjectId);
 export const useSetGeoCulturalMode = () => useChatStore((state) => state.setGeoCulturalMode);
 export const useSetUserLocation = () => useChatStore((state) => state.setUserLocation);
 
