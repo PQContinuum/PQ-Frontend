@@ -94,14 +94,14 @@ function SidebarFooterContent({
                   </span>
                   <span className={`text-xs font-semibold ${
                     userPlan?.planName === 'Free' || !userPlan?.planName
-                      ? 'text-[#7EEFB2]'
+                      ? 'text-[#64748B]'
                       : userPlan?.planName === 'Básico' || userPlan?.planName === 'Basic'
-                      ? 'text-[#3CCB75]'
+                      ? 'text-[#3B82F6]'
                       : userPlan?.planName === 'Profesional' || userPlan?.planName === 'Professional'
-                      ? 'text-[#DAA520]'
+                      ? 'text-[#8B5CF6]'
                       : userPlan?.planName === 'Enterprise' || userPlan?.planName === 'Empresarial'
-                      ? 'text-[#0A4D68]'
-                      : 'text-[#7EEFB2]'
+                      ? 'text-[#F59E0B]'
+                      : 'text-[#64748B]'
                   }`}>
                     Plan {userPlan?.planName || 'Free'}
                   </span>
@@ -361,25 +361,25 @@ export default function ChatPage() {
               </button>
               {/*<div className={`group rounded-full border-2 px-4 py-1.5 text-sm cursor-pointer transition-all hover:shadow-lg hover:scale-105 ${
                 userPlan?.planName === 'Free' || !userPlan?.planName
-                  ? 'border-[#7EEFB2] bg-[#7EEFB2]/10'
+                  ? 'border-[#64748B] bg-[#64748B]/10'
                   : userPlan?.planName === 'Básico' || userPlan?.planName === 'Basic'
-                  ? 'border-[#3CCB75] bg-[#3CCB75]/10'
+                  ? 'border-[#3B82F6] bg-[#3B82F6]/10'
                   : userPlan?.planName === 'Profesional' || userPlan?.planName === 'Professional'
-                  ? 'border-[#DAA520] bg-[#DAA520]/10'
+                  ? 'border-[#8B5CF6] bg-[#8B5CF6]/10'
                   : userPlan?.planName === 'Enterprise' || userPlan?.planName === 'Empresarial'
-                  ? 'border-[#0A4D68] bg-[#0A4D68]/10'
-                  : 'border-[#7EEFB2] bg-[#7EEFB2]/10'
+                  ? 'border-[#F59E0B] bg-[#F59E0B]/10'
+                  : 'border-[#64748B] bg-[#64748B]/10'
               }`}>
                 <span className={`flex items-center gap-2 font-semibold ${
                   userPlan?.planName === 'Free' || !userPlan?.planName
-                    ? 'text-[#7EEFB2]'
+                    ? 'text-[#64748B]'
                     : userPlan?.planName === 'Básico' || userPlan?.planName === 'Basic'
-                    ? 'text-[#3CCB75]'
+                    ? 'text-[#3B82F6]'
                     : userPlan?.planName === 'Profesional' || userPlan?.planName === 'Professional'
-                    ? 'text-[#DAA520]'
+                    ? 'text-[#8B5CF6]'
                     : userPlan?.planName === 'Enterprise' || userPlan?.planName === 'Empresarial'
-                    ? 'text-[#0A4D68]'
-                    : 'text-[#7EEFB2]'
+                    ? 'text-[#F59E0B]'
+                    : 'text-[#64748B]'
                 }`}>
                   {userPlan?.planName === 'Free' || !userPlan?.planName
                     ? '180 tokens ahorrados'
