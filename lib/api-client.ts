@@ -402,6 +402,12 @@ export const conversationsApi = {
     apiDelete<{ success: boolean }>(`/conversations/${id}`),
 
   /**
+   * Bulk delete multiple conversations
+   */
+  bulkDelete: (ids: string[]) =>
+    apiPost<{ success: boolean; deletedCount: number }>('/conversations/bulk-delete', { ids }),
+
+  /**
    * Get messages for a conversation
    */
   getMessages: (conversationId: string) =>

@@ -36,6 +36,12 @@ async function deleteConversation(id: string) {
   return { id };
 }
 
+// Eliminar múltiples conversaciones
+async function deleteConversations(ids: string[]) {
+  const result = await conversationsApi.bulkDelete(ids);
+  return { ids, deletedCount: result.deletedCount };
+}
+
 // Hook: Obtener todas las conversaciones
 export function useConversations() {
   return useQuery({
@@ -116,6 +122,47 @@ export function useDeleteConversation() {
       return { previousConversations };
     },
     onError: (_err, _deletedId, context) => {
+      // Revertir en caso de error
+      if (context?.previousConversations) {
+        queryClient.setQueryData(
+          conversationKeys.lists(),
+          context.previousConversations
+        );
+      }
+    },
+    onSettled: () => {
+      // Siempre invalidar después de mutar
+      queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
+    },
+  });
+}
+
+// Hook: Eliminar múltiples conversaciones
+export function useDeleteConversations() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: deleteConversations,
+    // Optimistic update
+    onMutate: async (deletedIds) => {
+      // Cancelar queries en curso
+      await queryClient.cancelQueries({ queryKey: conversationKeys.lists() });
+
+      // Snapshot del valor anterior
+      const previousConversations = queryClient.getQueryData<Conversation[]>(
+        conversationKeys.lists()
+      );
+
+      // Actualizar cache optimistamente - eliminar todas las seleccionadas
+      const idsSet = new Set(deletedIds);
+      queryClient.setQueryData<Conversation[]>(
+        conversationKeys.lists(),
+        (old) => old?.filter((conv) => !idsSet.has(conv.id)) ?? []
+      );
+
+      return { previousConversations };
+    },
+    onError: (_err, _deletedIds, context) => {
       // Revertir en caso de error
       if (context?.previousConversations) {
         queryClient.setQueryData(

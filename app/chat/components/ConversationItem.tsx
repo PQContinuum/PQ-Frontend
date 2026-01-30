@@ -1,7 +1,7 @@
 'use client';
 
 import { memo, useCallback } from 'react';
-import { MessageSquare, Ellipsis, Loader2, Pencil, Trash2 } from 'lucide-react';
+import { MessageSquare, Ellipsis, Loader2, Pencil, Trash2, Check } from 'lucide-react';
 import { SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import {
   DropdownMenu,
@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import type { Conversation } from '@/lib/api-client';
+import { cn } from '@/lib/utils';
 
 interface ConversationItemProps {
   conversation: Conversation;
@@ -24,6 +25,10 @@ interface ConversationItemProps {
   onRename: (id: string) => void;
   onCancelRename: () => void;
   onTitleChange: (title: string) => void;
+  // Selection mode props
+  isSelectionMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (id: string) => void;
 }
 
 const truncateTitle = (title: string, maxLength: number = 35): string => {
@@ -44,10 +49,17 @@ export const ConversationItem = memo(function ConversationItem({
   onRename,
   onCancelRename,
   onTitleChange,
+  isSelectionMode = false,
+  isSelected = false,
+  onToggleSelect,
 }: ConversationItemProps) {
   const handleSelect = useCallback(() => {
-    onSelect(conversation.id);
-  }, [conversation.id, onSelect]);
+    if (isSelectionMode && onToggleSelect) {
+      onToggleSelect(conversation.id);
+    } else {
+      onSelect(conversation.id);
+    }
+  }, [conversation.id, isSelectionMode, onToggleSelect, onSelect]);
 
   const handleMouseEnter = useCallback(() => {
     onMouseEnter(conversation.id);
@@ -96,10 +108,27 @@ export const ConversationItem = memo(function ConversationItem({
           <>
             <SidebarMenuButton
               onClick={handleSelect}
-              isActive={isActive}
-              className="data-[active=true]:bg-[#00552b]/10 data-[active=true]:text-[#00552b] hover:bg-[#00552b]/5 transition-colors pr-10"
+              isActive={!isSelectionMode && isActive}
+              className={cn(
+                "data-[active=true]:bg-[#00552b]/10 data-[active=true]:text-[#00552b] hover:bg-[#00552b]/5 transition-colors",
+                isSelectionMode ? "pr-4" : "pr-10",
+                isSelectionMode && isSelected && "bg-[#00552b]/10"
+              )}
             >
-              <MessageSquare className="size-4 flex-shrink-0" />
+              {isSelectionMode ? (
+                <div
+                  className={cn(
+                    "size-4 flex-shrink-0 rounded border-2 flex items-center justify-center transition-colors",
+                    isSelected
+                      ? "bg-[#00552b] border-[#00552b]"
+                      : "border-[#4c4c4c] bg-transparent"
+                  )}
+                >
+                  {isSelected && <Check className="size-3 text-white" />}
+                </div>
+              ) : (
+                <MessageSquare className="size-4 flex-shrink-0" />
+              )}
               <div className="flex-1 overflow-hidden min-w-0">
                 <div className="text-sm font-medium whitespace-nowrap overflow-hidden">
                   {truncateTitle(conversation.title)}
@@ -107,40 +136,42 @@ export const ConversationItem = memo(function ConversationItem({
               </div>
             </SidebarMenuButton>
 
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    onClick={(e) => e.stopPropagation()}
-                    className="p-1.5 rounded hover:bg-black/5 transition-colors"
-                  >
-                    {isDeleting ? (
-                      <Loader2 className="size-4 animate-spin text-[#4c4c4c]" />
-                    ) : (
-                      <Ellipsis className="size-4 text-[#4c4c4c]" />
-                    )}
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" side="bottom" sideOffset={4} className="w-48">
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleStartRename();
-                    }}
-                  >
-                    <Pencil className="size-4" />
-                    <span>Renombrar</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    variant="destructive"
-                    onClick={handleDelete}
-                  >
-                    <Trash2 className="size-4" />
-                    <span>Eliminar</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+            {!isSelectionMode && (
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      onClick={(e) => e.stopPropagation()}
+                      className="p-1.5 rounded hover:bg-black/5 transition-colors"
+                    >
+                      {isDeleting ? (
+                        <Loader2 className="size-4 animate-spin text-[#4c4c4c]" />
+                      ) : (
+                        <Ellipsis className="size-4 text-[#4c4c4c]" />
+                      )}
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" side="bottom" sideOffset={4} className="w-48">
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleStartRename();
+                      }}
+                    >
+                      <Pencil className="size-4" />
+                      <span>Renombrar</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onClick={handleDelete}
+                    >
+                      <Trash2 className="size-4" />
+                      <span>Eliminar</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            )}
           </>
         )}
       </div>

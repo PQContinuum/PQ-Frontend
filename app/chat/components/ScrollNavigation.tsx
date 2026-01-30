@@ -188,7 +188,7 @@ export const ScrollNavigation = memo(function ScrollNavigation({
                   shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1),0_0_0_1px_rgba(0,0,0,0.05)]
                   text-[#00552b]
                   transition-all duration-300
-                  focus:outline-none focus:ring-2 focus:ring-[#00552b]/30 focus:ring-offset-2
+                  outline-none
                   dark:from-zinc-800 dark:to-zinc-900 dark:border-white/10
                   dark:text-[#00aa56] dark:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.4)]
                 "
@@ -217,10 +217,10 @@ export const ScrollNavigation = memo(function ScrollNavigation({
                   w-12 h-12
                   rounded-2xl
                   transition-all duration-300
-                  focus:outline-none focus:ring-2 focus:ring-offset-2
+                  outline-none
                   ${highlightBottom
-                    ? 'bg-gradient-to-br from-[#00552b] to-[#003d1f] text-white border border-[#00552b]/50 shadow-[0_4px_20px_-4px_rgba(0,85,43,0.5)] focus:ring-[#00552b]/30 dark:from-[#00aa56] dark:to-[#008844] dark:border-[#00aa56]/50 dark:shadow-[0_4px_20px_-4px_rgba(0,170,86,0.4)]'
-                    : 'bg-gradient-to-br from-white to-gray-50 border border-white/80 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1),0_0_0_1px_rgba(0,0,0,0.05)] text-[#00552b] focus:ring-[#00552b]/30 dark:from-zinc-800 dark:to-zinc-900 dark:border-white/10 dark:text-[#00aa56] dark:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.4)]'
+                    ? 'bg-gradient-to-br from-[#00552b] to-[#003d1f] text-white border border-[#00552b]/50 shadow-[0_4px_20px_-4px_rgba(0,85,43,0.5)] dark:from-[#00aa56] dark:to-[#008844] dark:border-[#00aa56]/50 dark:shadow-[0_4px_20px_-4px_rgba(0,170,86,0.4)]'
+                    : 'bg-gradient-to-br from-white to-gray-50 border border-white/80 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1),0_0_0_1px_rgba(0,0,0,0.05)] text-[#00552b] dark:from-zinc-800 dark:to-zinc-900 dark:border-white/10 dark:text-[#00aa56] dark:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.4)]'
                   }
                 `}
                 aria-label="Ir al final del chat"
