@@ -34,7 +34,7 @@ export const VOICE_MAP: Record<Language, Record<Gender, VoiceConfig>> = {
   es: {
     female: {
       voice: 'nova',
-      label: 'Nova',
+      label: 'Lisa',
       description: 'Voz femenina cálida y natural - Español Latino',
     },
     male: {
@@ -46,7 +46,7 @@ export const VOICE_MAP: Record<Language, Record<Gender, VoiceConfig>> = {
   en: {
     female: {
       voice: 'shimmer',
-      label: 'Shimmer',
+      label: 'Lisa',
       description: 'Warm, optimistic female voice for English',
     },
     male: {

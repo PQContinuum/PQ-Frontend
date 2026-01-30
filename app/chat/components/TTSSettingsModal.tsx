@@ -1,7 +1,7 @@
 'use client';
 
-import { memo } from 'react';
-import { Volume2 } from 'lucide-react';
+import { memo, useCallback, useState } from 'react';
+import { Volume2, Play, Square, Loader2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -22,6 +22,19 @@ import {
   GENDER_OPTIONS,
   getVoiceConfig,
 } from '@/utils/voiceMapping';
+import { useTextToSpeech } from '@/hooks/useTextToSpeech';
+
+// Voice preview samples by language and gender
+const VOICE_SAMPLES: Record<Language, Record<Gender, string>> = {
+  es: {
+    female: 'Hola, soy Lisa, tu asistente de Continuum AI. Estoy aquí para ayudarte en lo que necesites.',
+    male: 'Hola, soy tu asistente de Continuum AI. Estoy aquí para ayudarte en lo que necesites.',
+  },
+  en: {
+    female: "Hello, I'm Lisa, your Continuum AI assistant. I'm here to help you with whatever you need.",
+    male: "Hello, I'm your Continuum AI assistant. I'm here to help you with whatever you need.",
+  },
+};
 
 interface TTSSettingsModalProps {
   open: boolean;
@@ -36,6 +49,28 @@ function TTSSettingsModalComponent({ open, onOpenChange }: TTSSettingsModalProps
 
   // Get current voice info
   const currentVoice = getVoiceConfig(language, gender);
+
+  // TTS for voice preview
+  const { speak, stop, isLoading, isPlaying } = useTextToSpeech();
+  const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
+
+  // Handle voice preview
+  const handlePlayPreview = useCallback(async () => {
+    if (isPreviewPlaying || isPlaying) {
+      stop();
+      setIsPreviewPlaying(false);
+      return;
+    }
+
+    setIsPreviewPlaying(true);
+    try {
+      await speak(VOICE_SAMPLES[language][gender]);
+    } catch (error) {
+      console.error('Error playing voice preview:', error);
+    } finally {
+      setIsPreviewPlaying(false);
+    }
+  }, [language, gender, speak, stop, isPreviewPlaying, isPlaying]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -121,7 +156,7 @@ function TTSSettingsModalComponent({ open, onOpenChange }: TTSSettingsModalProps
             </div>
           </div>
 
-          {/* Current Voice Info */}
+          {/* Current Voice Info with Preview */}
           <div className="bg-gradient-to-br from-[#00552b]/5 to-[#00aa56]/5 rounded-xl p-4 border border-[#00552b]/10">
             <div className="flex items-start gap-3">
               <div className="flex items-center justify-center size-10 rounded-full bg-[#00552b]/10 flex-shrink-0">
@@ -139,6 +174,41 @@ function TTSSettingsModalComponent({ open, onOpenChange }: TTSSettingsModalProps
                 </p>
               </div>
             </div>
+
+            {/* Voice Preview Button */}
+            <button
+              type="button"
+              onClick={handlePlayPreview}
+              disabled={isLoading}
+              className={`
+                w-full mt-4 flex items-center justify-center gap-2 px-4 py-3 rounded-xl
+                text-sm font-semibold transition-all duration-200
+                focus:outline-none focus:ring-2 focus:ring-[#00552b]/30 focus:ring-offset-2
+                ${
+                  isPreviewPlaying || isPlaying
+                    ? 'bg-red-500 hover:bg-red-600 text-white'
+                    : 'bg-[#00552b] hover:bg-[#00442a] text-white'
+                }
+                disabled:opacity-50 disabled:cursor-not-allowed
+              `}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  <span>Cargando...</span>
+                </>
+              ) : isPreviewPlaying || isPlaying ? (
+                <>
+                  <Square className="size-4 fill-current" />
+                  <span>Detener</span>
+                </>
+              ) : (
+                <>
+                  <Play className="size-4 fill-current" />
+                  <span>Escuchar voz</span>
+                </>
+              )}
+            </button>
           </div>
 
           {/* Auto-save notice */}

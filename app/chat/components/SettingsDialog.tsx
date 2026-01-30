@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { motion } from 'framer-motion';
-import { User, CreditCard, Sparkles, Clock, Database, Upload, MessageSquare } from 'lucide-react';
+import { User, CreditCard, Sparkles, Clock, Database, Upload, MessageSquare, ExternalLink, Loader2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ChatGPTImportDialog } from './ChatGPTImportDialog';
+import { billingApi } from '@/lib/api-client';
 
 // ChatGPT brand color
 const CHATGPT_GREEN = '#10a37f';
@@ -74,7 +75,25 @@ export function SettingsDialog({
 }: SettingsDialogProps) {
   const [activeTab, setActiveTab] = React.useState<'account' | 'plans' | 'data'>('account');
   const [importDialogOpen, setImportDialogOpen] = React.useState(false);
+  const [isLoadingPortal, setIsLoadingPortal] = React.useState(false);
   const planColors = getPlanColors(userPlan);
+
+  // Handle opening Stripe Customer Portal
+  const handleManageSubscription = React.useCallback(async () => {
+    setIsLoadingPortal(true);
+    try {
+      const response = await billingApi.createPortalSession({
+        returnUrl: window.location.href,
+      });
+      // Redirect to Stripe Customer Portal
+      window.location.href = response.url;
+    } catch (error) {
+      console.error('Error opening subscription portal:', error);
+      // Could show a toast/alert here
+    } finally {
+      setIsLoadingPortal(false);
+    }
+  }, []);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -308,12 +327,36 @@ export function SettingsDialog({
                     </div>
                   )}
 
-                  {/* Manage Subscription */}
-                  {userPlan !== 'Gratis' && (
-                    <div className="pt-4 border-t border-black/10">
-                      <button className="text-sm text-[#4c4c4c] hover:text-[#00552b] font-semibold transition-colors">
-                        Gestionar mi suscripción →
-                      </button>
+                  {/* Manage Subscription - Prominent CTA */}
+                  {userPlan !== 'Gratis' && userPlan !== 'Free' && (
+                    <div className="bg-gradient-to-r from-[#00552b]/5 to-[#00aa56]/5 rounded-xl p-5 border border-[#00552b]/20">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div>
+                          <h5 className="text-sm font-bold text-[#111111] mb-1">
+                            Gestiona tu suscripción
+                          </h5>
+                          <p className="text-xs text-[#4c4c4c]">
+                            Actualiza tu método de pago, cambia de plan o cancela
+                          </p>
+                        </div>
+                        <Button
+                          onClick={handleManageSubscription}
+                          disabled={isLoadingPortal}
+                          className="bg-[#00552b] hover:bg-[#00442a] text-white gap-2 px-6 py-3 h-auto text-sm font-semibold shrink-0"
+                        >
+                          {isLoadingPortal ? (
+                            <>
+                              <Loader2 className="size-4 animate-spin" />
+                              Cargando...
+                            </>
+                          ) : (
+                            <>
+                              <ExternalLink className="size-4" />
+                              Gestionar suscripción
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </motion.div>
