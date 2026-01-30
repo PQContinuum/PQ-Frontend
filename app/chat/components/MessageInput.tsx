@@ -95,6 +95,62 @@ const createId = () =>
     ? crypto.randomUUID()
     : Math.random().toString(36).slice(2);
 
+/**
+ * Detects if a prompt needs enhancement (contextual references or too short)
+ * Returns { needsEnhancement: true } if it should be enhanced
+ * Returns { needsEnhancement: false, error: string } if it's a question (not suitable for generation)
+ * Returns { needsEnhancement: false } if the prompt is already good
+ */
+const checkPromptNeedsEnhancement = (prompt: string, type: 'image' | 'video'): {
+  needsEnhancement: boolean;
+  error?: string;
+} => {
+  const trimmed = prompt.trim().toLowerCase();
+
+  // Check if prompt is just a question - these can't be enhanced
+  const questionPatterns = [
+    /^\?/,
+    /^(qué|que|cómo|como|por qué|porque|cuál|cual|dónde|donde|cuándo|cuando)\s/i,
+    /^(what|how|why|which|where|when|can you|could you)\s/i,
+  ];
+
+  for (const pattern of questionPatterns) {
+    if (pattern.test(trimmed)) {
+      return {
+        needsEnhancement: false,
+        error: `Para generar ${type === 'image' ? 'una imagen' : 'un video'}, describe visualmente lo que quieres crear en lugar de hacer una pregunta.`,
+      };
+    }
+  }
+
+  // Check for very short prompts - need enhancement
+  if (trimmed.length < 15) {
+    return { needsEnhancement: true };
+  }
+
+  // Contextual reference patterns (Spanish & English) - need enhancement
+  const contextualPatterns = [
+    /\b(lo|la|el|los|las)\s+(anterior|mismo|misma|de antes)\b/i,
+    /\b(eso|esto|ese|esta|esos|estas|aquel|aquella)\b/i,
+    /\b(igual|lo mismo|como antes|otra vez)\b/i,
+    /\b(haz|hazme|genera|crea|dame)\s+(lo mismo|eso|esto|otro)\b/i,
+    /\b(the same|this|that|it|another one)\b/i,
+    /de (lo|la) (anterior|que (dije|pedí|mencioné))/i,
+    /como (el|la) (anterior|último|última)/i,
+    /(del|de el|sobre el|sobre la) (tema|cosa|lo) (anterior|pasado)/i,
+    /^(si|sí|ok|okay|dale|va|bien|perfecto)$/i,
+  ];
+
+  for (const pattern of contextualPatterns) {
+    if (pattern.test(trimmed)) {
+      return { needsEnhancement: true };
+    }
+  }
+
+  // Prompt is good as-is
+  return { needsEnhancement: false };
+};
+
 const parseSSEChunk = (chunk: string): SSEvent | null => {
   const trimmed = chunk.trim();
   if (!trimmed) return null;
@@ -364,8 +420,71 @@ export const MessageInput = memo(function MessageInput() {
 
   // Handle image generation
   const handleGenerateImage = useCallback(async () => {
-    const prompt = input.trim();
+    let prompt = input.trim();
     if (!prompt || isGeneratingImage) return;
+
+    // Check if prompt needs enhancement
+    const promptCheck = checkPromptNeedsEnhancement(prompt, 'image');
+
+    // If it's a question (not suitable for generation), show error
+    if (promptCheck.error) {
+      addMessage({
+        id: createId(),
+        role: 'user',
+        content: `🖼️ ${prompt}`,
+      });
+      addMessage({
+        id: createId(),
+        role: 'assistant',
+        content: `⚠️ ${promptCheck.error}`,
+      });
+      return;
+    }
+
+    // If prompt needs enhancement and we have conversation history, enhance it
+    if (promptCheck.needsEnhancement && messages.length > 0) {
+      try {
+        const enhanceResult = await chatApi.enhancePrompt({
+          prompt,
+          messages: messages.map(m => ({ role: m.role, content: m.content })),
+          type: 'image',
+        });
+
+        if (enhanceResult.wasEnhanced) {
+          prompt = enhanceResult.enhancedPrompt;
+        }
+      } catch (error) {
+        console.error('Error enhancing prompt:', error);
+        // If enhancement fails but there's no context, show a helpful message
+        if (messages.length === 0) {
+          addMessage({
+            id: createId(),
+            role: 'user',
+            content: `🖼️ ${prompt}`,
+          });
+          addMessage({
+            id: createId(),
+            role: 'assistant',
+            content: `⚠️ No hay contexto de conversación para entender tu solicitud. Por favor, describe específicamente lo que quieres ver en la imagen.`,
+          });
+          return;
+        }
+        // Otherwise continue with original prompt
+      }
+    } else if (promptCheck.needsEnhancement && messages.length === 0) {
+      // No context available to enhance
+      addMessage({
+        id: createId(),
+        role: 'user',
+        content: `🖼️ ${prompt}`,
+      });
+      addMessage({
+        id: createId(),
+        role: 'assistant',
+        content: `⚠️ Por favor, describe con más detalle lo que quieres ver en la imagen. Por ejemplo: "Un atardecer en la playa con palmeras y olas suaves"`,
+      });
+      return;
+    }
 
     // Add user message showing the prompt (and reference image if using image-to-image)
     const userMessageId = createId();
@@ -480,15 +599,78 @@ export const MessageInput = memo(function MessageInput() {
 
     setStreaming(false);
     stopGeneration();
-  }, [input, imageSize, imageQuality, imageStylePreset, imageReferenceUrl, imageStrength, imageGalleryOptions, generateImage, generateWithStreaming, isGeneratingImage, addMessage, updateMessage, updateMessageGenerationState, setStreaming, startGeneration, stopGeneration, imageUsage, conversationId, createConversationMutation, setConversationId, queryClient, pendingProjectId, setPendingProjectId]);
+  }, [input, imageSize, imageQuality, imageStylePreset, imageReferenceUrl, imageStrength, imageGalleryOptions, generateImage, generateWithStreaming, isGeneratingImage, addMessage, updateMessage, updateMessageGenerationState, setStreaming, startGeneration, stopGeneration, imageUsage, conversationId, createConversationMutation, setConversationId, queryClient, pendingProjectId, setPendingProjectId, messages]);
 
   // Handle video generation
   const handleGenerateVideo = useCallback(async () => {
-    const prompt = input.trim();
+    let prompt = input.trim();
     if (!prompt || isGeneratingVideo) return;
 
     // Validate image-to-video mode
     if (videoModeType === 'image-to-video' && !videoImageUrl) {
+      return;
+    }
+
+    // Check if prompt needs enhancement
+    const promptCheck = checkPromptNeedsEnhancement(prompt, 'video');
+
+    // If it's a question (not suitable for generation), show error
+    if (promptCheck.error) {
+      addMessage({
+        id: createId(),
+        role: 'user',
+        content: `🎬 ${prompt}`,
+      });
+      addMessage({
+        id: createId(),
+        role: 'assistant',
+        content: `⚠️ ${promptCheck.error}`,
+      });
+      return;
+    }
+
+    // If prompt needs enhancement and we have conversation history, enhance it
+    if (promptCheck.needsEnhancement && messages.length > 0) {
+      try {
+        const enhanceResult = await chatApi.enhancePrompt({
+          prompt,
+          messages: messages.map(m => ({ role: m.role, content: m.content })),
+          type: 'video',
+        });
+
+        if (enhanceResult.wasEnhanced) {
+          prompt = enhanceResult.enhancedPrompt;
+        }
+      } catch (error) {
+        console.error('Error enhancing prompt:', error);
+        // If enhancement fails but there's no context, show a helpful message
+        if (messages.length === 0) {
+          addMessage({
+            id: createId(),
+            role: 'user',
+            content: `🎬 ${prompt}`,
+          });
+          addMessage({
+            id: createId(),
+            role: 'assistant',
+            content: `⚠️ No hay contexto de conversación para entender tu solicitud. Por favor, describe específicamente lo que quieres ver en el video.`,
+          });
+          return;
+        }
+        // Otherwise continue with original prompt
+      }
+    } else if (promptCheck.needsEnhancement && messages.length === 0) {
+      // No context available to enhance
+      addMessage({
+        id: createId(),
+        role: 'user',
+        content: `🎬 ${prompt}`,
+      });
+      addMessage({
+        id: createId(),
+        role: 'assistant',
+        content: `⚠️ Por favor, describe con más detalle lo que quieres ver en el video. Por ejemplo: "Un dron volando sobre montañas nevadas al atardecer"`,
+      });
       return;
     }
 
@@ -610,7 +792,7 @@ export const MessageInput = memo(function MessageInput() {
     // system handles it independently.
     setStreaming(false);
     stopGeneration();
-  }, [input, videoModeType, videoImageUrl, videoDuration, videoAspectRatio, videoGalleryOptions, generateVideo, isGeneratingVideo, addMessage, updateMessage, updateMessageGenerationState, setStreaming, startGeneration, stopGeneration, conversationId, createConversationMutation, setConversationId, queryClient, pendingProjectId, setPendingProjectId]);
+  }, [input, videoModeType, videoImageUrl, videoDuration, videoAspectRatio, videoGalleryOptions, generateVideo, isGeneratingVideo, addMessage, updateMessage, updateMessageGenerationState, setStreaming, startGeneration, stopGeneration, conversationId, createConversationMutation, setConversationId, queryClient, pendingProjectId, setPendingProjectId, messages]);
 
   const submitMessage = useCallback(
     async (event?: FormEvent<HTMLFormElement>) => {

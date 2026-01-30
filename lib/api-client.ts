@@ -569,6 +569,18 @@ export interface ChatRequest {
   attachmentIds?: string[];
 }
 
+export interface EnhancePromptRequest {
+  prompt: string;
+  messages: Array<{ role: 'user' | 'assistant'; content: string }>;
+  type: 'image' | 'video';
+}
+
+export interface EnhancePromptResponse {
+  enhancedPrompt: string;
+  wasEnhanced: boolean;
+  reason?: string;
+}
+
 export const chatApi = {
   /**
    * Send a chat message and get streaming response (NDJSON format)
@@ -580,6 +592,13 @@ export const chatApi = {
    */
   sync: (request: ChatRequest) =>
     apiPost<{ content: string; role: "assistant" }>("/chat/sync", request),
+
+  /**
+   * Enhance a prompt for image/video generation using conversation context
+   * This helps resolve contextual references like "lo anterior", "eso", etc.
+   */
+  enhancePrompt: (request: EnhancePromptRequest) =>
+    apiPost<EnhancePromptResponse>("/chat/enhance-prompt", request),
 };
 
 // ============================================================================
