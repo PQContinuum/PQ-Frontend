@@ -18,6 +18,7 @@ import {
   Check,
   Loader2,
   Users,
+  Trash2,
 } from 'lucide-react';
 import {
   useCharacter,
@@ -28,6 +29,7 @@ import {
   useShareCharacter,
 } from '@/hooks/use-characters';
 import { ShareCharacterModal } from '@/app/chat/components/lisa/ShareCharacterModal';
+import { DeleteCharacterModal } from '@/app/chat/components/lisa/DeleteCharacterModal';
 import { VISUAL_STYLE_OPTIONS, CHARACTER_TYPE_OPTIONS, CHARACTER_LOCK_OPTIONS } from '@/lib/lisa/constants';
 import type { Character, CharacterLocks } from '@/lib/lisa/types';
 
@@ -39,6 +41,7 @@ export default function CharacterDetailPage() {
   const editMode = searchParams.get('edit') === 'true';
 
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
@@ -420,6 +423,25 @@ export default function CharacterDetailPage() {
                 </>
               )}
             </div>
+
+            {/* Settings / Danger Zone - Only for owner */}
+            {isOwner && (
+              <div className="mt-8 p-4 bg-red-50 border border-red-200 rounded-xl">
+                <h3 className="text-sm font-semibold text-red-800 mb-2">
+                  Zona de configuracion
+                </h3>
+                <p className="text-sm text-red-600 mb-4">
+                  Las acciones en esta seccion son irreversibles. Procede con cuidado.
+                </p>
+                <button
+                  onClick={() => setShowDeleteModal(true)}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-white border border-red-300 text-red-600 rounded-lg hover:bg-red-100 transition"
+                >
+                  <Trash2 className="w-5 h-5" />
+                  Eliminar personaje
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -430,6 +452,16 @@ export default function CharacterDetailPage() {
           character={character}
           isOpen={showShareModal}
           onClose={() => setShowShareModal(false)}
+        />
+      )}
+
+      {/* Delete modal */}
+      {isOwner && (
+        <DeleteCharacterModal
+          character={character}
+          isOpen={showDeleteModal}
+          onClose={() => setShowDeleteModal(false)}
+          onSuccess={() => router.push('/characters')}
         />
       )}
     </div>

@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { motion } from 'framer-motion';
-import { User, CreditCard, Rocket, Clock, Database, Upload, MessageSquare, ExternalLink, Loader2, Crown, Check } from 'lucide-react';
+import { User, CreditCard, Rocket, Clock, Database, Upload, MessageSquare, ExternalLink, Loader2, Crown, Check, Sparkles, Users, Trash2, Eye } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -11,7 +11,10 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ChatGPTImportDialog } from './ChatGPTImportDialog';
+import { DeleteCharacterModal } from './lisa/DeleteCharacterModal';
 import { billingApi } from '@/lib/api-client';
+import { useCharacters } from '@/hooks/use-characters';
+import type { Character } from '@/lib/lisa/types';
 
 // ChatGPT brand color
 const CHATGPT_GREEN = '#10a37f';
@@ -73,10 +76,14 @@ export function SettingsDialog({
   userEmail,
   userPlan,
 }: SettingsDialogProps) {
-  const [activeTab, setActiveTab] = React.useState<'account' | 'plans' | 'data'>('account');
+  const [activeTab, setActiveTab] = React.useState<'account' | 'plans' | 'data' | 'lisa'>('account');
   const [importDialogOpen, setImportDialogOpen] = React.useState(false);
   const [isLoadingPortal, setIsLoadingPortal] = React.useState(false);
+  const [characterToDelete, setCharacterToDelete] = React.useState<Character | null>(null);
   const planColors = getPlanColors(userPlan);
+
+  // Characters for LISA tab
+  const { data: characters, isLoading: isLoadingCharacters } = useCharacters();
 
   // Handle opening Stripe Customer Portal
   const handleManageSubscription = React.useCallback(async () => {
@@ -141,6 +148,18 @@ export function SettingsDialog({
               >
                 <Database className="size-4" />
                 <span>Datos</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('lisa')}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                  activeTab === 'lisa'
+                    ? 'bg-white text-[#00552b] shadow-sm'
+                    : 'text-[#4c4c4c] hover:bg-white/50'
+                }`}
+              >
+                <Sparkles className="size-4" />
+                <span>LISA</span>
               </button>
             </nav>
           </div>
@@ -454,6 +473,123 @@ export function SettingsDialog({
                   </div>
                 </motion.div>
               )}
+
+              {activeTab === 'lisa' && (
+                <motion.div
+                  key="lisa"
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="space-y-6"
+                >
+                  <div>
+                    <h3 className="text-lg font-bold text-[#111111] mb-1">
+                      LISA - Personajes
+                    </h3>
+                    <p className="text-sm text-[#4c4c4c]">
+                      Gestiona los personajes que has creado para generacion de contenido
+                    </p>
+                  </div>
+
+                  {/* Characters List */}
+                  <div className="bg-white rounded-xl border border-black/10 shadow-sm overflow-hidden">
+                    <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                      <h4 className="text-sm font-bold text-[#111111]">
+                        Mis Personajes
+                      </h4>
+                      <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                        {characters?.length || 0} personajes
+                      </span>
+                    </div>
+
+                    {isLoadingCharacters ? (
+                      <div className="p-8 flex items-center justify-center">
+                        <Loader2 className="size-6 text-[#00552b] animate-spin" />
+                      </div>
+                    ) : !characters || characters.length === 0 ? (
+                      <div className="p-8 text-center">
+                        <Users className="size-12 text-gray-300 mx-auto mb-3" />
+                        <p className="text-sm text-gray-500">
+                          No tienes personajes creados
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          Crea personajes desde el wizard de LISA
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-gray-100 max-h-[400px] overflow-y-auto">
+                        {characters.map((character) => (
+                          <div
+                            key={character.id}
+                            className="p-4 flex items-center gap-4 hover:bg-gray-50 transition"
+                          >
+                            {/* Avatar */}
+                            {character.referenceImageUrl ? (
+                              <img
+                                src={character.referenceImageUrl}
+                                alt={character.name}
+                                className="size-12 rounded-lg object-cover border border-gray-200"
+                              />
+                            ) : (
+                              <div className="size-12 rounded-lg bg-gray-100 flex items-center justify-center border border-gray-200">
+                                <Users className="size-6 text-gray-400" />
+                              </div>
+                            )}
+
+                            {/* Info */}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold text-[#111111] truncate">
+                                {character.name}
+                              </p>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-xs text-gray-500 capitalize">
+                                  {character.visualStyle || 'Sin estilo'}
+                                </span>
+                                {character.isPublic && (
+                                  <span className="text-xs text-green-600 flex items-center gap-1">
+                                    <Eye className="size-3" />
+                                    Publico
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Delete button */}
+                            <button
+                              onClick={() => setCharacterToDelete(character)}
+                              className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
+                              title="Eliminar personaje"
+                            >
+                              <Trash2 className="size-5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Info box */}
+                  <div className="bg-purple-50 rounded-xl p-4 border border-purple-200">
+                    <h5 className="text-xs font-bold text-purple-700 uppercase tracking-wide mb-2">
+                      Sobre los personajes
+                    </h5>
+                    <ul className="space-y-2 text-xs text-purple-800">
+                      <li className="flex items-start gap-2">
+                        <span className="text-purple-600 mt-0.5">•</span>
+                        <span>Los personajes te permiten mantener consistencia visual en tus generaciones</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-purple-600 mt-0.5">•</span>
+                        <span>Puedes hacer publicos tus personajes para que otros los usen</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-purple-600 mt-0.5">•</span>
+                        <span>Eliminar un personaje es permanente y no se puede deshacer</span>
+                      </li>
+                    </ul>
+                  </div>
+                </motion.div>
+              )}
             </div>
           </div>
         </div>
@@ -463,6 +599,16 @@ export function SettingsDialog({
           open={importDialogOpen}
           onOpenChange={setImportDialogOpen}
         />
+
+        {/* Delete Character Modal */}
+        {characterToDelete && (
+          <DeleteCharacterModal
+            character={characterToDelete}
+            isOpen={!!characterToDelete}
+            onClose={() => setCharacterToDelete(null)}
+            onSuccess={() => setCharacterToDelete(null)}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

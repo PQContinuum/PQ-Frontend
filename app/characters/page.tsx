@@ -77,16 +77,17 @@ export default function CharactersPage() {
 
   // Filter public characters by search
   const filteredPublicCharacters = useMemo(() => {
-    if (!publicData?.characters) return [];
-    if (!searchQuery) return publicData.characters;
+    const characters = publicData?.characters;
+    if (!characters) return [];
+    if (!searchQuery) return characters;
     const query = searchQuery.toLowerCase();
-    return publicData.characters.filter((char) => {
+    return characters.filter((char) => {
       const matchesName = char.name.toLowerCase().includes(query);
       const matchesDesc = char.description?.toLowerCase().includes(query);
       const matchesTitle = char.galleryTitle?.toLowerCase().includes(query);
       return matchesName || matchesDesc || matchesTitle;
     });
-  }, [publicData?.characters, searchQuery]);
+  }, [publicData, searchQuery]);
 
   const handleCreateSuccess = (character: Character) => {
     setShowCreateForm(false);
