@@ -516,10 +516,18 @@ export const projectsApi = {
     apiPatch<{ project: Project }>(`/projects/${id}`, data),
 
   /**
-   * Delete a project
+   * Delete a project (conversations are unlinked but not deleted)
    */
   delete: (id: string) =>
     apiDelete<{ success: boolean }>(`/projects/${id}`),
+
+  /**
+   * Delete a project AND all its conversations (including messages and attachments)
+   */
+  deleteWithConversations: (id: string) =>
+    apiDelete<{ success: boolean; deletedConversations: number }>(
+      `/projects/${id}?deleteConversations=true`
+    ),
 
   /**
    * Add a conversation to a project
@@ -922,30 +930,47 @@ export const billingApi = {
 // ATTACHMENTS API
 // ============================================================================
 
+export interface ExtractedTextResponse {
+  attachmentId: string;
+  fileName: string;
+  mimeType: string;
+  extractedText: string | null;
+  message?: string;
+  canExtract: boolean;
+  charCount?: number;
+}
+
 export const attachmentsApi = {
   /**
-   * Upload an attachment
+   * Upload an attachment to a conversation
    */
   upload: (conversationId: string, file: File) => {
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("conversationId", conversationId);
     return apiPostFormData<{
-      id: string;
-      fileName: string;
-      fileType: string;
-      storagePath: string;
-      signedUrl: string;
-    }>("/attachments", formData);
+      success: boolean;
+      attachment: {
+        id: string;
+        fileName: string;
+        fileType: string;
+        storagePath: string;
+        signedUrl: string;
+      };
+    }>(`/conversations/${conversationId}/attachments`, formData);
   },
 
   /**
    * Get attachments for a conversation
    */
   list: (conversationId: string) =>
-    apiGet<{ attachments: unknown[] }>(`/attachments`, {
-      params: { conversationId },
-    }),
+    apiGet<{ attachments: unknown[] }>(`/conversations/${conversationId}/attachments`),
+
+  /**
+   * Extract text content from a document attachment
+   * Supports: PDF, Word (.docx), Excel (.xlsx), and text-based files
+   */
+  extractText: (conversationId: string, attachmentId: string) =>
+    apiGet<ExtractedTextResponse>(`/conversations/${conversationId}/attachments/${attachmentId}/extract-text`),
 };
 
 // ============================================================================

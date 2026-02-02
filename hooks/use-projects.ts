@@ -65,6 +65,12 @@ async function deleteProject(id: string) {
   return { id };
 }
 
+// Delete project with all conversations
+async function deleteProjectWithConversations(id: string) {
+  const result = await projectsApi.deleteWithConversations(id);
+  return { id, deletedConversations: result.deletedConversations };
+}
+
 // Add conversation to project
 async function addConversationToProject({ projectId, conversationId }: {
   projectId: string;
@@ -179,6 +185,42 @@ export function useDeleteProject() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: projectKeys.lists() });
       // Also invalidate conversations since they might have been updated
+      queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
+    },
+  });
+}
+
+// Hook: Delete project with all conversations
+export function useDeleteProjectWithConversations() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: deleteProjectWithConversations,
+    onMutate: async (deletedId) => {
+      await queryClient.cancelQueries({ queryKey: projectKeys.lists() });
+      await queryClient.cancelQueries({ queryKey: conversationKeys.lists() });
+
+      const previousProjects = queryClient.getQueryData<Project[]>(
+        projectKeys.lists()
+      );
+
+      queryClient.setQueryData<Project[]>(
+        projectKeys.lists(),
+        (old) => old?.filter((p) => p.id !== deletedId) ?? []
+      );
+
+      return { previousProjects };
+    },
+    onError: (_err, _deletedId, context) => {
+      if (context?.previousProjects) {
+        queryClient.setQueryData(
+          projectKeys.lists(),
+          context.previousProjects
+        );
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: projectKeys.lists() });
       queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
     },
   });

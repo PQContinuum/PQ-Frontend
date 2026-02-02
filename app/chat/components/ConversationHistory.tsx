@@ -27,6 +27,7 @@ import {
 import {
   useProjects,
   useDeleteProject,
+  useDeleteProjectWithConversations,
   useUpdateProject,
 } from '@/hooks/use-projects';
 import type { ConversationWithMessages } from '@/hooks/use-conversations';
@@ -79,6 +80,7 @@ export const ConversationHistory = memo(function ConversationHistory() {
   const deleteMutation = useDeleteConversation();
   const bulkDeleteMutation = useDeleteConversations();
   const deleteProjectMutation = useDeleteProject();
+  const deleteProjectWithConvMutation = useDeleteProjectWithConversations();
   const updateProjectMutation = useUpdateProject();
   const prefetchConversation = usePrefetchConversation();
 
@@ -88,6 +90,7 @@ export const ConversationHistory = memo(function ConversationHistory() {
   const [conversationToDelete, setConversationToDelete] = React.useState<string | null>(null);
   const [projectToDelete, setProjectToDelete] = React.useState<string | null>(null);
   const [deleteProjectDialogOpen, setDeleteProjectDialogOpen] = React.useState(false);
+  const [deleteProjectWithConversations, setDeleteProjectWithConversations] = React.useState(false);
 
   // Selection mode state
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -323,6 +326,7 @@ export const ConversationHistory = memo(function ConversationHistory() {
 
   const handleDeleteProject = useCallback((projectId: string) => {
     setProjectToDelete(projectId);
+    setDeleteProjectWithConversations(false); // Reset checkbox
     setDeleteProjectDialogOpen(true);
   }, []);
 
@@ -330,16 +334,28 @@ export const ConversationHistory = memo(function ConversationHistory() {
     if (!projectToDelete) return;
 
     try {
-      await deleteProjectMutation.mutateAsync(projectToDelete);
+      if (deleteProjectWithConversations) {
+        // Delete project AND all conversations
+        await deleteProjectWithConvMutation.mutateAsync(projectToDelete);
 
-      // If active conversation was in this project, keep it (it will now be unorganized)
+        // If active conversation was in this project, clear it
+        const projectConvs = projectConversations[projectToDelete] || [];
+        if (projectConvs.some(c => c.id === conversationId)) {
+          setConversationId(null);
+          replaceMessages([]);
+        }
+      } else {
+        // Only unlink conversations (existing behavior)
+        await deleteProjectMutation.mutateAsync(projectToDelete);
+      }
     } catch (error) {
       console.error('Error deleting project:', error);
     } finally {
       setDeleteProjectDialogOpen(false);
       setProjectToDelete(null);
+      setDeleteProjectWithConversations(false);
     }
-  }, [projectToDelete, deleteProjectMutation]);
+  }, [projectToDelete, deleteProjectMutation, deleteProjectWithConvMutation, deleteProjectWithConversations, projectConversations, conversationId, setConversationId, replaceMessages]);
 
   const handleRenameProject = useCallback((projectId: string, currentName: string) => {
     setRenamingProjectId(projectId);
@@ -499,9 +515,32 @@ export const ConversationHistory = memo(function ConversationHistory() {
           <DialogHeader>
             <DialogTitle>Eliminar proyecto</DialogTitle>
             <DialogDescription>
-              ¿Estás seguro de que deseas eliminar este proyecto? Las conversaciones dentro del proyecto no se eliminarán, solo se desorganizarán.
+              {projectToDelete && (projectConversations[projectToDelete]?.length || 0) > 0
+                ? `Este proyecto tiene ${projectConversations[projectToDelete]?.length} conversación(es).`
+                : 'Este proyecto no tiene conversaciones.'}
             </DialogDescription>
           </DialogHeader>
+
+          {/* Checkbox to delete conversations */}
+          {projectToDelete && (projectConversations[projectToDelete]?.length || 0) > 0 && (
+            <label className="flex items-start gap-3 p-3 rounded-lg bg-red-50 border border-red-200 cursor-pointer hover:bg-red-100 transition-colors">
+              <input
+                type="checkbox"
+                checked={deleteProjectWithConversations}
+                onChange={(e) => setDeleteProjectWithConversations(e.target.checked)}
+                className="mt-0.5 size-4 rounded border-red-300 text-red-600 focus:ring-red-500"
+              />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-red-800">
+                  Eliminar todas las conversaciones
+                </p>
+                <p className="text-xs text-red-600 mt-0.5">
+                  Se eliminarán permanentemente {projectConversations[projectToDelete]?.length} conversación(es) con todos sus mensajes y archivos adjuntos.
+                </p>
+              </div>
+            </label>
+          )}
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteProjectDialogOpen(false)}>
               Cancelar
@@ -509,13 +548,15 @@ export const ConversationHistory = memo(function ConversationHistory() {
             <Button
               variant="destructive"
               onClick={confirmDeleteProject}
-              disabled={deleteProjectMutation.isPending}
+              disabled={deleteProjectMutation.isPending || deleteProjectWithConvMutation.isPending}
             >
-              {deleteProjectMutation.isPending ? (
+              {(deleteProjectMutation.isPending || deleteProjectWithConvMutation.isPending) ? (
                 <>
                   <Loader2 className="size-4 animate-spin mr-2" />
                   Eliminando...
                 </>
+              ) : deleteProjectWithConversations ? (
+                'Eliminar todo'
               ) : (
                 'Eliminar proyecto'
               )}

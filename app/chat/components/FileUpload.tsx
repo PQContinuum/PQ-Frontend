@@ -15,6 +15,7 @@ import {
   Book,
   Table,
   Code,
+  Check,
 } from 'lucide-react';
 import { attachmentsApi } from '@/lib/api-client';
 
@@ -26,6 +27,8 @@ interface Attachment {
   url: string;
   thumbnailUrl?: string;
   mimeType?: string;
+  extractedText?: string | null;
+  isExtracting?: boolean;
 }
 
 interface FileUploadProps {
@@ -335,20 +338,28 @@ export function FileUpload({ conversationId, onAttachmentsChange }: FileUploadPr
 
       for (let i = 0; i < Math.min(files.length, 10); i++) {
         const file = files[i];
-        const data = await attachmentsApi.upload(conversationId, file);
+        const response = await attachmentsApi.upload(conversationId, file);
         // Map the API response to Attachment type
         uploadedAttachments.push({
-          id: data.id,
-          fileName: data.fileName,
-          fileType: data.fileType as 'image' | 'document',
-          fileSize: 0, // Not returned by API, but not critical
-          url: data.signedUrl,
+          id: response.attachment.id,
+          fileName: response.attachment.fileName,
+          fileType: response.attachment.fileType as 'image' | 'document',
+          fileSize: file.size,
+          url: response.attachment.signedUrl,
+          mimeType: file.type,
         });
       }
 
       const newAttachments = [...attachments, ...uploadedAttachments];
       setAttachments(newAttachments);
       onAttachmentsChange(newAttachments);
+
+      // Auto-extract text for documents (runs in background)
+      for (const attachment of uploadedAttachments) {
+        if (attachment.fileType === 'document') {
+          extractTextFromAttachment(attachment.id);
+        }
+      }
 
     } catch (error) {
       console.error('Upload error:', error);
@@ -357,6 +368,33 @@ export function FileUpload({ conversationId, onAttachmentsChange }: FileUploadPr
       setUploading(false);
     }
   }, [conversationId, attachments, onAttachmentsChange]);
+
+  const extractTextFromAttachment = useCallback(async (attachmentId: string) => {
+    // Mark as extracting
+    setAttachments(prev => prev.map(a =>
+      a.id === attachmentId ? { ...a, isExtracting: true } : a
+    ));
+
+    try {
+      const result = await attachmentsApi.extractText(conversationId, attachmentId);
+
+      setAttachments(prev => {
+        const updated = prev.map(a =>
+          a.id === attachmentId
+            ? { ...a, isExtracting: false, extractedText: result.extractedText }
+            : a
+        );
+        // Schedule the callback for after render completes
+        setTimeout(() => onAttachmentsChange(updated), 0);
+        return updated;
+      });
+    } catch (error) {
+      console.error('Text extraction error:', error);
+      setAttachments(prev => prev.map(a =>
+        a.id === attachmentId ? { ...a, isExtracting: false } : a
+      ));
+    }
+  }, [conversationId, onAttachmentsChange]);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -386,81 +424,104 @@ export function FileUpload({ conversationId, onAttachmentsChange }: FileUploadPr
 
   return (
     <div className="space-y-3">
-      {/* Upload Area */}
-      <div
-        onDragEnter={handleDrag}
-        onDragLeave={handleDrag}
-        onDragOver={handleDrag}
-        onDrop={handleDrop}
-        className={`relative border-2 border-dashed rounded-2xl p-8 transition-all duration-300 ${
-          dragActive
-            ? 'border-[#00552b] bg-gradient-to-br from-[#00552b]/10 to-[#00aa56]/5 scale-[1.02]'
-            : 'border-gray-300 hover:border-[#00552b]/50 hover:bg-gray-50/50'
-        }`}
-      >
-        {dragActive && (
-          <div className="absolute inset-0 bg-[#00552b]/5 rounded-2xl animate-pulse pointer-events-none"></div>
-        )}
-
-        <input
-          type="file"
-          id="file-upload"
-          className="hidden"
-          multiple
-          accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.odt,.ods,.odp,.rtf,.epub,text/*,application/json,text/csv,application/xml,text/xml,text/html,application/x-yaml,.js,.ts,.tsx,.jsx,.py,.java,.c,.cpp,.cs,.go,.rs,.php,.rb,.swift,.kt,.sh,.yaml,.yml,.toml,.ini,.md,.css,.sql,.ipynb"
-          onChange={(e) => handleUpload(e.target.files)}
-          disabled={uploading}
-        />
-
-        <label
-          htmlFor="file-upload"
-          className="flex flex-col items-center cursor-pointer"
+      {/* Upload Area - Only show when no attachments */}
+      {attachments.length === 0 && (
+        <div
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={handleDrop}
+          className={`relative border-2 border-dashed rounded-2xl p-8 transition-all duration-300 ${
+            dragActive
+              ? 'border-[#00552b] bg-gradient-to-br from-[#00552b]/10 to-[#00aa56]/5 scale-[1.02]'
+              : 'border-gray-300 hover:border-[#00552b]/50 hover:bg-gray-50/50'
+          }`}
         >
-          <div className={`relative mb-4 ${uploading ? 'animate-bounce' : ''}`}>
-            {uploading ? (
-              <div className="relative">
-                <div className="absolute inset-0 bg-[#00552b]/20 rounded-full blur-xl"></div>
-                <Loader2 className="relative w-12 h-12 text-[#00552b] animate-spin" />
-              </div>
-            ) : (
-              <div className="relative group">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#00552b]/20 to-[#00aa56]/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <div className="relative bg-gradient-to-br from-[#00552b] to-[#00aa56] p-3 rounded-2xl shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110">
-                  <Upload className="w-6 h-6 text-white" />
-                </div>
-              </div>
-            )}
-          </div>
+          {dragActive && (
+            <div className="absolute inset-0 bg-[#00552b]/5 rounded-2xl animate-pulse pointer-events-none"></div>
+          )}
 
-          <p className="text-base font-semibold text-gray-800 text-center mb-1">
-            {uploading ? 'Subiendo archivos...' : dragActive ? '¡Suelta los archivos aquí!' : 'Arrastra archivos o haz clic'}
-          </p>
-          <p className="text-xs text-gray-500 text-center">
-            <span className="font-medium">Imágenes:</span> PNG, JPG, GIF, WebP, BMP, TIFF, HEIF, SVG
-          </p>
-          <p className="text-xs text-gray-500 text-center mt-0.5">
-            <span className="font-medium">Office:</span> Word, Excel, PowerPoint · <span className="font-medium">Docs:</span> PDF, TXT, MD, RTF, ODT, EPUB
-          </p>
-          <p className="text-xs text-gray-500 text-center mt-0.5">
-            <span className="font-medium">Código:</span> JS, TS, PY, Java, CSS, SQL · <span className="font-medium">Datos:</span> JSON, CSV, XML, YAML
-          </p>
-          <p className="text-xs text-gray-500 text-center mt-0.5">
-            <span className="font-medium">Notebooks:</span> Jupyter (.ipynb)
-          </p>
-          <p className="text-xs text-gray-400 mt-1.5">
-            Máximo 20MB por archivo
-          </p>
-        </label>
-      </div>
+          <input
+            type="file"
+            id="file-upload"
+            className="hidden"
+            multiple
+            accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.odt,.ods,.odp,.rtf,.epub,text/*,application/json,text/csv,application/xml,text/xml,text/html,application/x-yaml,.js,.ts,.tsx,.jsx,.py,.java,.c,.cpp,.cs,.go,.rs,.php,.rb,.swift,.kt,.sh,.yaml,.yml,.toml,.ini,.md,.css,.sql,.ipynb"
+            onChange={(e) => handleUpload(e.target.files)}
+            disabled={uploading}
+          />
+
+          <label
+            htmlFor="file-upload"
+            className="flex flex-col items-center cursor-pointer"
+          >
+            <div className={`relative mb-4 ${uploading ? 'animate-bounce' : ''}`}>
+              {uploading ? (
+                <div className="relative">
+                  <div className="absolute inset-0 bg-[#00552b]/20 rounded-full blur-xl"></div>
+                  <Loader2 className="relative w-12 h-12 text-[#00552b] animate-spin" />
+                </div>
+              ) : (
+                <div className="relative group">
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#00552b]/20 to-[#00aa56]/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="relative bg-gradient-to-br from-[#00552b] to-[#00aa56] p-3 rounded-2xl shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110">
+                    <Upload className="w-6 h-6 text-white" />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <p className="text-base font-semibold text-gray-800 text-center mb-1">
+              {uploading ? 'Subiendo archivos...' : dragActive ? '¡Suelta los archivos aquí!' : 'Arrastra archivos o haz clic'}
+            </p>
+            <p className="text-xs text-gray-500 text-center">
+              <span className="font-medium">Imágenes:</span> PNG, JPG, GIF, WebP, BMP, TIFF, HEIF, SVG
+            </p>
+            <p className="text-xs text-gray-500 text-center mt-0.5">
+              <span className="font-medium">Office:</span> Word, Excel, PowerPoint · <span className="font-medium">Docs:</span> PDF, TXT, MD, RTF, ODT, EPUB
+            </p>
+            <p className="text-xs text-gray-500 text-center mt-0.5">
+              <span className="font-medium">Código:</span> JS, TS, PY, Java, CSS, SQL · <span className="font-medium">Datos:</span> JSON, CSV, XML, YAML
+            </p>
+            <p className="text-xs text-gray-500 text-center mt-0.5">
+              <span className="font-medium">Notebooks:</span> Jupyter (.ipynb)
+            </p>
+            <p className="text-xs text-gray-400 mt-1.5">
+              Máximo 20MB por archivo
+            </p>
+          </label>
+        </div>
+      )}
 
       {/* Attachments Preview */}
       {attachments.length > 0 && (
         <div className="space-y-2">
+          {/* Hidden input for adding more files */}
+          <input
+            type="file"
+            id="file-upload-more"
+            className="hidden"
+            multiple
+            accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.odt,.ods,.odp,.rtf,.epub,text/*,application/json,text/csv,application/xml,text/xml,text/html,application/x-yaml,.js,.ts,.tsx,.jsx,.py,.java,.c,.cpp,.cs,.go,.rs,.php,.rb,.swift,.kt,.sh,.yaml,.yml,.toml,.ini,.md,.css,.sql,.ipynb"
+            onChange={(e) => handleUpload(e.target.files)}
+            disabled={uploading}
+          />
+
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold text-gray-700">
               {attachments.length} {attachments.length === 1 ? 'archivo listo' : 'archivos listos'}
             </p>
-            <div className="h-px flex-1 bg-gradient-to-r from-gray-200 to-transparent ml-3"></div>
+            <label
+              htmlFor="file-upload-more"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#00552b] bg-[#00552b]/10 hover:bg-[#00552b]/20 rounded-lg cursor-pointer transition-colors"
+            >
+              {uploading ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Upload className="w-3.5 h-3.5" />
+              )}
+              {uploading ? 'Subiendo...' : 'Agregar más'}
+            </label>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -507,6 +568,19 @@ export function FileUpload({ conversationId, onAttachmentsChange }: FileUploadPr
                       <p className="text-xs text-[#00552b] font-medium">
                         {attachment.fileType === 'image' ? 'Imagen' : getFileTypeLabel(attachment.mimeType)}
                       </p>
+                      {/* Simple extraction status indicator */}
+                      {attachment.fileType === 'document' && attachment.isExtracting && (
+                        <>
+                          <span className="text-xs text-gray-400">•</span>
+                          <Loader2 className="w-3 h-3 animate-spin text-amber-600" />
+                        </>
+                      )}
+                      {attachment.fileType === 'document' && attachment.extractedText && (
+                        <>
+                          <span className="text-xs text-gray-400">•</span>
+                          <Check className="w-3 h-3 text-green-600" />
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
