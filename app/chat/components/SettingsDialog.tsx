@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { motion } from 'framer-motion';
-import { User, CreditCard, Sparkles, Clock, Database, Upload, MessageSquare, ExternalLink, Loader2 } from 'lucide-react';
+import { User, CreditCard, Rocket, Clock, Database, Upload, MessageSquare, ExternalLink, Loader2, Crown, Check } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -203,7 +203,7 @@ export function SettingsDialog({
                   {/* Upgrade Banner */}
                   <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl p-5">
                     <div className="flex gap-3">
-                      <Sparkles className="size-5 text-yellow-600 shrink-0 mt-0.5" />
+                      <Rocket className="size-5 text-yellow-600 shrink-0 mt-0.5" />
                       <div>
                         <h4 className="text-sm font-bold text-[#111111] mb-1">
                           Mejora tu experiencia
@@ -246,7 +246,7 @@ export function SettingsDialog({
                         <h4 className="text-3xl font-bold">{userPlan}</h4>
                       </div>
                       <div className="bg-white/20 backdrop-blur-sm rounded-lg p-2.5">
-                        <Sparkles className="size-6" />
+                        <Crown className="size-6" />
                       </div>
                     </div>
                     <p className="text-sm opacity-95 font-medium">
@@ -266,19 +266,19 @@ export function SettingsDialog({
                         <>
                           <li className="flex items-start gap-3 text-sm text-[#4c4c4c]">
                             <div className="bg-green-100 rounded-full p-1 mt-0.5">
-                              <Sparkles className="size-3 text-green-600" />
+                              <Check className="size-3 text-green-600" />
                             </div>
                             <span>Conversaciones básicas</span>
                           </li>
                           <li className="flex items-start gap-3 text-sm text-[#4c4c4c]">
                             <div className="bg-green-100 rounded-full p-1 mt-0.5">
-                              <Sparkles className="size-3 text-green-600" />
+                              <Check className="size-3 text-green-600" />
                             </div>
                             <span>Historial limitado de conversaciones</span>
                           </li>
                           <li className="flex items-start gap-3 text-sm text-[#4c4c4c]">
                             <div className="bg-green-100 rounded-full p-1 mt-0.5">
-                              <Sparkles className="size-3 text-green-600" />
+                              <Check className="size-3 text-green-600" />
                             </div>
                             <span>Soporte por comunidad</span>
                           </li>
@@ -287,19 +287,19 @@ export function SettingsDialog({
                         <>
                           <li className="flex items-start gap-3 text-sm text-[#4c4c4c]">
                             <div className="bg-green-100 rounded-full p-1 mt-0.5">
-                              <Sparkles className="size-3 text-green-600" />
+                              <Check className="size-3 text-green-600" />
                             </div>
                             <span>Conversaciones ilimitadas</span>
                           </li>
                           <li className="flex items-start gap-3 text-sm text-[#4c4c4c]">
                             <div className="bg-green-100 rounded-full p-1 mt-0.5">
-                              <Sparkles className="size-3 text-green-600" />
+                              <Check className="size-3 text-green-600" />
                             </div>
                             <span>Soporte prioritario 24/7</span>
                           </li>
                           <li className="flex items-start gap-3 text-sm text-[#4c4c4c]">
                             <div className="bg-green-100 rounded-full p-1 mt-0.5">
-                              <Sparkles className="size-3 text-green-600" />
+                              <Check className="size-3 text-green-600" />
                             </div>
                             <span>Integraciones avanzadas y API</span>
                           </li>
@@ -312,7 +312,7 @@ export function SettingsDialog({
                   {userPlan === 'Gratis' && (
                     <div className="border-2 border-dashed border-[#00aa56] rounded-xl p-6 text-center bg-green-50/30">
                       <div className="bg-gradient-to-br from-[#00552b]/10 to-[#00aa56]/10 w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <Sparkles className="size-7 text-[#00aa56]" />
+                        <Rocket className="size-7 text-[#00aa56]" />
                       </div>
                       <h4 className="text-base font-bold text-[#111111] mb-2">
                         ¿Listo para crecer?

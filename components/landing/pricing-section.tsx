@@ -18,13 +18,13 @@ import { cn } from "@/lib/utils";
 import {
   ArrowRight,
   Check,
-  Sparkles,
   Rocket,
   Building2,
   Zap,
   Loader2,
   Crown,
   Clock,
+  type LucideIcon,
 } from "lucide-react";
 
 type BillingFrequency = "monthly" | "yearly";
@@ -32,7 +32,7 @@ type BillingFrequency = "monthly" | "yearly";
 type Plan = {
   id: string;
   name: string;
-  icon: typeof Sparkles;
+  icon: LucideIcon;
   price: {
     monthly: number | string | null;
     yearly: number | string | null;
@@ -84,7 +84,7 @@ const plans: Plan[] = [
   {
     id: "professional",
     name: "Profesional",
-    icon: Sparkles,
+    icon: Crown,
     price: {
       monthly: 1499,
       yearly: 16490,

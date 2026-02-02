@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Globe,
   Lock,
-  Sparkles,
   Tag,
   Type,
   FileText,
@@ -246,7 +245,7 @@ export function GalleryOptionsPanel({
               animate={{ scale: 1 }}
               className="flex items-center gap-1 px-2 py-1 rounded-full bg-primary/10 text-primary text-xs"
             >
-              <Sparkles className="w-3 h-3" />
+              <Globe className="w-3 h-3" />
               <span>Gallery</span>
             </motion.div>
           )}

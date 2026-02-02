@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
-import { ArrowRight, Check, Sparkles, Zap, Building2, Rocket, Crown, Clock } from 'lucide-react';
+import { ArrowRight, Check, Zap, Building2, Rocket, Crown, Clock } from 'lucide-react';
 import { useState } from 'react';
 import Link from 'next/link';
 import { useUserPlan } from '@/hooks/use-user-plan';
@@ -66,7 +66,7 @@ const plans = [
   {
     id: 'professional',
     name: 'Profesional',
-    icon: Sparkles,
+    icon: Crown,
     price: {
       monthly: 1499,
       yearly: 16490,

@@ -9,7 +9,7 @@ import {
   memo,
   useEffect,
 } from 'react';
-import { ArrowUp, MapPin, Paperclip, Plus, Check, Loader2, Image, X, ChevronDown, Lock, Mic, Square, Sparkles, Video, Blend } from 'lucide-react';
+import { ArrowUp, MapPin, Paperclip, Plus, Check, Loader2, Image, X, ChevronDown, Lock, Mic, Square, Clock, Video, Blend, Wand2, Zap } from 'lucide-react';
 import { VideoImageUpload } from './VideoImageUpload';
 import { ImageReferenceUpload } from './ImageReferenceUpload';
 import { GalleryOptionsPanel } from './GalleryOptionsPanel';
@@ -57,6 +57,7 @@ import {
   type VideoDuration,
   type VideoMode,
 } from '@/hooks/useVideoGeneration';
+import { LisaWizardDialog } from './lisa/LisaWizardDialog';
 
 /**
  * FEATURE FLAGS - Control de acceso a funcionalidades
@@ -229,6 +230,10 @@ export const MessageInput = memo(function MessageInput() {
   const [videoModeType, setVideoModeType] = useState<VideoMode>('text-to-video');
   const [videoImageUrl, setVideoImageUrl] = useState<string>('');
   const [videoGalleryOptions, setVideoGalleryOptions] = useState<GalleryOptions>({ isPublic: false });
+
+  // LISA Wizard state
+  const [showLisaWizard, setShowLisaWizard] = useState(false);
+  const [isLisaGenerating, setIsLisaGenerating] = useState(false);
 
   const {
     generate: generateVideo,
@@ -1039,7 +1044,181 @@ export const MessageInput = memo(function MessageInput() {
     setTimeout(() => textareaRef.current?.focus(), 100);
   }, []);
 
-  const isLoading = isStreaming || isGeneratingImage || isGeneratingVideo || isTranscribing;
+  const openLisaWizard = useCallback(() => {
+    setShowLisaWizard(true);
+    setImageMode(false);
+    setVideoMode(false);
+    setShowFileUpload(false);
+    setShowStylePicker(false);
+  }, []);
+
+  // Handle LISA wizard generation
+  const handleLisaGenerate = useCallback(async (data: {
+    prompt: string;
+    contentType: 'video' | 'image';
+    aspectRatio: '16:9' | '9:16' | '1:1';
+    duration?: '5' | '10';
+    visualStyle?: string;
+  }) => {
+    setIsLisaGenerating(true);
+    setShowLisaWizard(false);
+
+    const userMessageId = createId();
+    const assistantMessageId = createId();
+    const isVideo = data.contentType === 'video';
+    const userContent = `${isVideo ? '🎬' : '🖼️'} ${data.prompt}`;
+
+    // Add user message to UI immediately
+    addMessage({
+      id: userMessageId,
+      role: 'user',
+      content: userContent,
+    });
+
+    // Add assistant message with generation state
+    addMessage({
+      id: assistantMessageId,
+      role: 'assistant',
+      content: '',
+      generationState: { type: data.contentType, status: 'generating' },
+    });
+
+    setStreaming(true);
+    startGeneration(data.contentType, assistantMessageId);
+
+    // Create conversation if needed
+    let currentConversationId = conversationId;
+    if (!currentConversationId) {
+      try {
+        const title = data.prompt.length > 50
+          ? `${isVideo ? '🎬' : '🖼️'} ${data.prompt.substring(0, 47)}...`
+          : `${isVideo ? '🎬' : '🖼️'} ${data.prompt}`;
+        const conversation = await createConversationMutation.mutateAsync({
+          title,
+          projectId: pendingProjectId || undefined,
+        });
+        currentConversationId = conversation.id;
+        setConversationId(conversation.id);
+        if (pendingProjectId) setPendingProjectId(null);
+      } catch (error) {
+        console.error('Error creating conversation:', error);
+      }
+    }
+
+    // Save user message to backend
+    if (currentConversationId) {
+      try {
+        await conversationsApi.createMessage(currentConversationId, {
+          role: 'user',
+          content: userContent,
+        });
+      } catch (error) {
+        console.error('Error saving user message:', error);
+      }
+    }
+
+    // Helper to save assistant message with generation state
+    const saveAssistantMessage = async (content: string, generationState: { type: 'video' | 'image'; status: 'generating' | 'completed' | 'error'; jobId?: string }) => {
+      if (!currentConversationId) return;
+      try {
+        await conversationsApi.createMessage(currentConversationId, {
+          role: 'assistant',
+          content,
+          metadata: JSON.stringify({ generationState }),
+        });
+        // Invalidate to sync with backend
+        queryClient.invalidateQueries({ queryKey: conversationKeys.detail(currentConversationId) });
+        queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
+      } catch (error) {
+        console.error('Error saving assistant message:', error);
+      }
+    };
+
+    try {
+      if (isVideo) {
+        // Generate video
+        const result = await generateVideo(data.prompt, {
+          mode: 'text-to-video',
+          duration: data.duration || '5',
+          aspectRatio: data.aspectRatio,
+          generateAudio: true,
+        });
+
+        if (result.success) {
+          const generatingContent = '🎬 Video en proceso de generación. Puedes cerrar esta ventana y regresar más tarde.';
+          const generationState = {
+            type: 'video' as const,
+            status: 'generating' as const,
+            jobId: result.jobId,
+          };
+
+          // Update UI
+          updateMessage(assistantMessageId, () => generatingContent);
+          updateMessageGenerationState(assistantMessageId, generationState);
+
+          // CRITICAL: Save to backend with jobId so polling resumes on page reload
+          await saveAssistantMessage(generatingContent, generationState);
+        } else {
+          const errorContent = `❌ ${result.error}`;
+          const errorState = { type: 'video' as const, status: 'error' as const };
+          updateMessage(assistantMessageId, () => errorContent);
+          updateMessageGenerationState(assistantMessageId, errorState);
+          await saveAssistantMessage(errorContent, errorState);
+        }
+      } else {
+        // Generate image
+        const result = await generateImage(data.prompt, {
+          quality: 'medium',
+          size: data.aspectRatio === '1:1' ? '1024x1024' : data.aspectRatio === '9:16' ? '1024x1536' : '1536x1024',
+          stylePreset: data.visualStyle || 'auto',
+        });
+
+        if (result.success) {
+          const successContent = `![Imagen generada](${result.url})`;
+          const successState = { type: 'image' as const, status: 'completed' as const };
+          updateMessage(assistantMessageId, () => successContent);
+          updateMessageGenerationState(assistantMessageId, successState);
+          await saveAssistantMessage(successContent, successState);
+        } else {
+          const errorContent = `❌ ${result.error}`;
+          const errorState = { type: 'image' as const, status: 'error' as const };
+          updateMessage(assistantMessageId, () => errorContent);
+          updateMessageGenerationState(assistantMessageId, errorState);
+          await saveAssistantMessage(errorContent, errorState);
+        }
+      }
+    } catch (error) {
+      console.error('LISA generation error:', error);
+      const errorContent = '❌ Error al generar contenido';
+      const errorState = { type: data.contentType, status: 'error' as const };
+      updateMessage(assistantMessageId, () => errorContent);
+      updateMessageGenerationState(assistantMessageId, errorState);
+      if (currentConversationId) {
+        await saveAssistantMessage(errorContent, errorState);
+      }
+    } finally {
+      setIsLisaGenerating(false);
+      setStreaming(false);
+      stopGeneration();
+    }
+  }, [
+    conversationId,
+    createConversationMutation,
+    setConversationId,
+    pendingProjectId,
+    setPendingProjectId,
+    addMessage,
+    updateMessage,
+    updateMessageGenerationState,
+    setStreaming,
+    startGeneration,
+    stopGeneration,
+    generateVideo,
+    generateImage,
+    queryClient,
+  ]);
+
+  const isLoading = isStreaming || isGeneratingImage || isGeneratingVideo || isTranscribing || isLisaGenerating;
 
   // Style preset picker component
   const StylePresetPicker = () => (
@@ -1098,6 +1277,14 @@ export const MessageInput = memo(function MessageInput() {
 
   return (
     <>
+      {/* LISA Wizard Dialog */}
+      <LisaWizardDialog
+        isOpen={showLisaWizard}
+        onClose={() => setShowLisaWizard(false)}
+        onGenerate={handleLisaGenerate}
+        isGenerating={isLisaGenerating}
+      />
+
       <LocationPermissionDialog
         isOpen={showLocationDialog}
         onClose={handleCloseDialog}
@@ -1619,7 +1806,7 @@ export const MessageInput = memo(function MessageInput() {
                   {!FEATURE_FLAGS.imageGeneration && (
                     <div className="absolute -inset-x-2 -inset-y-1 bg-gradient-to-r from-white/90 via-white/70 to-white/90 backdrop-blur-[1px] rounded-sm flex items-center justify-end pr-2 z-10">
                       <div className="flex items-center gap-1.5 bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-[10px] font-medium shadow-sm">
-                        <Sparkles className="size-3" />
+                        <Clock className="size-3" />
                         <span>Próximamente</span>
                       </div>
                     </div>
@@ -1638,7 +1825,7 @@ export const MessageInput = memo(function MessageInput() {
                   {!FEATURE_FLAGS.videoGeneration && (
                     <div className="absolute -inset-x-2 -inset-y-1 bg-gradient-to-r from-white/90 via-white/70 to-white/90 backdrop-blur-[1px] rounded-sm flex items-center justify-end pr-2 z-10">
                       <div className="flex items-center gap-1.5 bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-[10px] font-medium shadow-sm">
-                        <Sparkles className="size-3" />
+                        <Clock className="size-3" />
                         <span>Próximamente</span>
                       </div>
                     </div>
@@ -1646,6 +1833,17 @@ export const MessageInput = memo(function MessageInput() {
                   <Video className="mr-2 size-4" />
                   <span className="flex-1">Generar video</span>
                   {videoMode && FEATURE_FLAGS.videoGeneration && <Check className="size-4 text-[#00552b]" />}
+                </DropdownMenuItem>
+
+                {/* LISA - Editor Guiado */}
+                <DropdownMenuItem
+                  onClick={openLisaWizard}
+                  disabled={isLoading}
+                  className="cursor-pointer bg-gradient-to-r from-[#00552b]/5 to-emerald-500/5"
+                >
+                  <Wand2 className="mr-2 size-4 text-[#00552b]" />
+                  <span className="flex-1 font-medium text-[#00552b]">LISA - Editor Guiado</span>
+                  <Zap className="size-3 text-emerald-500" />
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem

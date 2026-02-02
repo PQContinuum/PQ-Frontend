@@ -8,7 +8,7 @@ import {
   History,
   Plus,
   Settings,
-  Sparkles,
+  TrendingUp,
   LogOut,
   Loader2,
   Volume2,
@@ -112,7 +112,7 @@ function SidebarFooterContent({
               <SelectItem value="upgrade">
                 <Link href={'/payment'}>
                 <div className="flex items-center gap-2">
-                  <Sparkles className="size-4" />
+                  <TrendingUp className="size-4" />
                   <span>Mejorar Plan</span>
                 </div>
                 </Link>

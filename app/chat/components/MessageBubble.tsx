@@ -802,8 +802,13 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
   const isGeneratingMedia = effectiveStatus === 'generating';
 
   // Get the video URL from completed job or from message content
-  const jobVideoUrl = job?.status === 'completed' && job.jobType === 'video' ? job.publicUrl : null;
-  const jobImageUrl = job?.status === 'completed' && job.jobType === 'image' ? job.publicUrl : null;
+  // Fallback to resultUrl if publicUrl is not available
+  const jobVideoUrl = job?.status === 'completed' && job.jobType === 'video'
+    ? (job.publicUrl || job.resultUrl)
+    : null;
+  const jobImageUrl = job?.status === 'completed' && job.jobType === 'image'
+    ? (job.publicUrl || job.resultUrl)
+    : null;
 
   // Get progress message from job
   const jobProgressMessage = job ? getJobStatusMessage(job) : null;

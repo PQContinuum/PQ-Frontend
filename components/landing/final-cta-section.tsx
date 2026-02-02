@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles, Loader2 } from "lucide-react";
+import { ArrowRight, Rocket, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -41,7 +41,7 @@ export function FinalCTASection() {
         <div className="max-w-4xl mx-auto text-center space-y-8">
           {/* Icon */}
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#00552b]/10 mb-4 border border-[#00552b]/20">
-            <Sparkles className="w-8 h-8 text-[#00552b]" />
+            <Rocket className="w-8 h-8 text-[#00552b]" />
           </div>
 
           {/* Heading */}

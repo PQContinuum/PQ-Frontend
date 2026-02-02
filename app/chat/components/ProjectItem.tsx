@@ -87,6 +87,8 @@ export const ProjectItem = memo(function ProjectItem({
   selectedConversations = new Set(),
   onToggleSelectConversation,
 }: ProjectItemProps) {
+  const [isHovered, setIsHovered] = useState(false);
+
   const handleToggle = useCallback(() => {
     onToggleExpand(project.id);
   }, [project.id, onToggleExpand]);

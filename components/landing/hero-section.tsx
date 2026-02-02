@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles, Loader2 } from "lucide-react";
+import { ArrowRight, Infinity, Loader2 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -52,7 +52,7 @@ export function HeroSection() {
 
         {/* Badge */}
         <div className="inline-flex items-center gap-2 px-4 py-2 mb-8 rounded-full border border-white/10 bg-white/5 backdrop-blur-sm animate-fade-in">
-          <Sparkles className="w-4 h-4 text-[#00552b]" />
+          <Infinity className="w-4 h-4 text-[#00552b]" />
           <span className="text-sm text-neutral-400">
             Inteligencia artificial en flujo continuo
           </span>

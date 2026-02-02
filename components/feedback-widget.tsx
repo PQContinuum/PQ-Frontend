@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MessageSquareHeart, Send, Loader2, Check, Sparkles } from "lucide-react";
+import { MessageSquareHeart, Send, Loader2, Check, Code } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -227,7 +227,7 @@ export function FeedbackWidget({ className, variant = "sidebar", isCollapsed: is
               {/* Send button and markdown indicator */}
               <div className="flex items-center justify-between">
                 <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                  <Sparkles className="size-3" />
+                  <Code className="size-3" />
                   markdown
                 </span>
 

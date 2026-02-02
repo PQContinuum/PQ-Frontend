@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Globe,
   Lock,
-  Sparkles,
+  CheckCircle2,
   Tag,
   Type,
   FileText,
@@ -221,7 +221,7 @@ export function ShareToGalleryModal({
                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
                 className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center mb-6"
               >
-                <Sparkles className="w-10 h-10 text-primary" />
+                <CheckCircle2 className="w-10 h-10 text-primary" />
               </motion.div>
               <motion.h3
                 initial={{ opacity: 0, y: 10 }}

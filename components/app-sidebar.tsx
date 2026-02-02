@@ -21,7 +21,7 @@ import {
   PieChart,
   Settings,
   ShoppingBag,
-  Sparkles,
+  Gift,
   Store,
   TrendingUp,
   Users,
@@ -108,7 +108,7 @@ const dashboardRoutes: Route[] = [
   {
     id: "benefits",
     title: "Benefits",
-    icon: <Sparkles className="size-4" />,
+    icon: <Gift className="size-4" />,
     link: "#",
   },
   {
