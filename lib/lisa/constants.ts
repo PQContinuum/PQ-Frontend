@@ -5,6 +5,7 @@ import type {
   VisualStyle,
   QualitySettings,
   LanguageSettings,
+  CharacterType,
 } from './types';
 
 // ============================================================================
@@ -399,4 +400,97 @@ export const CLOTHING_STYLE_OPTIONS = [
 export const MOOD_OPTIONS = [
   'alegre', 'serio', 'pensativo', 'enojado', 'triste',
   'sorprendido', 'confiado', 'tímido', 'misterioso', 'relajado',
+];
+
+// ============================================================================
+// CHARACTER TYPE OPTIONS
+// ============================================================================
+
+export interface CharacterTypeOption {
+  value: CharacterType;
+  label: string;
+  description: string;
+  icon: string;
+}
+
+export const CHARACTER_TYPE_OPTIONS: CharacterTypeOption[] = [
+  {
+    value: 'human',
+    label: 'Humano',
+    description: 'Persona realista o estilizada',
+    icon: 'User',
+  },
+  {
+    value: 'mascot',
+    label: 'Mascota',
+    description: 'Personaje de marca o mascota',
+    icon: 'Dog',
+  },
+  {
+    value: 'fantasy',
+    label: 'Fantasía',
+    description: 'Criatura o ser fantástico',
+    icon: 'Sparkles',
+  },
+  {
+    value: 'animal',
+    label: 'Animal',
+    description: 'Animal realista o antropomórfico',
+    icon: 'Cat',
+  },
+  {
+    value: 'product',
+    label: 'Producto',
+    description: 'Objeto o producto personificado',
+    icon: 'Package',
+  },
+  {
+    value: 'other',
+    label: 'Otro',
+    description: 'Otro tipo de personaje',
+    icon: 'Shapes',
+  },
+];
+
+// ============================================================================
+// CHARACTER LOCK OPTIONS
+// ============================================================================
+
+export interface CharacterLockOption {
+  key: string;
+  label: string;
+  description: string;
+}
+
+export const CHARACTER_LOCK_OPTIONS: CharacterLockOption[] = [
+  {
+    key: 'face',
+    label: 'Mantener rostro',
+    description: 'Conserva los rasgos faciales en todas las generaciones',
+  },
+  {
+    key: 'eyeColor',
+    label: 'Mantener color de ojos',
+    description: 'Conserva el color de ojos especificado',
+  },
+  {
+    key: 'hairStyle',
+    label: 'Mantener peinado',
+    description: 'Conserva el estilo y color de cabello',
+  },
+  {
+    key: 'bodyType',
+    label: 'Mantener complexión',
+    description: 'Conserva el tipo de cuerpo especificado',
+  },
+  {
+    key: 'colorPalette',
+    label: 'Mantener paleta de colores',
+    description: 'Conserva los colores característicos del personaje',
+  },
+  {
+    key: 'baseOutfit',
+    label: 'Mantener vestimenta base',
+    description: 'Conserva el estilo de ropa base del personaje',
+  },
 ];

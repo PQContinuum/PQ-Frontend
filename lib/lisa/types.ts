@@ -56,6 +56,23 @@ export interface LanguageSettings {
 // CHARACTER TYPES
 // ============================================================================
 
+export type CharacterType =
+  | 'human'
+  | 'mascot'
+  | 'fantasy'
+  | 'animal'
+  | 'product'
+  | 'other';
+
+export interface CharacterLocks {
+  face?: boolean;
+  eyeColor?: boolean;
+  hairStyle?: boolean;
+  bodyType?: boolean;
+  colorPalette?: boolean;
+  baseOutfit?: boolean;
+}
+
 export interface PhysicalTraits {
   age?: string;
   gender?: string;
@@ -100,6 +117,21 @@ export interface Character {
   compiledPrompt?: string;
   createdAt: string;
   updatedAt: string;
+
+  // New fields for gallery
+  characterType?: CharacterType;
+  isPublic?: boolean;
+  galleryTitle?: string;
+  galleryDescription?: string;
+  tags?: string[];
+  locks?: CharacterLocks;
+  version?: number;
+  viewCount?: number;
+  likeCount?: number;
+  shareCount?: number;
+  isFeatured?: boolean;
+  allowCloning?: boolean;
+  hasLiked?: boolean;
 }
 
 export interface CreateCharacterInput {
@@ -110,6 +142,33 @@ export interface CreateCharacterInput {
   personality?: PersonalityTraits;
   visualStyle?: VisualStyle;
   referenceImageUrl?: string;
+  characterType?: CharacterType;
+  locks?: CharacterLocks;
+  tags?: string[];
+}
+
+export interface UpdateCharacterVisibilityInput {
+  isPublic: boolean;
+  galleryTitle?: string;
+  galleryDescription?: string;
+  tags?: string[];
+  allowCloning?: boolean;
+}
+
+export interface PublicCharactersParams {
+  page?: number;
+  limit?: number;
+  characterType?: CharacterType;
+  visualStyle?: VisualStyle;
+  tag?: string;
+  sortBy?: 'recent' | 'popular' | 'likes';
+}
+
+export interface PublicCharactersResponse {
+  characters: Character[];
+  total: number;
+  page: number;
+  limit: number;
 }
 
 export interface UpdateCharacterInput extends Partial<CreateCharacterInput> {

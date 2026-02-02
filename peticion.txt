@@ -1,0 +1,106 @@
+Proceso: Crear Personaje y Guardarlo en Galería (Privado / Público) — ContinuumAI
+Objetivo
+Que el usuario pueda crear un personaje persistente (con Character ID) para reutilizarlo en videos/imágenes posteriores, y decidir si ese personaje será:
+Privado (solo el usuario / su workspace)
+Público (disponible para otros usuarios como “plantilla” o “personaje público”)
+1) Entrada al flujo (desde dónde se crea)
+El usuario puede crear personaje desde:
+LISA Prompt Studio → Pregunta “¿Quieres usar un personaje?” → [Crear nuevo personaje]
+Panel → Biblioteca → Personajes → [Nuevo personaje]
+2) Pantalla “Crear Personaje”
+A) Información básica (obligatoria)
+Nombre del personaje
+Ej: “LISA Host”, “Chef Xokiimak”, “Coli Mascota”
+Tipo de personaje
+Humano / Mascota / Fantasía / Producto-personaje / Otro
+Descripción física (prompt-friendly, breve pero concreta)
+Edad aprox, complexión, piel, cabello, rostro, rasgos distintivos.
+Outfit base
+Ropa, colores, accesorios.
+Estilo visual base
+Realista / Cinemático / 3D / Anime / Editorial / etc.
+Resultado: con esto ya se puede generar consistencia mínima.
+B) Identidad y consistencia (muy recomendado)
+Rasgos fijos (locks) (checkboxes)
+☐ Mantener rostro
+☐ Mantener color de ojos
+☐ Mantener peinado
+☐ Mantener complexión
+☐ Mantener paleta de colores
+☐ Mantener vestimenta base
+Variantes permitidas (opcional)
+“Permitir cambios leves de outfit” / “permitir accesorios” / “permitir peinados similares”.
+C) Referencias (opcional pero premium)
+Subir referencias (1–5 imágenes)
+“Referencia de rostro”, “outfit”, “estilo”, “pose”
+Notas / reglas negativas
+“Evitar estilo caricatura”, “evitar rasgos exagerados”, “evitar tatuajes”, etc.
+3) Visibilidad: Privado o Público
+Selector: Visibilidad del personaje
+Privado (default): Solo tú (y tu equipo si aplica permisos de workspace).
+Público: Aparece en el catálogo público de ContinuumAI.
+Si elige Público, se habilitan campos extra:
+Categoría (Humano, Mascota, Presentador, etc.)
+Etiquetas (tags)
+Descripción pública corta (para que otros lo encuentren)
+Licencia/uso (plantilla reutilizable; no incluye referencias privadas si el usuario no lo permite)
+Permitir clonación (Sí/No)
+Ocultar referencias originales (Sí/No)
+Recomendación: en público, publicar “descripción + estilo + locks”, y dejar referencias como privadas para evitar exposición.
+4) Botón: Guardar personaje
+CTA: [ Guardar en mi Galería ]
+Al guardar, ContinuumAI crea automáticamente:
+A) Character ID (persistente)
+Ejemplo interno: char_8Q2F1A9...
+ Este ID se usa en prompts futuros para mantener consistencia del personaje.
+B) Ficha del personaje (card)
+Incluye:
+Thumbnail / preview (si hay)
+Nombre
+Estilo base
+Visibilidad: Privado/Público
+Tags
+C) Versionado (muy útil)
+Cada cambio genera:
+v1, v2, v3…
+ Permite volver atrás si el personaje “se fue deformando” con el tiempo.
+5) Galería de Personajes (Biblioteca Privada + Pública)
+A) Vista “Mis Personajes” (Privados)
+Cards con:
+Preview
+Nombre
+Último uso
+Estilo
+Acciones:
+Usar (video / imagen)
+Editar
+Crear variante
+Duplicar
+Archivar
+Cambiar visibilidad (Privado ↔ Público, si cumple reglas)
+B) Vista “Personajes Públicos”
+Catálogo con filtros:
+Estilo, categoría, tags, popularidad, recientes
+Acciones:
+Usar como plantilla
+Clonar a mi galería (si el autor lo permite)
+Ver detalles
+6) Uso del personaje en videos posteriores (cómo se integra en LISA)
+Cuando el usuario elige un personaje desde galería:
+LISA inserta el Character ID
+Aplica “locks” de identidad
+Mantiene estilo base y rasgos principales
+Permite variaciones controladas (si están habilitadas)
+El usuario solo describe:
+“qué pasa en el video”
+“escena y objetivo”
+ y el personaje queda consistente.
+7) Reglas clave (para que privado/público sea sólido)
+Privado
+Puede incluir referencias y detalles completos.
+Solo visible para el dueño (o su workspace con permisos).
+Público
+Debe tener un “perfil público” limpio (descripción + estilo + tags).
+Referencias pueden ser opcionales y controladas.
+Permitir o no clonación.
+Moderación básica (evitar contenido sensible / identidad real sin permiso, etc.)

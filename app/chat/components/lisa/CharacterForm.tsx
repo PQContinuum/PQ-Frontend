@@ -18,10 +18,36 @@ import {
   Pencil,
   Grid3x3,
   Minus,
+  Settings2,
+  Dog,
+  Sparkles,
+  Cat,
+  Package,
+  Shapes,
+  Lock,
 } from 'lucide-react';
 import { useCreateCharacter, useUploadCharacterReference } from '@/hooks/use-characters';
-import { VISUAL_STYLE_OPTIONS, AGE_OPTIONS, GENDER_OPTIONS, HAIR_COLOR_OPTIONS, HAIR_STYLE_OPTIONS, EYE_COLOR_OPTIONS, BODY_TYPE_OPTIONS, MOOD_OPTIONS } from '@/lib/lisa/constants';
-import type { Character, CreateCharacterInput, VisualStyle, PhysicalTraits, PersonalityTraits } from '@/lib/lisa/types';
+import {
+  VISUAL_STYLE_OPTIONS,
+  AGE_OPTIONS,
+  GENDER_OPTIONS,
+  HAIR_COLOR_OPTIONS,
+  HAIR_STYLE_OPTIONS,
+  EYE_COLOR_OPTIONS,
+  BODY_TYPE_OPTIONS,
+  MOOD_OPTIONS,
+  CHARACTER_TYPE_OPTIONS,
+  CHARACTER_LOCK_OPTIONS,
+} from '@/lib/lisa/constants';
+import type {
+  Character,
+  CreateCharacterInput,
+  VisualStyle,
+  PhysicalTraits,
+  PersonalityTraits,
+  CharacterType,
+  CharacterLocks,
+} from '@/lib/lisa/types';
 
 const styleIconMap = {
   Camera,
@@ -34,6 +60,15 @@ const styleIconMap = {
   Pencil,
   Grid3x3,
   Minus,
+};
+
+const characterTypeIconMap = {
+  User,
+  Dog,
+  Sparkles,
+  Cat,
+  Package,
+  Shapes,
 };
 
 interface CharacterFormProps {
@@ -49,7 +84,11 @@ export function CharacterForm({ onSuccess, onCancel }: CharacterFormProps) {
   const [personality, setPersonality] = useState<PersonalityTraits>({});
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
-  const [activeSection, setActiveSection] = useState<'basic' | 'physical' | 'style'>('basic');
+  const [activeSection, setActiveSection] = useState<'basic' | 'physical' | 'style' | 'advanced'>('basic');
+  const [characterType, setCharacterType] = useState<CharacterType>('human');
+  const [locks, setLocks] = useState<CharacterLocks>({});
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
 
   const createMutation = useCreateCharacter();
   const uploadMutation = useUploadCharacterReference();
@@ -80,6 +119,9 @@ export function CharacterForm({ onSuccess, onCancel }: CharacterFormProps) {
       visualStyle,
       physicalTraits: Object.keys(physicalTraits).length > 0 ? physicalTraits : undefined,
       personality: Object.keys(personality).length > 0 ? personality : undefined,
+      characterType,
+      locks: Object.keys(locks).length > 0 ? locks : undefined,
+      tags: tags.length > 0 ? tags : undefined,
     };
 
     try {
@@ -104,11 +146,12 @@ export function CharacterForm({ onSuccess, onCancel }: CharacterFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Section tabs */}
-      <div className="flex gap-2 border-b border-gray-200 pb-2">
+      <div className="flex gap-2 border-b border-gray-200 pb-2 overflow-x-auto">
         {[
           { id: 'basic', label: 'Básico', icon: FileText },
           { id: 'physical', label: 'Físico', icon: User },
           { id: 'style', label: 'Estilo', icon: Palette },
+          { id: 'advanced', label: 'Avanzado', icon: Settings2 },
         ].map((section) => {
           const IconComponent = section.icon;
           return (
@@ -352,6 +395,144 @@ export function CharacterForm({ onSuccess, onCancel }: CharacterFormProps) {
                 </button>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Advanced section */}
+      {activeSection === 'advanced' && (
+        <div className="space-y-5">
+          {/* Character Type */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Tipo de personaje
+            </label>
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+              {CHARACTER_TYPE_OPTIONS.map((option) => {
+                const IconComponent = characterTypeIconMap[option.icon as keyof typeof characterTypeIconMap];
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setCharacterType(option.value)}
+                    className={`flex flex-col items-center gap-1 p-2.5 rounded-lg border-2 transition ${
+                      characterType === option.value
+                        ? 'border-[#00552b] bg-[#00552b]/5'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    {IconComponent && (
+                      <IconComponent
+                        className={`w-5 h-5 ${
+                          characterType === option.value ? 'text-[#00552b]' : 'text-gray-500'
+                        }`}
+                      />
+                    )}
+                    <span
+                      className={`text-xs font-medium ${
+                        characterType === option.value ? 'text-[#00552b]' : 'text-gray-700'
+                      }`}
+                    >
+                      {option.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Locks */}
+          <div>
+            <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-2">
+              <Lock className="w-4 h-4" />
+              Rasgos fijos (Locks)
+            </label>
+            <p className="text-xs text-gray-500 mb-3">
+              Los rasgos fijos se mantendrán consistentes en todas las generaciones
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {CHARACTER_LOCK_OPTIONS.map((option) => (
+                <label
+                  key={option.key}
+                  className={`flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer transition ${
+                    locks[option.key as keyof CharacterLocks]
+                      ? 'border-[#00552b] bg-[#00552b]/5'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={locks[option.key as keyof CharacterLocks] || false}
+                    onChange={(e) =>
+                      setLocks({
+                        ...locks,
+                        [option.key]: e.target.checked || undefined,
+                      })
+                    }
+                    className="w-4 h-4 text-[#00552b] border-gray-300 rounded focus:ring-[#00552b]"
+                  />
+                  <span className="text-sm text-gray-700">{option.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Tags */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Etiquetas (max. 5)
+            </label>
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {tags.map((tag, index) => (
+                <span
+                  key={index}
+                  className="flex items-center gap-1 px-2 py-1 text-sm bg-gray-100 text-gray-700 rounded-full"
+                >
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={() => setTags(tags.filter((_, i) => i !== index))}
+                    className="p-0.5 hover:bg-gray-200 rounded-full"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+            {tags.length < 5 && (
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && tagInput.trim()) {
+                      e.preventDefault();
+                      if (!tags.includes(tagInput.trim())) {
+                        setTags([...tags, tagInput.trim()]);
+                      }
+                      setTagInput('');
+                    }
+                  }}
+                  placeholder="Añadir etiqueta..."
+                  maxLength={30}
+                  className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:border-[#00552b] focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (tagInput.trim() && !tags.includes(tagInput.trim())) {
+                      setTags([...tags, tagInput.trim()]);
+                      setTagInput('');
+                    }
+                  }}
+                  disabled={!tagInput.trim()}
+                  className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50"
+                >
+                  Añadir
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

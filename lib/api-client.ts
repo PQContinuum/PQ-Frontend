@@ -1014,6 +1014,174 @@ export const healthApi = {
 };
 
 // ============================================================================
+// CHARACTERS API
+// ============================================================================
+
+import type {
+  Character,
+  CreateCharacterInput,
+  UpdateCharacterInput,
+  UpdateCharacterVisibilityInput,
+  PublicCharactersParams,
+  PublicCharactersResponse,
+} from "./lisa/types";
+
+export const charactersApi = {
+  // ============================================================================
+  // USER'S OWN CHARACTERS (authenticated)
+  // ============================================================================
+
+  /**
+   * Get all characters for current user
+   */
+  list: () => apiGet<{ characters: Character[] }>("/characters"),
+
+  /**
+   * Get a specific character by ID
+   */
+  get: (id: string) => apiGet<{ character: Character }>(`/characters/${id}`),
+
+  /**
+   * Create a new character
+   */
+  create: (data: CreateCharacterInput) =>
+    apiPost<{ character: Character }>("/characters", data),
+
+  /**
+   * Update a character
+   */
+  update: (id: string, data: Partial<CreateCharacterInput>) =>
+    apiPatch<{ character: Character }>(`/characters/${id}`, data),
+
+  /**
+   * Delete a character
+   */
+  delete: (id: string) => apiDelete<{ success: boolean }>(`/characters/${id}`),
+
+  /**
+   * Upload reference image for a character
+   */
+  uploadReference: (characterId: string, file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return apiPostFormData<{
+      character: Character;
+      imageUrl: string;
+      storagePath: string;
+    }>(`/characters/${characterId}/upload-reference`, formData);
+  },
+
+  // ============================================================================
+  // VISIBILITY & SHARING (authenticated)
+  // ============================================================================
+
+  /**
+   * Update character visibility (public/private)
+   */
+  updateVisibility: (id: string, data: UpdateCharacterVisibilityInput) =>
+    apiPatch<{ character: Character }>(`/characters/${id}/visibility`, data),
+
+  /**
+   * Clone a public character
+   */
+  clone: (id: string) =>
+    apiPost<{ character: Character }>(`/characters/${id}/clone`),
+
+  /**
+   * Create a new version of a character
+   */
+  createVersion: (id: string, data: Partial<CreateCharacterInput>) =>
+    apiPost<{ character: Character }>(`/characters/${id}/version`, data),
+
+  /**
+   * Like a public character
+   */
+  like: (id: string) => apiPost<{ success: boolean }>(`/characters/${id}/like`),
+
+  /**
+   * Unlike a public character
+   */
+  unlike: (id: string) =>
+    apiDelete<{ success: boolean }>(`/characters/${id}/like`),
+
+  /**
+   * Track character share
+   */
+  share: (id: string) =>
+    apiPost<{ success: boolean }>(`/characters/${id}/share`),
+
+  // ============================================================================
+  // PUBLIC GALLERY (no auth required)
+  // ============================================================================
+
+  /**
+   * Get public characters with pagination and filters
+   */
+  getPublicCharacters: async (
+    params?: PublicCharactersParams
+  ): Promise<PublicCharactersResponse> => {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          searchParams.set(key, String(value));
+        }
+      });
+    }
+    const url = `${API_BASE_URL}/characters/public${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
+    const response = await fetch(url);
+    return handleResponse<PublicCharactersResponse>(response);
+  },
+
+  /**
+   * Get a public character by ID
+   */
+  getPublicCharacter: async (id: string): Promise<{ character: Character }> => {
+    const url = `${API_BASE_URL}/characters/public/${id}`;
+    const response = await fetch(url);
+    return handleResponse<{ character: Character }>(response);
+  },
+
+  /**
+   * Get featured characters
+   */
+  getFeatured: async (limit?: number): Promise<{ characters: Character[] }> => {
+    const url = `${API_BASE_URL}/characters/public/featured${limit ? `?limit=${limit}` : ""}`;
+    const response = await fetch(url);
+    return handleResponse<{ characters: Character[] }>(response);
+  },
+
+  /**
+   * Get trending characters
+   */
+  getTrending: async (limit?: number): Promise<{ characters: Character[] }> => {
+    const url = `${API_BASE_URL}/characters/public/trending${limit ? `?limit=${limit}` : ""}`;
+    const response = await fetch(url);
+    return handleResponse<{ characters: Character[] }>(response);
+  },
+
+  /**
+   * Get characters by creator
+   */
+  getCreatorCharacters: async (
+    creatorId: string,
+    params?: { page?: number; limit?: number }
+  ): Promise<PublicCharactersResponse> => {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          searchParams.set(key, String(value));
+        }
+      });
+    }
+    const url = `${API_BASE_URL}/characters/creator/${creatorId}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
+    const response = await fetch(url);
+    return handleResponse<PublicCharactersResponse>(response);
+  },
+};
+
+// ============================================================================
 // GALLERY API
 // ============================================================================
 
