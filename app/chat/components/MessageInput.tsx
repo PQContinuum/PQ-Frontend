@@ -38,7 +38,7 @@ import { useCreateConversation } from '@/hooks/use-conversations';
 import { useQueryClient } from '@tanstack/react-query';
 import { conversationKeys } from '@/hooks/use-conversations';
 import { useProjects } from '@/hooks/use-projects';
-import { chatApi, conversationsApi, ApiError } from '@/lib/api-client';
+import { chatApi, conversationsApi, imageGenApi, videoGenApi, ApiError } from '@/lib/api-client';
 import { usePreciseLocation } from '@/hooks/use-precise-location';
 import { LocationPermissionDialog } from './LocationPermissionDialog';
 import { LocationMapConfirmDialog } from './LocationMapConfirmDialog';
@@ -1028,6 +1028,52 @@ export const MessageInput = memo(function MessageInput() {
     // Enter sin Shift = comportamiento normal (nueva línea)
   };
 
+  // Handle paste for images - allows pasting images as reference
+  const [isPastingImage, setIsPastingImage] = useState(false);
+  const handlePaste = useCallback(async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items || isPastingImage) return;
+
+    // Find image item in clipboard
+    let imageFile: File | null = null;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        imageFile = items[i].getAsFile();
+        break;
+      }
+    }
+
+    if (!imageFile) return; // No image found, let default paste behavior happen
+
+    e.preventDefault(); // Prevent default paste behavior for images
+    setIsPastingImage(true);
+
+    try {
+      // Upload based on current mode
+      if (videoMode && videoModeType === 'image-to-video') {
+        // Upload for video generation
+        const data = await videoGenApi.uploadImage(imageFile);
+        setVideoImageUrl(data.imageUrl);
+      } else {
+        // Upload as image reference (for image mode or to activate it)
+        const data = await imageGenApi.uploadReference(imageFile);
+
+        if (!imageMode) {
+          // Activate image mode if not already active
+          setImageMode(true);
+          setVideoMode(false);
+          setShowFileUpload(false);
+          setShowStylePicker(false);
+        }
+        setImageReferenceUrl(data.imageUrl);
+      }
+    } catch (error) {
+      console.error('Error uploading pasted image:', error);
+    } finally {
+      setIsPastingImage(false);
+    }
+  }, [imageMode, videoMode, videoModeType, isPastingImage]);
+
   const toggleImageMode = useCallback(() => {
     setImageMode((prev) => !prev);
     setVideoMode(false);
@@ -1218,7 +1264,7 @@ export const MessageInput = memo(function MessageInput() {
     queryClient,
   ]);
 
-  const isLoading = isStreaming || isGeneratingImage || isGeneratingVideo || isTranscribing || isLisaGenerating;
+  const isLoading = isStreaming || isGeneratingImage || isGeneratingVideo || isTranscribing || isLisaGenerating || isPastingImage;
 
   // Style preset picker component
   const StylePresetPicker = () => (
@@ -1894,6 +1940,7 @@ export const MessageInput = memo(function MessageInput() {
               value={input}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
+              onPaste={handlePaste}
               rows={1}
               placeholder={
                 isRecording
