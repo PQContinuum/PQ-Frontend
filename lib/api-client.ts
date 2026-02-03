@@ -1465,3 +1465,107 @@ export const galleryApi = {
   updateImageVisibility: (imageId: string, data: UpdateMediaVisibilityRequest) =>
     apiPatch<GalleryItem>(`/gallery/image/${imageId}/visibility`, data),
 };
+
+// ============================================================================
+// VERIFICATION API (2FA & Profile Completion)
+// ============================================================================
+
+export type OccupationType =
+  | "professional"
+  | "student"
+  | "scientist"
+  | "academic"
+  | "entrepreneur"
+  | "startup"
+  | "government"
+  | "content_creator"
+  | "other";
+
+export interface VerificationStatus {
+  emailVerified: boolean;
+  phoneVerified: boolean;
+  profileCompleted: boolean;
+  email: string | null;
+  phone: string | null;
+  fullName: string | null;
+  country: string | null;
+  occupation: OccupationType[] | null;
+}
+
+export interface SendCodeResponse {
+  success: boolean;
+  message: string;
+  expiresAt: string;
+  canResendAt: string;
+}
+
+export interface VerifyCodeResponse {
+  success: boolean;
+  message: string;
+  verified: boolean;
+}
+
+export interface CompleteProfileResponse {
+  success: boolean;
+  message: string;
+  profile: {
+    fullName: string;
+    country: string;
+    occupation: OccupationType[];
+    emailVerified: boolean;
+    phoneVerified: boolean;
+    profileCompleted: boolean;
+  };
+}
+
+export interface SendEmailVerificationRequest {
+  email: string;
+}
+
+export interface SendSmsVerificationRequest {
+  phone: string;
+}
+
+export interface VerifyCodeRequest {
+  type: "email" | "sms";
+  code: string;
+  target: string;
+}
+
+export interface CompleteProfileRequest {
+  fullName: string;
+  country: string;
+  occupation: OccupationType[];
+}
+
+export const verificationApi = {
+  /**
+   * Get current verification status
+   */
+  getStatus: () =>
+    apiGet<VerificationStatus>("/verification/status"),
+
+  /**
+   * Send email verification code
+   */
+  sendEmailCode: (data: SendEmailVerificationRequest) =>
+    apiPost<SendCodeResponse>("/verification/email/send", data),
+
+  /**
+   * Send SMS verification code
+   */
+  sendSmsCode: (data: SendSmsVerificationRequest) =>
+    apiPost<SendCodeResponse>("/verification/sms/send", data),
+
+  /**
+   * Verify a code (email or SMS)
+   */
+  verifyCode: (data: VerifyCodeRequest) =>
+    apiPost<VerifyCodeResponse>("/verification/verify", data),
+
+  /**
+   * Complete user profile after verification
+   */
+  completeProfile: (data: CompleteProfileRequest) =>
+    apiPost<CompleteProfileResponse>("/verification/complete-profile", data),
+};

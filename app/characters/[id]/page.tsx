@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import {
   ArrowLeft,
@@ -89,6 +90,14 @@ export default function CharacterDetailPage() {
     [character?.characterType]
   );
 
+  // Get active locks with proper typing
+  const activeLocks = useMemo(() => {
+    const locks = character?.locks as CharacterLocks | null | undefined;
+    if (!locks) return [];
+    return (Object.entries(locks) as [keyof CharacterLocks, boolean | undefined][])
+      .filter(([, value]) => value === true);
+  }, [character?.locks]);
+
   // Handlers with useCallback for stable references
   const handleLike = useCallback(async () => {
     if (!character) return;
@@ -162,14 +171,6 @@ export default function CharacterDetailPage() {
     );
   }
 
-  // Get active locks with proper typing
-  const activeLocks = useMemo(() => {
-    const locks = character.locks as CharacterLocks | null | undefined;
-    if (!locks) return [];
-    return (Object.entries(locks) as [keyof CharacterLocks, boolean | undefined][])
-      .filter(([, value]) => value === true);
-  }, [character.locks]);
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -192,10 +193,12 @@ export default function CharacterDetailPage() {
           <div className="space-y-4">
             <div className="relative aspect-square bg-white rounded-2xl border border-gray-200 overflow-hidden">
               {character.referenceImageUrl ? (
-                <img
+                <Image
                   src={character.referenceImageUrl}
                   alt={character.name}
-                  className="w-full h-full object-cover"
+                  fill
+                  className="object-cover"
+                  unoptimized
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
