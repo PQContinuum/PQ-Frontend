@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { notFound } from 'next/navigation';
 import {
@@ -48,6 +48,7 @@ export default function CharacterDetailPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const [localLikeState, setLocalLikeState] = useState<{
+    characterId: string;
     isLiked: boolean;
     likeCount: number;
   } | null>(null);
@@ -73,13 +74,10 @@ export default function CharacterDetailPage() {
   const shareMutation = useShareCharacter();
 
   // Derive like state from character data or local optimistic state
-  const isLiked = localLikeState?.isLiked ?? character?.hasLiked ?? false;
-  const likeCount = localLikeState?.likeCount ?? character?.likeCount ?? 0;
-
-  // Reset local state when character changes
-  useEffect(() => {
-    setLocalLikeState(null);
-  }, [character?.id]);
+  // Only use local state if it matches the current character
+  const localStateForCurrentCharacter = localLikeState?.characterId === character?.id ? localLikeState : null;
+  const isLiked = localStateForCurrentCharacter?.isLiked ?? character?.hasLiked ?? false;
+  const likeCount = localStateForCurrentCharacter?.likeCount ?? character?.likeCount ?? 0;
 
   // Memoized options lookup
   const styleOption = useMemo(
@@ -99,7 +97,7 @@ export default function CharacterDetailPage() {
     const newIsLiked = !isLiked;
     const newLikeCount = newIsLiked ? likeCount + 1 : Math.max(0, likeCount - 1);
 
-    setLocalLikeState({ isLiked: newIsLiked, likeCount: newLikeCount });
+    setLocalLikeState({ characterId: character.id, isLiked: newIsLiked, likeCount: newLikeCount });
 
     try {
       if (newIsLiked) {
