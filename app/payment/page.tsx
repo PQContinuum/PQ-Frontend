@@ -10,7 +10,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { ArrowRight, Check, Zap, Building2, Rocket, Crown, Clock } from 'lucide-react';
 import { useState } from 'react';
@@ -119,7 +118,7 @@ const plans = [
 ];
 
 export default function PaymentPage() {
-  const [frequency, setFrequency] = useState<string>('monthly');
+  const [frequency] = useState<string>('monthly');
   const { data: userPlan } = useUserPlan();
 
   return (

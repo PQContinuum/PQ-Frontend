@@ -106,7 +106,7 @@ export function DeleteCharacterModal({
           {/* Confirmation input */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Escribe <span className="font-bold text-red-600">"{character.name}"</span> para confirmar
+              Escribe <span className="font-bold text-red-600">&quot;{character.name}&quot;</span> para confirmar
             </label>
             <input
               type="text"

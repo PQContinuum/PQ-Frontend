@@ -1,6 +1,6 @@
 'use client';
 
-import { Mic, Subtitles, Image } from 'lucide-react';
+import { Mic, Subtitles, Image as ImageIcon } from 'lucide-react';
 import { useLisaWizardStore } from '@/hooks/use-lisa-wizard';
 import { LANGUAGE_OPTIONS, VOICE_STYLE_OPTIONS } from '@/lib/lisa/constants';
 
@@ -26,7 +26,7 @@ export function LanguageStep() {
 
         <div className="bg-gray-50 rounded-xl p-8 text-center">
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-            <Image className="w-8 h-8 text-gray-400" />
+            <ImageIcon className="w-8 h-8 text-gray-400" />
           </div>
           <p className="text-gray-600">
             Has seleccionado generar una imagen, por lo que no aplican opciones de audio.

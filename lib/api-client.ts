@@ -1020,7 +1020,6 @@ export const healthApi = {
 import type {
   Character,
   CreateCharacterInput,
-  UpdateCharacterInput,
   UpdateCharacterVisibilityInput,
   PublicCharactersParams,
   PublicCharactersResponse,

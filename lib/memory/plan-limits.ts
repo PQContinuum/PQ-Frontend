@@ -340,8 +340,7 @@ export function getVideoGenLimits(planName: PlanName | null | undefined): VideoG
  * Calcula el costo de un video según sus parámetros (Google Veo 3)
  */
 export function calculateVideoCost(
-  duration: VideoGenDuration,
-  _audioEnabled: boolean
+  duration: VideoGenDuration
 ): number {
   // Veo 3 pricing: ~$0.50/second
   // Duration '5' → 6s, '10' → 8s for Veo 3

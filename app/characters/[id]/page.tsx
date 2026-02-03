@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import {
   ArrowLeft,
   Heart,
@@ -31,23 +32,33 @@ import {
 import { ShareCharacterModal } from '@/app/chat/components/lisa/ShareCharacterModal';
 import { DeleteCharacterModal } from '@/app/chat/components/lisa/DeleteCharacterModal';
 import { VISUAL_STYLE_OPTIONS, CHARACTER_TYPE_OPTIONS, CHARACTER_LOCK_OPTIONS } from '@/lib/lisa/constants';
-import type { Character, CharacterLocks } from '@/lib/lisa/types';
+import type { CharacterLocks } from '@/lib/lisa/types';
 
 export default function CharacterDetailPage() {
-  const params = useParams();
+  const params = useParams<{ id: string }>();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const characterId = params.id as string;
-  const editMode = searchParams.get('edit') === 'true';
+
+  // Validate params
+  const characterId = params?.id;
+  if (!characterId || typeof characterId !== 'string') {
+    notFound();
+  }
 
   const [showShareModal, setShowShareModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [isLiked, setIsLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(0);
+  const [localLikeState, setLocalLikeState] = useState<{
+    isLiked: boolean;
+    likeCount: number;
+  } | null>(null);
 
   // Try to fetch as owner first, then as public
-  const { data: ownedCharacter, isLoading: isLoadingOwned, error: ownedError } = useCharacter(characterId);
+  const {
+    data: ownedCharacter,
+    isLoading: isLoadingOwned,
+    error: ownedError,
+  } = useCharacter(characterId);
+
   const { data: publicCharacter, isLoading: isLoadingPublic } = usePublicCharacter(
     ownedError ? characterId : null
   );
@@ -61,30 +72,48 @@ export default function CharacterDetailPage() {
   const unlikeMutation = useUnlikeCharacter();
   const shareMutation = useShareCharacter();
 
+  // Derive like state from character data or local optimistic state
+  const isLiked = localLikeState?.isLiked ?? character?.hasLiked ?? false;
+  const likeCount = localLikeState?.likeCount ?? character?.likeCount ?? 0;
+
+  // Reset local state when character changes
   useEffect(() => {
-    if (character) {
-      setIsLiked(character.hasLiked || false);
-      setLikeCount(character.likeCount || 0);
-    }
-  }, [character]);
+    setLocalLikeState(null);
+  }, [character?.id]);
 
-  const styleOption = VISUAL_STYLE_OPTIONS.find((s) => s.value === character?.visualStyle);
-  const typeOption = CHARACTER_TYPE_OPTIONS.find((t) => t.value === character?.characterType);
+  // Memoized options lookup
+  const styleOption = useMemo(
+    () => VISUAL_STYLE_OPTIONS.find((s) => s.value === character?.visualStyle),
+    [character?.visualStyle]
+  );
+  const typeOption = useMemo(
+    () => CHARACTER_TYPE_OPTIONS.find((t) => t.value === character?.characterType),
+    [character?.characterType]
+  );
 
-  const handleLike = async () => {
+  // Handlers with useCallback for stable references
+  const handleLike = useCallback(async () => {
     if (!character) return;
-    if (isLiked) {
-      setIsLiked(false);
-      setLikeCount(Math.max(0, likeCount - 1));
-      await unlikeMutation.mutateAsync(character.id);
-    } else {
-      setIsLiked(true);
-      setLikeCount(likeCount + 1);
-      await likeMutation.mutateAsync(character.id);
-    }
-  };
 
-  const handleShare = async () => {
+    // Optimistic update
+    const newIsLiked = !isLiked;
+    const newLikeCount = newIsLiked ? likeCount + 1 : Math.max(0, likeCount - 1);
+
+    setLocalLikeState({ isLiked: newIsLiked, likeCount: newLikeCount });
+
+    try {
+      if (newIsLiked) {
+        await likeMutation.mutateAsync(character.id);
+      } else {
+        await unlikeMutation.mutateAsync(character.id);
+      }
+    } catch {
+      // Rollback on error
+      setLocalLikeState(null);
+    }
+  }, [character, isLiked, likeCount, likeMutation, unlikeMutation]);
+
+  const handleShare = useCallback(async () => {
     if (!character) return;
     await shareMutation.mutateAsync(character.id);
     const url = `${window.location.origin}/characters/${character.id}`;
@@ -95,18 +124,18 @@ export default function CharacterDetailPage() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
-  };
+  }, [character, shareMutation]);
 
-  const handleClone = async () => {
+  const handleClone = useCallback(async () => {
     if (!character) return;
     const result = await cloneMutation.mutateAsync(character.id);
     router.push(`/characters/${result.character.id}?edit=true`);
-  };
+  }, [character, cloneMutation, router]);
 
-  const handleUseInLisa = () => {
+  const handleUseInLisa = useCallback(() => {
     if (!character) return;
     router.push(`/chat?character=${character.id}`);
-  };
+  }, [character, router]);
 
   if (isLoading) {
     return (
@@ -135,9 +164,13 @@ export default function CharacterDetailPage() {
     );
   }
 
-  const activeLocks = Object.entries(character.locks || {}).filter(
-    ([_, value]) => value === true
-  );
+  // Get active locks with proper typing
+  const activeLocks = useMemo(() => {
+    const locks = character.locks as CharacterLocks | null | undefined;
+    if (!locks) return [];
+    return (Object.entries(locks) as [keyof CharacterLocks, boolean | undefined][])
+      .filter(([, value]) => value === true);
+  }, [character.locks]);
 
   return (
     <div className="min-h-screen bg-gray-50">

@@ -58,7 +58,7 @@ export async function uploadMediaFiles(
   let authHeaders: HeadersInit;
   try {
     authHeaders = await getAuthHeadersForUpload();
-  } catch (error) {
+  } catch {
     throw new Error(
       'No se encontró el token de autenticación. Por favor inicia sesión nuevamente.'
     );

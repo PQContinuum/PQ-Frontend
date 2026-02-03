@@ -12,6 +12,7 @@ import {
   LogOut,
   Loader2,
   Volume2,
+  Images,
 } from 'lucide-react';
 
 import {
@@ -77,6 +78,33 @@ function SidebarFooterContent({
 
   return (
     <SidebarFooter className="bg-[#f6f6f6] gap-2">
+      {/* Multimedia Button - Prominent CTA */}
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <Link href="/characters" className="block">
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className={`relative overflow-hidden rounded-lg bg-[#00552b] shadow-md hover:shadow-lg transition-shadow ${
+                isCollapsed ? 'mx-auto w-fit' : ''
+              }`}
+            >
+              <div className={`flex items-center gap-3 px-3 py-2.5 text-white ${
+                isCollapsed ? 'justify-center px-2.5' : ''
+              }`}>
+                <Images className="size-5" />
+                {!isCollapsed && (
+                  <div className="flex flex-col">
+                    <span className="text-sm font-bold leading-tight">Multimedia</span>
+                    <span className="text-[10px] font-medium opacity-80">Galería de contenido</span>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </Link>
+        </SidebarMenuItem>
+      </SidebarMenu>
+
       <FeedbackWidget isCollapsed={isCollapsed} />
       <SidebarMenu>
         <SidebarMenuItem>

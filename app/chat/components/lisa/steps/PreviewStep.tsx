@@ -6,7 +6,7 @@ import {
   Copy,
   Check,
   Video,
-  Image,
+  Image as ImageIcon,
   Palette,
   RectangleHorizontal,
   Monitor,
@@ -67,7 +67,7 @@ export function PreviewStep() {
             {isVideo ? (
               <Video className="w-5 h-5 text-gray-600" />
             ) : (
-              <Image className="w-5 h-5 text-gray-600" />
+              <ImageIcon className="w-5 h-5 text-gray-600" />
             )}
           </div>
           <p className="text-xs text-gray-500">Tipo</p>

@@ -30,7 +30,6 @@ interface CharacterCardProps {
 
 export function CharacterCard({
   character,
-  variant = 'gallery',
   onSelect,
   onEdit,
   onShare,

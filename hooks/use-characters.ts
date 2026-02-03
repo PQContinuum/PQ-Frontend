@@ -51,11 +51,19 @@ export const characterKeys = {
   publicList: (params?: PublicCharactersParams) =>
     [...characterKeys.public, 'list', params] as const,
   publicDetail: (id: string) => [...characterKeys.public, 'detail', id] as const,
-  featured: () => [...characterKeys.public, 'featured'] as const,
-  trending: () => [...characterKeys.public, 'trending'] as const,
+  featured: (limit?: number) => [...characterKeys.public, 'featured', limit] as const,
+  trending: (limit?: number) => [...characterKeys.public, 'trending', limit] as const,
   creator: (creatorId: string) =>
     [...characterKeys.public, 'creator', creatorId] as const,
-};
+} as const;
+
+// Default query options for consistency
+const defaultQueryOptions = {
+  staleTime: 1000 * 60 * 5, // 5 minutes
+  gcTime: 1000 * 60 * 10,   // 10 minutes
+  retry: 2,
+  refetchOnWindowFocus: false,
+} as const;
 
 // ============================================================================
 // API FUNCTIONS
@@ -111,7 +119,7 @@ export function useCharacters() {
   return useQuery({
     queryKey: characterKeys.lists(),
     queryFn: fetchCharacters,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    ...defaultQueryOptions,
   });
 }
 
@@ -120,10 +128,10 @@ export function useCharacters() {
  */
 export function useCharacter(id: string | null) {
   return useQuery({
-    queryKey: characterKeys.detail(id!),
+    queryKey: characterKeys.detail(id ?? ''),
     queryFn: () => fetchCharacter(id!),
     enabled: !!id,
-    staleTime: 1000 * 60 * 10, // 10 minutes
+    ...defaultQueryOptions,
   });
 }
 
@@ -270,12 +278,13 @@ export function usePublicCharacter(id: string | null) {
  */
 export function useFeaturedCharacters(limit?: number) {
   return useQuery({
-    queryKey: characterKeys.featured(),
+    queryKey: characterKeys.featured(limit),
     queryFn: async () => {
       const data = await apiCharacters.getFeatured(limit);
       return data.characters;
     },
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    ...defaultQueryOptions,
+    staleTime: 1000 * 60 * 15, // 15 minutes (featured changes less often)
   });
 }
 
@@ -284,12 +293,13 @@ export function useFeaturedCharacters(limit?: number) {
  */
 export function useTrendingCharacters(limit?: number) {
   return useQuery({
-    queryKey: characterKeys.trending(),
+    queryKey: characterKeys.trending(limit),
     queryFn: async () => {
       const data = await apiCharacters.getTrending(limit);
       return data.characters;
     },
-    staleTime: 1000 * 60 * 2, // 2 minutes
+    ...defaultQueryOptions,
+    staleTime: 1000 * 60 * 2, // 2 minutes (trending changes frequently)
   });
 }
 
