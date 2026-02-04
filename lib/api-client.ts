@@ -74,6 +74,13 @@ function getUserFriendlyErrorMessage(
 ): string {
   // Payment/Plan related errors (403)
   if (statusCode === 403) {
+    const lowerMessage = originalMessage.toLowerCase();
+
+    // Profile incomplete error
+    if (lowerMessage.includes('profile') || lowerMessage.includes('perfil')) {
+      return 'Por favor completa tu perfil para acceder a esta funcion.';
+    }
+
     const planKeywords = [
       'plan',
       'suscripción',
@@ -85,7 +92,6 @@ function getUserFriendlyErrorMessage(
       'requiere',
       'requires',
     ];
-    const lowerMessage = originalMessage.toLowerCase();
     if (planKeywords.some((keyword) => lowerMessage.includes(keyword))) {
       return 'Esta función no está disponible en tu plan actual. Actualiza tu suscripción para acceder a todas las funciones.';
     }
@@ -130,6 +136,7 @@ function getUserFriendlyErrorMessage(
 
 export class ApiError extends Error {
   public userMessage: string;
+  public requiresProfileCompletion: boolean;
 
   constructor(
     public statusCode: number,
@@ -140,7 +147,22 @@ export class ApiError extends Error {
     super(message);
     this.name = "ApiError";
     this.userMessage = getUserFriendlyErrorMessage(statusCode, message);
+
+    // Check if this error requires profile completion
+    this.requiresProfileCompletion =
+      statusCode === 403 &&
+      typeof data === 'object' &&
+      data !== null &&
+      'requiresProfileCompletion' in data &&
+      (data as { requiresProfileCompletion?: boolean }).requiresProfileCompletion === true;
   }
+}
+
+/**
+ * Check if an error requires profile completion
+ */
+export function isProfileIncompleteError(error: unknown): error is ApiError {
+  return error instanceof ApiError && error.requiresProfileCompletion;
 }
 
 async function handleResponse<T>(response: Response): Promise<T> {
@@ -1467,7 +1489,7 @@ export const galleryApi = {
 };
 
 // ============================================================================
-// VERIFICATION API (2FA & Profile Completion)
+// VERIFICATION API (2FA & Profile Completion via Supabase)
 // ============================================================================
 
 export type OccupationType =
@@ -1495,8 +1517,6 @@ export interface VerificationStatus {
 export interface SendCodeResponse {
   success: boolean;
   message: string;
-  expiresAt: string;
-  canResendAt: string;
 }
 
 export interface VerifyCodeResponse {
@@ -1518,24 +1538,20 @@ export interface CompleteProfileResponse {
   };
 }
 
-export interface SendEmailVerificationRequest {
-  email: string;
-}
-
-export interface SendSmsVerificationRequest {
+export interface SendPhoneVerificationRequest {
   phone: string;
 }
 
-export interface VerifyCodeRequest {
-  type: "email" | "sms";
+export interface VerifyPhoneCodeRequest {
+  phone: string;
   code: string;
-  target: string;
 }
 
 export interface CompleteProfileRequest {
   fullName: string;
   country: string;
   occupation: OccupationType[];
+  bio?: string;
 }
 
 export const verificationApi = {
@@ -1546,22 +1562,22 @@ export const verificationApi = {
     apiGet<VerificationStatus>("/verification/status"),
 
   /**
-   * Send email verification code
+   * Resend email verification (via Supabase)
    */
-  sendEmailCode: (data: SendEmailVerificationRequest) =>
-    apiPost<SendCodeResponse>("/verification/email/send", data),
+  resendEmailVerification: () =>
+    apiPost<SendCodeResponse>("/verification/email/resend"),
 
   /**
-   * Send SMS verification code
+   * Send phone verification OTP (via Supabase)
    */
-  sendSmsCode: (data: SendSmsVerificationRequest) =>
-    apiPost<SendCodeResponse>("/verification/sms/send", data),
+  sendPhoneOtp: (data: SendPhoneVerificationRequest) =>
+    apiPost<SendCodeResponse>("/verification/phone/send", data),
 
   /**
-   * Verify a code (email or SMS)
+   * Verify phone OTP code
    */
-  verifyCode: (data: VerifyCodeRequest) =>
-    apiPost<VerifyCodeResponse>("/verification/verify", data),
+  verifyPhoneCode: (data: VerifyPhoneCodeRequest) =>
+    apiPost<VerifyCodeResponse>("/verification/phone/verify", data),
 
   /**
    * Complete user profile after verification

@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactNode, useState } from 'react';
 import { JobRecoveryProvider } from './job-recovery-provider';
+import { ProfileVerificationProvider } from './profile-verification-provider';
 
 type QueryProviderProps = {
   children: ReactNode;
@@ -30,9 +31,11 @@ export function QueryProvider({ children }: QueryProviderProps) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <JobRecoveryProvider>
-        {children}
-      </JobRecoveryProvider>
+      <ProfileVerificationProvider>
+        <JobRecoveryProvider>
+          {children}
+        </JobRecoveryProvider>
+      </ProfileVerificationProvider>
     </QueryClientProvider>
   );
 }
