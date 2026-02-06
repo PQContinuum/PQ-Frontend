@@ -1177,19 +1177,19 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} w-full`}>
-      <div className="flex flex-col gap-1 max-w-[85%] md:max-w-[75%] min-w-0">
+      <div className={`flex flex-col gap-1 min-w-0 ${isUser ? 'max-w-[85%] md:max-w-[75%]' : 'max-w-[90%] md:max-w-[80%]'}`}>
         <div
-          className={`rounded-4xl border px-4 py-2 text-[15px] leading-relaxed overflow-hidden ${
+          className={`border overflow-hidden ${
             isUser
-              ? 'border-transparent bg-[#00552b] text-white font-medium'
-              : 'border-transparent bg-transparent text-black'
+              ? 'rounded-4xl px-4 py-2 text-[15px] leading-relaxed border-transparent bg-[#00552b] text-white font-medium'
+              : 'rounded-2xl px-5 py-4 sm:px-6 sm:py-5 border-transparent bg-transparent text-black'
           }`}
         >
           <div className="flex w-full flex-col gap-2 min-w-0">
             {isUser && attachments && attachments.length > 0 && (
               <AttachmentsPreview attachments={attachments} />
             )}
-            <div className="markdown prose prose-sm max-w-full text-current prose-headings:text-[#111111] prose-strong:text-[#111111] break-words overflow-hidden">
+            <div className={`max-w-full break-words overflow-hidden ${isUser ? 'text-current' : 'continuum-prose'}`}>
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 rehypePlugins={[rehypeHighlight]}
@@ -1208,25 +1208,40 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
                       return (
                         <code
                           {...props}
-                          className="rounded-md bg-black/5 px-1.5 py-0.5 text-[0.92em] text-[#111111]"
+                          className={isUser
+                            ? "rounded-md bg-white/15 px-1.5 py-0.5 text-[0.92em]"
+                            : undefined
+                          }
                         >
                           {children}
                         </code>
                       );
                     }
-                    // For non-inline code, let the pre component handle it
                     return <code {...props} className={className}>{children}</code>;
                   },
-                  a: (props) => (
+                  a: ({ children, ...props }) => (
                     <a
                       {...props}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="font-medium text-[#111111] underline underline-offset-4 break-all"
-                    />
+                      className={isUser ? "font-medium text-white underline underline-offset-4 break-all" : undefined}
+                    >
+                      {children}
+                    </a>
                   ),
-                  ul: (props) => <ul {...props} className="list-disc pl-6 overflow-hidden" />,
-                  ol: (props) => <ol {...props} className="list-decimal pl-6 overflow-hidden" />,
+                  ul: ({ children, ...props }) => (
+                    isUser ? <ul {...props} className="list-disc pl-6 overflow-hidden">{children}</ul> : <ul {...props}>{children}</ul>
+                  ),
+                  ol: ({ children, ...props }) => (
+                    isUser ? <ol {...props} className="list-decimal pl-6 overflow-hidden">{children}</ol> : <ol {...props}>{children}</ol>
+                  ),
+                  table: ({ children, ...props }) => (
+                    isUser ? <table {...props}>{children}</table> : (
+                      <div className="overflow-x-auto">
+                        <table {...props}>{children}</table>
+                      </div>
+                    )
+                  ),
                   img: (props) => <ChatImage {...props} />,
                 }}
               >
