@@ -9,7 +9,7 @@ import {
   memo,
   useEffect,
 } from 'react';
-import { ArrowUp, MapPin, Paperclip, Plus, Check, Loader2, Image, X, ChevronDown, Lock, Mic, Square, Clock, Video, Blend, Wand2, Zap } from 'lucide-react';
+import { ArrowUp, Globe, MapPin, Paperclip, Plus, Check, Loader2, Image, X, ChevronDown, Lock, Mic, Square, Clock, Video, Blend, Wand2, Zap } from 'lucide-react';
 import { VideoImageUpload } from './VideoImageUpload';
 import { ImageReferenceUpload } from './ImageReferenceUpload';
 import { GalleryOptionsPanel } from './GalleryOptionsPanel';
@@ -58,6 +58,8 @@ import {
   type VideoMode,
 } from '@/hooks/useVideoGeneration';
 import { LisaWizardDialog } from './lisa/LisaWizardDialog';
+import { useWebSearchStore } from '@/store/useWebSearchStore';
+import type { WebSearchResult } from '@/types/websearch';
 
 /**
  * FEATURE FLAGS - Control de acceso a funcionalidades
@@ -279,6 +281,14 @@ export const MessageInput = memo(function MessageInput() {
   const geoCulturalMode = useGeoCulturalMode();
   const userLocation = useUserLocation();
 
+  // Web Search (global toggle + UI state)
+  const enableWebSearch = useWebSearchStore((s) => s.enableWebSearch);
+  const setEnableWebSearch = useWebSearchStore((s) => s.setEnableWebSearch);
+  const isWebSearching = useWebSearchStore((s) => s.isSearching);
+  const setIsSearching = useWebSearchStore((s) => s.setIsSearching);
+  const setLastResults = useWebSearchStore((s) => s.setLastResults);
+  const setLastError = useWebSearchStore((s) => s.setLastError);
+
   const {
     address,
     coords,
@@ -299,10 +309,12 @@ export const MessageInput = memo(function MessageInput() {
     textarea.style.height = `${newHeight}px`;
   }, []);
 
-  const { addMessage, updateMessage, updateMessageGenerationState, setStreaming, setConversationId, setGeoCulturalMode, setUserLocation, startGeneration, stopGeneration } = useChatStore(
+  const { addMessage, updateMessage, updateMessageCitations, updateMessageWebSearchError, updateMessageGenerationState, setStreaming, setConversationId, setGeoCulturalMode, setUserLocation, startGeneration, stopGeneration } = useChatStore(
     useShallow((state) => ({
       addMessage: state.addMessage,
       updateMessage: state.updateMessage,
+      updateMessageCitations: state.updateMessageCitations,
+      updateMessageWebSearchError: state.updateMessageWebSearchError,
       updateMessageGenerationState: state.updateMessageGenerationState,
       setStreaming: state.setStreaming,
       setConversationId: state.setConversationId,
@@ -839,6 +851,9 @@ export const MessageInput = memo(function MessageInput() {
         attachments: attachments.length > 0 ? attachments : undefined
       });
       addMessage({ id: assistantMessageId, role: 'assistant', content: '' });
+      // Clear per-message web search state for the new assistant message.
+      updateMessageCitations(assistantMessageId, null);
+      updateMessageWebSearchError(assistantMessageId, null);
       setInput('');
       setStreaming(true);
 
@@ -847,6 +862,11 @@ export const MessageInput = memo(function MessageInput() {
       let geoCulturalContent: (GeoCulturalAnalysisText & Record<string, unknown>) | null = null;
 
       try {
+        // Web Search UI state (shows spinner on the toggle)
+        setLastError(null);
+        setLastResults(null);
+        setIsSearching(enableWebSearch);
+
         if (!currentConversationId) {
           try {
             const title =
@@ -871,6 +891,8 @@ export const MessageInput = memo(function MessageInput() {
 
         const response = await chatApi.stream({
           message: value,
+          enableWebSearch,
+          webSearchMaxResults: enableWebSearch ? 5 : undefined,
           messages: payloadMessages,
           conversationId: currentConversationId || undefined,
           geoCulturalContext: freshGeoCulturalContext || undefined,
@@ -892,7 +914,20 @@ export const MessageInput = memo(function MessageInput() {
             buffer = buffer.slice(boundary + 2);
             const event = parseSSEChunk(chunk);
             if (event) {
-              if (geoCulturalMode) {
+              if (event.event === 'websearch.results') {
+                const results = (event.data as { results?: unknown })?.results;
+                if (Array.isArray(results)) {
+                  updateMessageCitations(assistantMessageId, results as WebSearchResult[]);
+                  setLastResults(results as WebSearchResult[]);
+                }
+                setIsSearching(false);
+              } else if (event.event === 'websearch.error') {
+                const message = (event.data as { message?: unknown })?.message;
+                const errorText = typeof message === 'string' ? message : 'Web search unavailable';
+                updateMessageWebSearchError(assistantMessageId, errorText);
+                setLastError(errorText);
+                setIsSearching(false);
+              } else if (geoCulturalMode) {
                 if (event.event === 'geocultural.start') {
                   geoCulturalContent = { ...(event.data as object), reply: '' } as GeoCulturalAnalysisText & Record<string, unknown>;
                   assistantContent = JSON.stringify(geoCulturalContent);
@@ -972,8 +1007,8 @@ export const MessageInput = memo(function MessageInput() {
             }).catch(err => console.debug('Background geocultural context save:', err instanceof Error ? err.message : 'error'));
           }
         }
-      } catch (err) {
-        console.error('[Chat] Error during message submission:', err);
+        } catch (err) {
+          console.error('[Chat] Error during message submission:', err);
 
         // Keep partial content if we received any during streaming
         if (assistantContent && assistantContent.length > 0) {
@@ -994,6 +1029,7 @@ export const MessageInput = memo(function MessageInput() {
         }
       } finally {
         setStreaming(false);
+        setIsSearching(false);
       }
     },
     [
@@ -1003,6 +1039,8 @@ export const MessageInput = memo(function MessageInput() {
       messages,
       setStreaming,
       updateMessage,
+      updateMessageCitations,
+      updateMessageWebSearchError,
       conversationId,
       setConversationId,
       createConversationMutation,
@@ -1016,6 +1054,10 @@ export const MessageInput = memo(function MessageInput() {
       handleGenerateImage,
       pendingProjectId,
       setPendingProjectId,
+      enableWebSearch,
+      setIsSearching,
+      setLastError,
+      setLastResults,
     ],
   );
 
@@ -1487,9 +1529,44 @@ export const MessageInput = memo(function MessageInput() {
               ? 'border-0 image-mode-glow'
               : videoMode
               ? 'border-0 video-mode-glow'
+              : enableWebSearch
+              ? 'border-0 web-search-glow'
               : 'border border-black/5'
           }`}
         >
+          {/* Web Search indicator - mirrors "mode active" styling (like image/video) */}
+          {enableWebSearch && (
+            <div className="px-3 sm:px-4 pt-3 pb-2 border-b border-gray-100">
+              <div className="flex items-center justify-between gap-3 px-3 py-2 rounded-2xl border border-sky-200/60 bg-gradient-to-r from-sky-50 to-emerald-50">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  {isWebSearching ? (
+                    <Loader2 className="size-4 animate-spin text-sky-700 shrink-0" />
+                  ) : (
+                    <Globe className="size-4 text-sky-700 shrink-0" />
+                  )}
+
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-sm font-medium text-sky-900">
+                      {isWebSearching ? 'Buscando en la web...' : 'Web Search activo ✓'}
+                    </span>
+                    <span className="text-xs text-sky-900/60 truncate">
+                      La respuesta incluirá citas como [1], [2], [3]
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setEnableWebSearch(false)}
+                  className="shrink-0 p-1.5 rounded-full hover:bg-black/5 transition-colors"
+                  title="Desactivar Web Search"
+                >
+                  <X className="size-4 text-sky-700/70 hover:text-sky-900" />
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Image mode controls - Beautiful redesign */}
           {imageMode && (
             <div className="px-3 sm:px-4 pt-3 pb-2 border-b border-gray-100">
@@ -1828,7 +1905,7 @@ export const MessageInput = memo(function MessageInput() {
                   type="button"
                   disabled={isLoading}
                   className={`relative flex shrink-0 items-center justify-center rounded-full p-2 transition ${
-                    geoCulturalMode || showFileUpload || attachments.length > 0 || imageMode || videoMode
+                    enableWebSearch || geoCulturalMode || showFileUpload || attachments.length > 0 || imageMode || videoMode
                       ? 'bg-[#00552b] text-white'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   } disabled:opacity-40 disabled:cursor-not-allowed`}
@@ -1892,6 +1969,15 @@ export const MessageInput = memo(function MessageInput() {
                   <Zap className="size-3 text-emerald-500" />
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => setEnableWebSearch(!enableWebSearch)}
+                  disabled={isLoading}
+                  className="cursor-pointer"
+                >
+                  <Globe className="mr-2 size-4" />
+                  <span className="flex-1">Web Search</span>
+                  {enableWebSearch && <Check className="size-4 text-[#00552b]" />}
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={handleLocationToggle}
                   disabled={isLoading}

@@ -554,6 +554,8 @@ export const projectsApi = {
 
 export interface ChatRequest {
   message: string;
+  enableWebSearch?: boolean;
+  webSearchMaxResults?: number;
   conversationId?: string;
   messages?: Array<{ role: "user" | "assistant"; content: string }>;
   geoCulturalContext?: {
@@ -599,7 +601,7 @@ export const chatApi = {
    * Send a chat message and get non-streaming response
    */
   sync: (request: ChatRequest) =>
-    apiPost<{ content: string; role: "assistant" }>("/chat/sync", request),
+    apiPost<{ content: string; role: "assistant"; citations?: { title: string; url: string; snippet: string }[]; webSearchError?: string }>("/chat/sync", request),
 
   /**
    * Enhance a prompt for image/video generation using conversation context

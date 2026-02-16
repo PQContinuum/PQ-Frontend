@@ -33,6 +33,7 @@ import {
 import type { ConversationWithMessages } from '@/hooks/use-conversations';
 import { useQueryClient } from '@tanstack/react-query';
 import { conversationsApi } from '@/lib/api-client';
+import type { WebSearchResult } from '@/types/websearch';
 
 // Helper para transformar mensajes de API a ChatMessage con generationState
 function mapApiMessagesToChatMessages(
@@ -40,6 +41,8 @@ function mapApiMessagesToChatMessages(
 ): ChatMessage[] {
   return messages.map((msg) => {
     let generationState: MessageGenerationState | undefined = undefined;
+    let citations: WebSearchResult[] | undefined = undefined;
+    let webSearchError: string | null | undefined = undefined;
 
     // Parsear metadata si existe
     if (msg.metadata) {
@@ -49,6 +52,12 @@ function mapApiMessagesToChatMessages(
           : msg.metadata;
         if (metadata?.generationState) {
           generationState = metadata.generationState as MessageGenerationState;
+        }
+        if (Array.isArray(metadata?.citations)) {
+          citations = metadata.citations as WebSearchResult[];
+        }
+        if (typeof metadata?.webSearchError === 'string') {
+          webSearchError = metadata.webSearchError;
         }
       } catch {
         // Ignore parse errors
@@ -61,6 +70,8 @@ function mapApiMessagesToChatMessages(
       content: msg.content,
       attachments: msg.attachments,
       generationState,
+      citations,
+      webSearchError: webSearchError ?? null,
     };
   });
 }

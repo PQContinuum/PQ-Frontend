@@ -3,6 +3,7 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import type { NamedSet } from 'zustand/middleware';
+import type { WebSearchResult } from '@/types/websearch';
 
 export type ChatRole = 'user' | 'assistant';
 
@@ -20,6 +21,8 @@ export type ChatMessage = {
   id: string;
   role: ChatRole;
   content: string;
+  citations?: WebSearchResult[];
+  webSearchError?: string | null;
   attachments?: Array<{
     id: string;
     fileName: string;
@@ -81,6 +84,8 @@ type ChatStore = {
   // Actions
   addMessage: (message: ChatMessage) => void;
   updateMessage: (id: string, updater: (previous: string) => string) => void;
+  updateMessageCitations: (id: string, citations: WebSearchResult[] | null) => void;
+  updateMessageWebSearchError: (id: string, message: string | null) => void;
   updateMessageGenerationState: (id: string, state: MessageGenerationState | null) => void;
   replaceMessages: (messages: ChatMessage[]) => void;
   setStreaming: (value: boolean) => void;
@@ -177,6 +182,28 @@ const createChatStore = create<ChatStore>()(
           'updateMessage'
         ),
 
+      updateMessageCitations: (id, citations) =>
+        set(
+          (state) => ({
+            messages: state.messages.map((msg) =>
+              msg.id === id ? { ...msg, citations: citations || undefined } : msg
+            ),
+          }),
+          false,
+          'updateMessageCitations'
+        ),
+
+      updateMessageWebSearchError: (id, message) =>
+        set(
+          (state) => ({
+            messages: state.messages.map((msg) =>
+              msg.id === id ? { ...msg, webSearchError: message } : msg
+            ),
+          }),
+          false,
+          'updateMessageWebSearchError'
+        ),
+
       updateMessageGenerationState: (id, generationState) =>
         set(
           (state) => ({
@@ -197,7 +224,12 @@ const createChatStore = create<ChatStore>()(
                 (msg, idx) =>
                   !state.messages[idx] ||
                   state.messages[idx].id !== msg.id ||
-                  state.messages[idx].content !== msg.content
+                  state.messages[idx].content !== msg.content ||
+                  state.messages[idx].webSearchError !== msg.webSearchError ||
+                  JSON.stringify(state.messages[idx].citations || null) !==
+                    JSON.stringify(msg.citations || null) ||
+                  JSON.stringify(state.messages[idx].generationState || null) !==
+                    JSON.stringify(msg.generationState || null)
               );
               if (!hasChanges) return state;
             }
@@ -285,6 +317,8 @@ export const useGeoCulturalMode = () => useChatStore((state) => state.geoCultura
 export const useUserLocation = () => useChatStore((state) => state.userLocation);
 export const useAddMessage = () => useChatStore((state) => state.addMessage);
 export const useUpdateMessage = () => useChatStore((state) => state.updateMessage);
+export const useUpdateMessageCitations = () => useChatStore((state) => state.updateMessageCitations);
+export const useUpdateMessageWebSearchError = () => useChatStore((state) => state.updateMessageWebSearchError);
 export const useUpdateMessageGenerationState = () => useChatStore((state) => state.updateMessageGenerationState);
 export const useReplaceMessages = () => useChatStore((state) => state.replaceMessages);
 export const useSetStreaming = () => useChatStore((state) => state.setStreaming);

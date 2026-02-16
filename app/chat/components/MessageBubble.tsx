@@ -15,6 +15,7 @@ import { useGenerationJob, getJobStatusMessage, parseJobInputParams } from '@/ho
 import { ShareToGalleryModal } from './ShareToGalleryModal';
 import { galleryApi } from '@/lib/api-client';
 import { MathContent } from '@/components/math-renderer';
+import { AIResponse } from '@/components/ai-response';
 
 import 'highlight.js/styles/github.css';
 
@@ -1293,7 +1294,23 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
               <AttachmentsPreview attachments={attachments} />
             )}
             <div className={`max-w-full break-words overflow-hidden ${isUser ? 'text-current' : 'continuum-prose'}`}>
-              {!isUser && !isStreaming ? <MathContent>{messageMarkdown}</MathContent> : messageMarkdown}
+              {isUser ? (
+                messageMarkdown
+              ) : message.citations?.length || message.webSearchError ? (
+                <AIResponse
+                  content={message.content}
+                  citations={message.citations || null}
+                  isStreaming={isStreaming}
+                />
+              ) : (
+                !isStreaming ? <MathContent>{messageMarkdown}</MathContent> : messageMarkdown
+              )}
+
+              {!isUser && !isStreaming && message.webSearchError && (
+                <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/70 px-3 py-1 text-xs font-medium text-[#111111]/60">
+                  Web search unavailable
+                </div>
+              )}
             </div>
           </div>
         </div>
