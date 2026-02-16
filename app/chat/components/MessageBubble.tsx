@@ -14,8 +14,47 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip
 import { useGenerationJob, getJobStatusMessage, parseJobInputParams } from '@/hooks/useGenerationJobs';
 import { ShareToGalleryModal } from './ShareToGalleryModal';
 import { galleryApi } from '@/lib/api-client';
+import { MathContent } from '@/components/math-renderer';
 
 import 'highlight.js/styles/github.css';
+
+// MathJax expects TeX delimiters like $...$ / $$...$$.
+// In Markdown, delimiters like \(...\) and \[...\] lose the backslashes (they are treated as escapes).
+// Normalize them BEFORE ReactMarkdown runs, so MathJax can typeset correctly.
+function normalizeMathDelimiters(markdown: string): string {
+  // Keep fenced code blocks (```...```) intact.
+  const fenceParts = markdown.split(/```/);
+  const normalizedFenceParts = fenceParts.map((part, fenceIndex) => {
+    if (fenceIndex % 2 === 1) return part;
+
+    // Keep inline code (`...`) intact.
+    const inlineParts = part.split(/`/);
+    return inlineParts
+      .map((inlinePart, inlineIndex) => {
+        if (inlineIndex % 2 === 1) return inlinePart;
+        const withStandardDelims = inlinePart
+          .replace(/\\\[/g, '$$')
+          .replace(/\\\]/g, '$$')
+          .replace(/\\\(/g, '$')
+          .replace(/\\\)/g, '$');
+
+        // Heuristic: if the model (or an upstream transform) outputs a standalone bracketed block like:
+        //   [ \frac{a}{b} ]
+        // treat it as display math too. We only convert when it clearly contains TeX commands to avoid
+        // breaking normal Markdown [links] or bracketed text.
+        return withStandardDelims.replace(
+          /(^|\n)([ \t]*)\[\s*([\s\S]*?)\s*\](?=\n|$)/g,
+          (match, prefix, indent, body) => {
+            if (!/\\[A-Za-z]/.test(body)) return match;
+            return `${prefix}${indent}$$${body}$$`;
+          }
+        );
+      })
+      .join('`');
+  });
+
+  return normalizedFenceParts.join('```');
+}
 
 // Minimalist media generation skeleton - works for both image and video
 interface MediaGeneratingSkeletonProps {
@@ -1038,35 +1077,8 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
 
   // Render geocultural text analysis (new format)
   if (geoCulturalText) {
-    return (
-      <div className="flex justify-start w-full">
-        <div className="inline-flex max-w-full w-full rounded-4xl border border-transparent bg-transparent text-black px-4 py-2">
-          <div className="w-full space-y-6">
-            {/* Header with area badge */}
-            <div className="flex items-center gap-3 pb-4 border-b border-[#00552b]/10">
-              <div className="flex-shrink-0">
-                <div className="size-12 rounded-full bg-gradient-to-br from-[#00552b] to-[#00aa56] flex items-center justify-center shadow-lg">
-                  <svg className="size-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                </div>
-              </div>
-              <div className="flex-1">
-                <h3 className="text-xs font-semibold text-[#00552b]/60 uppercase tracking-wider mb-1">
-                  Análisis Geocultural
-                </h3>
-                {geoCulturalText.areaName && (
-                  <h2 className="text-xl font-bold text-[#111111]">
-                    {geoCulturalText.areaName}
-                  </h2>
-                )}
-              </div>
-            </div>
-
-            {/* Geocultural analysis content with enhanced styling */}
-            <div className="geocultural-analysis">
-              <ReactMarkdown
+    const geoMarkdown = (
+<ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 rehypePlugins={[rehypeHighlight]}
                 components={{
@@ -1140,8 +1152,39 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
                   ),
                 }}
               >
-                {geoCulturalText.reply}
+                {normalizeMathDelimiters(geoCulturalText.reply)}
               </ReactMarkdown>
+    );
+
+    return (
+      <div className="flex justify-start w-full">
+        <div className="inline-flex max-w-full w-full rounded-4xl border border-transparent bg-transparent text-black px-4 py-2">
+          <div className="w-full space-y-6">
+            {/* Header with area badge */}
+            <div className="flex items-center gap-3 pb-4 border-b border-[#00552b]/10">
+              <div className="flex-shrink-0">
+                <div className="size-12 rounded-full bg-gradient-to-br from-[#00552b] to-[#00aa56] flex items-center justify-center shadow-lg">
+                  <svg className="size-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-xs font-semibold text-[#00552b]/60 uppercase tracking-wider mb-1">
+                  Análisis Geocultural
+                </h3>
+                {geoCulturalText.areaName && (
+                  <h2 className="text-xl font-bold text-[#111111]">
+                    {geoCulturalText.areaName}
+                  </h2>
+                )}
+              </div>
+            </div>
+
+            {/* Geocultural analysis content with enhanced styling */}
+            <div className="geocultural-analysis">
+              {isStreaming ? geoMarkdown : <MathContent>{geoMarkdown}</MathContent>}
             </div>
 
             {/* Footer decoration */}
@@ -1154,7 +1197,7 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
                   <span className="font-medium">Análisis territorial completo</span>
                 </div>
                 {!isStreaming && geoCulturalText.reply && (
-                  <SpeechButton text={geoCulturalText.reply} />
+                  <SpeechButton text={normalizeMathDelimiters(geoCulturalText.reply)} />
                 )}
               </div>
             </div>
@@ -1175,22 +1218,8 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
     );
   }
 
-  return (
-    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} w-full`}>
-      <div className={`flex flex-col gap-1 min-w-0 ${isUser ? 'max-w-[85%] md:max-w-[75%]' : 'max-w-[90%] md:max-w-[80%]'}`}>
-        <div
-          className={`border overflow-hidden ${
-            isUser
-              ? 'rounded-4xl px-4 py-2 text-[15px] leading-relaxed border-transparent bg-[#00552b] text-white font-medium'
-              : 'rounded-2xl px-5 py-4 sm:px-6 sm:py-5 border-transparent bg-transparent text-black'
-          }`}
-        >
-          <div className="flex w-full flex-col gap-2 min-w-0">
-            {isUser && attachments && attachments.length > 0 && (
-              <AttachmentsPreview attachments={attachments} />
-            )}
-            <div className={`max-w-full break-words overflow-hidden ${isUser ? 'text-current' : 'continuum-prose'}`}>
-              <ReactMarkdown
+  const messageMarkdown = (
+<ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 rehypePlugins={[rehypeHighlight]}
                 components={{
@@ -1245,8 +1274,26 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
                   img: (props) => <ChatImage {...props} />,
                 }}
               >
-                {message.content || ' '}
+                {normalizeMathDelimiters(message.content || ' ')}
               </ReactMarkdown>
+  );
+
+  return (
+    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} w-full`}>
+      <div className={`flex flex-col gap-1 min-w-0 ${isUser ? 'max-w-[85%] md:max-w-[75%]' : 'max-w-[90%] md:max-w-[80%]'}`}>
+        <div
+          className={`border overflow-hidden ${
+            isUser
+              ? 'rounded-4xl px-4 py-2 text-[15px] leading-relaxed border-transparent bg-[#00552b] text-white font-medium'
+              : 'rounded-2xl px-5 py-4 sm:px-6 sm:py-5 border-transparent bg-transparent text-black'
+          }`}
+        >
+          <div className="flex w-full flex-col gap-2 min-w-0">
+            {isUser && attachments && attachments.length > 0 && (
+              <AttachmentsPreview attachments={attachments} />
+            )}
+            <div className={`max-w-full break-words overflow-hidden ${isUser ? 'text-current' : 'continuum-prose'}`}>
+              {!isUser && !isStreaming ? <MathContent>{messageMarkdown}</MathContent> : messageMarkdown}
             </div>
           </div>
         </div>
