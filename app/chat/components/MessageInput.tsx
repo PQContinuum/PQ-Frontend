@@ -839,10 +839,11 @@ export const MessageInput = memo(function MessageInput() {
 
       const userMessageId = createId();
       const assistantMessageId = createId();
-      const payloadMessages = [
-        ...messages.filter((msg) => msg.content.trim().length > 0),
-        { role: 'user', content: value } as const,
-      ];
+      // IMPORTANT: Only send {role, content} to the backend. The UI store messages include
+      // extra fields (attachments, generationState, citations, etc.) that the backend DTO rejects.
+      const payloadMessages = messages
+        .filter((msg) => msg.content.trim().length > 0)
+        .map((msg) => ({ role: msg.role, content: msg.content } as const));
 
       addMessage({
         id: userMessageId,

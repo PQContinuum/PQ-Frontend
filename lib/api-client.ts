@@ -65,13 +65,37 @@ export async function getAuthHeadersForUpload(): Promise<HeadersInit> {
 // ERROR HANDLING
 // ============================================================================
 
+function normalizeErrorMessage(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  if (Array.isArray(value)) {
+    return value
+      .map((v) => normalizeErrorMessage(v))
+      .filter((v) => v.trim().length > 0)
+      .join("; ");
+  }
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    // Common NestJS error shape: { message: string|string[], error: string, statusCode: number }
+    if ("message" in record) return normalizeErrorMessage(record.message);
+    if ("error" in record) return normalizeErrorMessage(record.error);
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return String(value);
+    }
+  }
+  return "";
+}
+
 /**
  * Translates API error messages into user-friendly Spanish messages
  */
 function getUserFriendlyErrorMessage(
   statusCode: number,
-  originalMessage: string
+  originalMessage: unknown
 ): string {
+  const message = normalizeErrorMessage(originalMessage) || "Unknown error";
   // Payment/Plan related errors (403)
   if (statusCode === 403) {
     const planKeywords = [
@@ -85,7 +109,7 @@ function getUserFriendlyErrorMessage(
       'requiere',
       'requires',
     ];
-    const lowerMessage = originalMessage.toLowerCase();
+    const lowerMessage = message.toLowerCase();
     if (planKeywords.some((keyword) => lowerMessage.includes(keyword))) {
       return 'Esta función no está disponible en tu plan actual. Actualiza tu suscripción para acceder a todas las funciones.';
     }
@@ -94,7 +118,7 @@ function getUserFriendlyErrorMessage(
 
   // Validation errors (400)
   if (statusCode === 400) {
-    const lowerMessage = originalMessage.toLowerCase();
+    const lowerMessage = message.toLowerCase();
     if (lowerMessage.includes('validation') || lowerMessage.includes('invalid')) {
       return 'Los datos enviados no son válidos. Por favor, revisa el formulario e intenta de nuevo.';
     }
@@ -125,7 +149,7 @@ function getUserFriendlyErrorMessage(
   }
 
   // Return original message if no specific translation
-  return originalMessage;
+  return message;
 }
 
 export class ApiError extends Error {
@@ -134,23 +158,24 @@ export class ApiError extends Error {
   constructor(
     public statusCode: number,
     public statusText: string,
-    message: string,
+    message: unknown,
     public data?: unknown
   ) {
-    super(message);
+    const normalized = normalizeErrorMessage(message) || statusText || "Unknown error";
+    super(normalized);
     this.name = "ApiError";
-    this.userMessage = getUserFriendlyErrorMessage(statusCode, message);
+    this.userMessage = getUserFriendlyErrorMessage(statusCode, normalized);
   }
 }
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    let errorMessage = response.statusText;
+    let errorMessage: unknown = response.statusText;
     let errorData: unknown;
 
     try {
       const errorBody = await response.json();
-      errorMessage = errorBody.message || errorBody.error || response.statusText;
+      errorMessage = errorBody?.message ?? errorBody?.error ?? response.statusText;
       errorData = errorBody;
     } catch {
       // Response body is not JSON
@@ -284,14 +309,16 @@ export async function apiPostStream(
   });
 
   if (!response.ok) {
-    let errorMessage = response.statusText;
+    let errorMessage: unknown = response.statusText;
+    let errorData: unknown;
     try {
       const errorBody = await response.json();
-      errorMessage = errorBody.message || errorBody.error || response.statusText;
+      errorMessage = errorBody?.message ?? errorBody?.error ?? response.statusText;
+      errorData = errorBody;
     } catch {
       // Response body is not JSON
     }
-    throw new ApiError(response.status, response.statusText, errorMessage);
+    throw new ApiError(response.status, response.statusText, errorMessage, errorData);
   }
 
   return response;
