@@ -5,6 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
 import remarkGfm from 'remark-gfm';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Check, Copy, Share2 } from 'lucide-react';
 
 import type { ChatMessage } from '@/app/chat/store';
 import { GeoCulturalResponse } from './GeoCulturalResponse';
@@ -16,6 +17,8 @@ import { ShareToGalleryModal } from './ShareToGalleryModal';
 import { galleryApi } from '@/lib/api-client';
 import { MathContent } from '@/components/math-renderer';
 import { AIResponse } from '@/components/ai-response';
+import { ShareResponseModal } from './ShareResponseModal';
+import { encodeSharePayload } from '@/lib/share';
 
 import 'highlight.js/styles/github.css';
 
@@ -761,6 +764,46 @@ const copyToClipboard = async (text: string) => {
   }
 };
 
+const stripMarkdown = (value: string) => {
+  return value
+    .replace(/```[\s\S]*?```/g, (match) => match.replace(/```/g, '').trim())
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 ($2)')
+    .replace(/[#>*_~`]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
+const stripMarkdownForCopy = (value: string) => {
+  return value
+    .replace(/```([\s\S]*?)```/g, (_, code) => code.trim())
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 ($2)')
+    .replace(/^\s{0,3}#+\s?/gm, '')
+    .replace(/^\s{0,3}>\s?/gm, '')
+    .replace(/^\s*[-*+]\s+/gm, '• ')
+    .replace(/^\s*\d+\.\s+/gm, '• ')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+};
+
+const getShareTitle = (content: string) => {
+  const cleaned = stripMarkdown(content);
+  if (!cleaned) return 'Respuesta compartida';
+  const line = cleaned.split(/\\n/).find((text) => text.trim().length > 0) || cleaned;
+  const trimmed = line.trim();
+  return trimmed.length > 72 ? `${trimmed.slice(0, 72).trim()}…` : trimmed;
+};
+
+const buildShareUrl = (title: string, content: string) => {
+  const payload = encodeSharePayload({ title, content });
+  if (!payload || typeof window === 'undefined') return '';
+  return `${window.location.origin}/s/${payload}`;
+};
+
 const CodeBlock = ({
   language,
   value,
@@ -792,8 +835,77 @@ const CodeBlock = ({
   );
 };
 
+const AssistantActions = ({
+  content,
+  showSpeech = true,
+  className = '',
+}: {
+  content: string;
+  showSpeech?: boolean;
+  className?: string;
+}) => {
+  const [copied, setCopied] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+
+  const shareTitle = useMemo(() => getShareTitle(content), [content]);
+  const shareUrl = useMemo(() => buildShareUrl(shareTitle, content), [shareTitle, content]);
+
+  const handleCopy = async () => {
+    await copyToClipboard(stripMarkdownForCopy(content));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 5000);
+  };
+
+  return (
+    <>
+      <div className={`flex items-center gap-2 text-xs text-[#111111]/60 ${className}`}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="inline-flex size-8 items-center justify-center rounded-full bg-white/80 text-[#111111]/70 transition hover:bg-white hover:text-[#111111] hover:shadow-sm"
+              aria-label={copied ? 'Copiado' : 'Copiar'}
+            >
+              {copied ? <Check className="size-4 text-emerald-600" /> : <Copy className="size-4" />}
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>{copied ? 'Copiado' : 'Copiar'}</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={() => setShareOpen(true)}
+              className="inline-flex size-8 items-center justify-center rounded-full bg-white/80 text-[#111111]/70 transition hover:bg-white hover:text-[#111111] hover:shadow-sm"
+              aria-label="Compartir"
+            >
+              <Share2 className="size-4" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>Compartir</TooltipContent>
+        </Tooltip>
+
+        {showSpeech && <SpeechButton text={content} />}
+      </div>
+
+      <ShareResponseModal
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        title={shareTitle}
+        content={content}
+        shareUrl={shareUrl}
+      />
+    </>
+  );
+};
+
 export function MessageBubble({ message, isStreaming = false, attachments }: MessageBubbleProps) {
   const isUser = message.role === 'user';
+  const isMediaMessage = !isUser && !!message.content && (
+    message.content.includes('![Imagen generada]') || message.content.includes('<video')
+  );
 
   // Estado de generación desde el mensaje
   const generationState = message.generationState;
@@ -1202,6 +1314,14 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
                 )}
               </div>
             </div>
+
+            {!isStreaming && geoCulturalText.reply && (
+              <AssistantActions
+                content={geoCulturalText.reply}
+                showSpeech={false}
+                className="pl-1"
+              />
+            )}
           </div>
         </div>
       </div>
@@ -1213,7 +1333,12 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
     return (
       <div className="flex justify-start w-full">
         <div className="inline-flex max-w-full w-full rounded-4xl border border-transparent bg-transparent text-black px-4 py-2">
-          <GeoCulturalResponse data={geoCulturalData} />
+          <div className="flex w-full flex-col gap-3">
+            <GeoCulturalResponse data={geoCulturalData} />
+            {!isStreaming && geoCulturalData.reply && (
+              <AssistantActions content={geoCulturalData.reply} className="pl-2" />
+            )}
+          </div>
         </div>
       </div>
     );
@@ -1314,10 +1439,10 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
             </div>
           </div>
         </div>
-        {/* Speech button for assistant messages (not for generated images or videos) */}
-        {!isUser && !isStreaming && message.content && !message.content.includes('![Imagen generada]') && !message.content.includes('<video') && (
+        {/* Copy / Share / Speech actions (assistant messages only) */}
+        {!isUser && !isStreaming && message.content && !isMediaMessage && (
           <div className="flex justify-start pl-2">
-            <SpeechButton text={message.content} />
+            <AssistantActions content={message.content} />
           </div>
         )}
       </div>
