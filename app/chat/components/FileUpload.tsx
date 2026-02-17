@@ -16,8 +16,39 @@ import {
   Table,
   Code,
   Check,
+  AlertTriangle,
 } from 'lucide-react';
 import { attachmentsApi } from '@/lib/api-client';
+
+// Formatos de imagen permitidos (alineados con el backend). Excluimos HEIC/HEIF.
+const ALLOWED_IMAGE_MIMES = [
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/bmp',
+  'image/tiff',
+  'image/svg+xml',
+];
+
+const ALLOWED_IMAGE_EXTS = [
+  'jpg',
+  'jpeg',
+  'png',
+  'gif',
+  'webp',
+  'bmp',
+  'tif',
+  'tiff',
+  'svg',
+];
+
+const isSupportedImage = (file: File) => {
+  const mime = file.type?.toLowerCase();
+  if (mime && ALLOWED_IMAGE_MIMES.includes(mime)) return true;
+  const ext = file.name.split('.').pop()?.toLowerCase();
+  return !!ext && ALLOWED_IMAGE_EXTS.includes(ext);
+};
 
 interface Attachment {
   id: string;
@@ -327,17 +358,60 @@ export function FileUpload({ conversationId, onAttachmentsChange }: FileUploadPr
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const extractTextFromAttachment = useCallback(async (attachmentId: string) => {
+    // Mark as extracting
+    setAttachments((prev) =>
+      prev.map((a) =>
+        a.id === attachmentId ? { ...a, isExtracting: true } : a,
+      ),
+    );
+
+    try {
+      const result = await attachmentsApi.extractText(conversationId, attachmentId);
+
+      setAttachments((prev) => {
+        const updated = prev.map((a) =>
+          a.id === attachmentId
+            ? { ...a, isExtracting: false, extractedText: result.extractedText }
+            : a,
+        );
+        // Schedule the callback for after render completes
+        setTimeout(() => onAttachmentsChange(updated), 0);
+        return updated;
+      });
+    } catch (error) {
+      console.error('Text extraction error:', error);
+      setAttachments((prev) =>
+        prev.map((a) =>
+          a.id === attachmentId ? { ...a, isExtracting: false } : a,
+        ),
+      );
+    }
+  }, [conversationId, onAttachmentsChange]);
 
   const handleUpload = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
 
     setUploading(true);
+    setErrorMessage(null);
 
     try {
       const uploadedAttachments: Attachment[] = [];
+      const invalidImages: string[] = [];
 
       for (let i = 0; i < Math.min(files.length, 10); i++) {
         const file = files[i];
+
+        // Rechazar imágenes no soportadas (p.ej., HEIC/HEIF)
+        const ext = file.name.split('.').pop()?.toLowerCase() || '';
+        const looksLikeImage = file.type.startsWith('image/') || ALLOWED_IMAGE_EXTS.includes(ext);
+        if (looksLikeImage && !isSupportedImage(file)) {
+          invalidImages.push(file.name);
+          continue;
+        }
+
         const response = await attachmentsApi.upload(conversationId, file);
         // Map the API response to Attachment type
         uploadedAttachments.push({
@@ -361,40 +435,23 @@ export function FileUpload({ conversationId, onAttachmentsChange }: FileUploadPr
         }
       }
 
+      if (invalidImages.length > 0) {
+        setErrorMessage(
+          `No se aceptan estos formatos de imagen: ${invalidImages.join(
+            ', ',
+          )}. Usa JPG, PNG, GIF, WEBP, BMP, TIFF o SVG.`,
+        );
+      }
+
     } catch (error) {
       console.error('Upload error:', error);
-      alert(error instanceof Error ? error.message : 'Upload failed');
+      setErrorMessage(
+        error instanceof Error ? error.message : 'No se pudo subir el archivo. Intenta de nuevo.',
+      );
     } finally {
       setUploading(false);
     }
-  }, [conversationId, attachments, onAttachmentsChange]);
-
-  const extractTextFromAttachment = useCallback(async (attachmentId: string) => {
-    // Mark as extracting
-    setAttachments(prev => prev.map(a =>
-      a.id === attachmentId ? { ...a, isExtracting: true } : a
-    ));
-
-    try {
-      const result = await attachmentsApi.extractText(conversationId, attachmentId);
-
-      setAttachments(prev => {
-        const updated = prev.map(a =>
-          a.id === attachmentId
-            ? { ...a, isExtracting: false, extractedText: result.extractedText }
-            : a
-        );
-        // Schedule the callback for after render completes
-        setTimeout(() => onAttachmentsChange(updated), 0);
-        return updated;
-      });
-    } catch (error) {
-      console.error('Text extraction error:', error);
-      setAttachments(prev => prev.map(a =>
-        a.id === attachmentId ? { ...a, isExtracting: false } : a
-      ));
-    }
-  }, [conversationId, onAttachmentsChange]);
+  }, [conversationId, attachments, onAttachmentsChange, extractTextFromAttachment]);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -424,6 +481,20 @@ export function FileUpload({ conversationId, onAttachmentsChange }: FileUploadPr
 
   return (
     <div className="space-y-3">
+      {errorMessage && (
+        <div className="flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-amber-900 shadow-sm">
+          <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+          <div className="text-sm leading-snug flex-1">{errorMessage}</div>
+          <button
+            onClick={() => setErrorMessage(null)}
+            className="text-amber-800 hover:text-amber-900"
+            aria-label="Cerrar aviso"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Upload Area - Only show when no attachments */}
       {attachments.length === 0 && (
         <div
@@ -446,7 +517,7 @@ export function FileUpload({ conversationId, onAttachmentsChange }: FileUploadPr
             id="file-upload"
             className="hidden"
             multiple
-            accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.odt,.ods,.odp,.rtf,.epub,text/*,application/json,text/csv,application/xml,text/xml,text/html,application/x-yaml,.js,.ts,.tsx,.jsx,.py,.java,.c,.cpp,.cs,.go,.rs,.php,.rb,.swift,.kt,.sh,.yaml,.yml,.toml,.ini,.md,.css,.sql,.ipynb"
+            accept="image/jpeg,image/png,image/gif,image/webp,image/bmp,image/tiff,image/svg+xml,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.odt,.ods,.odp,.rtf,.epub,text/*,application/json,text/csv,application/xml,text/xml,text/html,application/x-yaml,.js,.ts,.tsx,.jsx,.py,.java,.c,.cpp,.cs,.go,.rs,.php,.rb,.swift,.kt,.sh,.yaml,.yml,.toml,.ini,.md,.css,.sql,.ipynb"
             onChange={(e) => handleUpload(e.target.files)}
             disabled={uploading}
           />
@@ -475,7 +546,7 @@ export function FileUpload({ conversationId, onAttachmentsChange }: FileUploadPr
               {uploading ? 'Subiendo archivos...' : dragActive ? '¡Suelta los archivos aquí!' : 'Arrastra archivos o haz clic'}
             </p>
             <p className="text-xs text-gray-500 text-center">
-              <span className="font-medium">Imágenes:</span> PNG, JPG, GIF, WebP, BMP, TIFF, HEIF, SVG
+              <span className="font-medium">Imágenes:</span> PNG, JPG, GIF, WebP, BMP, TIFF, SVG
             </p>
             <p className="text-xs text-gray-500 text-center mt-0.5">
               <span className="font-medium">Office:</span> Word, Excel, PowerPoint · <span className="font-medium">Docs:</span> PDF, TXT, MD, RTF, ODT, EPUB
@@ -502,7 +573,7 @@ export function FileUpload({ conversationId, onAttachmentsChange }: FileUploadPr
             id="file-upload-more"
             className="hidden"
             multiple
-            accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.odt,.ods,.odp,.rtf,.epub,text/*,application/json,text/csv,application/xml,text/xml,text/html,application/x-yaml,.js,.ts,.tsx,.jsx,.py,.java,.c,.cpp,.cs,.go,.rs,.php,.rb,.swift,.kt,.sh,.yaml,.yml,.toml,.ini,.md,.css,.sql,.ipynb"
+            accept="image/jpeg,image/png,image/gif,image/webp,image/bmp,image/tiff,image/svg+xml,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.odt,.ods,.odp,.rtf,.epub,text/*,application/json,text/csv,application/xml,text/xml,text/html,application/x-yaml,.js,.ts,.tsx,.jsx,.py,.java,.c,.cpp,.cs,.go,.rs,.php,.rb,.swift,.kt,.sh,.yaml,.yml,.toml,.ini,.md,.css,.sql,.ipynb"
             onChange={(e) => handleUpload(e.target.files)}
             disabled={uploading}
           />
