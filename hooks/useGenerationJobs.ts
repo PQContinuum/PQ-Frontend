@@ -125,6 +125,9 @@ export function useGenerationJob(jobId: string | null) {
     queryFn: async () => {
       if (!jobId) return null;
       const data = await jobsApi.get(jobId);
+      if (process.env.NODE_ENV !== "production") {
+        console.debug("[useGenerationJob] job response", { jobId, job: data.job });
+      }
       return mapApiJob(data.job);
     },
     enabled: !!jobId,
