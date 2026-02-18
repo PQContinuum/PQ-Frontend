@@ -16,7 +16,7 @@ interface JobRecoveryProviderProps {
  */
 export function JobRecoveryProvider({ children }: JobRecoveryProviderProps) {
   const queryClient = useQueryClient();
-  const lastVisibleTime = useRef<number>(Date.now());
+  const lastVisibleTime = useRef<number>(0);
   const wasHidden = useRef<boolean>(false);
 
   const handleVisibilityChange = useCallback(() => {

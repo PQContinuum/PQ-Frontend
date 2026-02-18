@@ -1,4 +1,5 @@
 "use client"
+/* eslint-disable react-compiler/react-compiler */
 
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"

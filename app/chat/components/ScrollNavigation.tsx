@@ -1,17 +1,15 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef, memo } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface ScrollNavigationProps {
   scrollContainerRef: React.RefObject<HTMLElement | null>;
-  hasNewMessages?: boolean;
 }
 
-export const ScrollNavigation = memo(function ScrollNavigation({
+export function ScrollNavigation({
   scrollContainerRef,
-  hasNewMessages = false,
 }: ScrollNavigationProps) {
   const [showTopButton, setShowTopButton] = useState(false);
   const [showBottomButton, setShowBottomButton] = useState(false);
@@ -114,15 +112,6 @@ export const ScrollNavigation = memo(function ScrollNavigation({
       clearInterval(checkInterval);
     };
   }, [scrollContainerRef, checkScrollPosition]);
-
-  // También verificar cuando cambian los mensajes
-  useEffect(() => {
-    if (hasNewMessages) {
-      requestAnimationFrame(() => {
-        checkScrollPosition();
-      });
-    }
-  }, [hasNewMessages, checkScrollPosition]);
 
   const scrollToTop = useCallback(() => {
     scrollContainerRef.current?.scrollTo({
@@ -242,4 +231,4 @@ export const ScrollNavigation = memo(function ScrollNavigation({
       )}
     </AnimatePresence>
   );
-});
+}

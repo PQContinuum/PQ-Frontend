@@ -57,7 +57,7 @@ import { PendingJobsBanner } from './components/PendingJobsBanner';
 import { ScrollNavigation } from './components/ScrollNavigation';
 import { FeedbackWidget } from '@/components/feedback-widget';
 import { MathProvider } from '@/components/math-renderer';
-import { useMessages, useReplaceMessages, useSetConversationId, useIsStreaming } from './store';
+import { useMessages, useReplaceMessages, useSetConversationId } from './store';
 import { getSupabaseBrowserClient } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { useUserPlan } from '@/hooks/use-user-plan';
@@ -176,7 +176,6 @@ export default function ChatPage() {
   const messages = useMessages();
   const replaceMessages = useReplaceMessages();
   const setConversationId = useSetConversationId();
-  const isStreaming = useIsStreaming();
   const [isCreatingNew, setIsCreatingNew] = React.useState(false);
   const [userEmail, setUserEmail] = React.useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = React.useState(false);
@@ -547,7 +546,6 @@ export default function ChatPage() {
 
             <ScrollNavigation
               scrollContainerRef={scrollContainerRef}
-              hasNewMessages={isStreaming}
             />
 
             <motion.div

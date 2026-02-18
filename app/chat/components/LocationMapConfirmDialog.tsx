@@ -6,7 +6,6 @@ import { MapPin, X, Check, Navigation, AlertCircle } from 'lucide-react';
 import { APIProvider, Map, AdvancedMarker, type MapMouseEvent } from '@vis.gl/react-google-maps';
 import type { StructuredAddress } from '@/lib/geolocation/address-types';
 
-// Type for marker drag events
 type MarkerDragEvent = google.maps.MapMouseEvent;
 
 type LocationMapConfirmDialogProps = {
@@ -33,6 +32,26 @@ export function LocationMapConfirmDialog({
   initialLocation,
   initialAddress,
 }: LocationMapConfirmDialogProps) {
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <LocationMapConfirmContent
+          onClose={onClose}
+          onConfirm={onConfirm}
+          initialLocation={initialLocation}
+          initialAddress={initialAddress}
+        />
+      )}
+    </AnimatePresence>
+  );
+}
+
+function LocationMapConfirmContent({
+  onClose,
+  onConfirm,
+  initialLocation,
+  initialAddress,
+}: Omit<LocationMapConfirmDialogProps, 'isOpen'>) {
   const [markerPosition, setMarkerPosition] = useState({
     lat: initialLocation.lat,
     lng: initialLocation.lng,
@@ -195,20 +214,6 @@ export function LocationMapConfirmDialog({
     });
   }, [markerPosition, initialLocation.accuracy, currentAddress, onConfirm, userAdjustedPosition]);
 
-  // Reset position when dialog opens
-  useEffect(() => {
-    if (isOpen) {
-      setMarkerPosition({
-        lat: initialLocation.lat,
-        lng: initialLocation.lng,
-      });
-      setCurrentAddress(initialAddress);
-      setGeocodingError(null);
-      setUserAdjustedPosition(false); // Reset adjustment tracking
-    }
-  }, [isOpen, initialLocation, initialAddress]);
-
-  // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
       if (geocodingTimeoutRef.current) {
@@ -218,9 +223,7 @@ export function LocationMapConfirmDialog({
   }, []);
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
+    <>
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -433,8 +436,6 @@ export function LocationMapConfirmDialog({
               </div>
             </motion.div>
           </div>
-        </>
-      )}
-    </AnimatePresence>
+    </>
   );
 }

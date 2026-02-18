@@ -3,7 +3,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Pencil, Code2, Search, Workflow, Lightbulb, Users, Rocket, Briefcase, Terminal, Building2 } from "lucide-react";
 
-const useCases = [
+const CASES = [
   {
     icon: Pencil,
     title: "Escritura que suena a ti, pero más nítida",
@@ -85,31 +85,32 @@ export function UseCasesSection() {
 
         {/* Use cases grid */}
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
-          {useCases.map((useCase, index) => (
+          {CASES.map((item, index) => {
+            const Icon = item.icon;
+            return (
             <Card
               key={index}
               className="group border-white/5 bg-white/[0.02] backdrop-blur-sm hover:border-[#00552b]/30 hover:bg-white/[0.04] transition-all duration-300"
             >
               <CardContent className="p-6">
                 <div className="flex items-start gap-4">
-                  {/* Icon */}
                   <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-[#00552b]/10 flex items-center justify-center group-hover:bg-[#00552b]/20 transition-colors border border-[#00552b]/20">
-                    <useCase.icon className="w-5 h-5 text-[#00552b]" />
+                    <Icon className="w-5 h-5 text-[#00552b]" />
                   </div>
 
-                  {/* Content */}
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-white mb-2">
-                      {useCase.title}
+                      {item.title}
                     </h3>
                     <p className="text-sm text-neutral-400 leading-relaxed">
-                      {useCase.description}
+                      {item.description}
                     </p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>

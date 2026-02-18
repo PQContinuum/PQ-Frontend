@@ -11,14 +11,22 @@ function PaymentSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionId = searchParams.get('session_id');
-  const [status, setStatus] = useState<'loading' | 'success' | 'error'>(
-    sessionId ? 'loading' : 'error'
-  );
   const [sessionData, setSessionData] = useState<{
     status: string | null;
     customerEmail: string | null;
     paymentStatus: string | null;
   } | null>(null);
+  const [fetchError, setFetchError] = useState(false);
+
+  const status: 'loading' | 'success' | 'error' = !sessionId
+    ? 'error'
+    : fetchError
+      ? 'error'
+      : !sessionData
+        ? 'loading'
+        : sessionData.status === 'complete' && sessionData.paymentStatus === 'paid'
+          ? 'success'
+          : 'error';
 
   useEffect(() => {
     if (!sessionId) return;
@@ -26,33 +34,25 @@ function PaymentSuccessContent() {
     const checkSession = async () => {
       try {
         const data = await billingApi.getSessionStatus(sessionId!);
-
         setSessionData({
           status: data.status,
           customerEmail: data.customerEmail || null,
           paymentStatus: data.paymentStatus,
         });
-
-        if (data.status === 'complete' && data.paymentStatus === 'paid') {
-          setStatus('success');
-        } else {
-          setStatus('error');
-        }
       } catch (error) {
         console.error('Error checking session:', error);
-        setStatus('error');
+        setFetchError(true);
       }
     };
 
     checkSession();
   }, [sessionId]);
 
-  // Redirigir automáticamente a /chat después de un pago exitoso
   useEffect(() => {
     if (status === 'success') {
       const redirectTimer = setTimeout(() => {
         router.push('/chat');
-      }, 3000); // 3 segundos
+      }, 3000);
 
       return () => clearTimeout(redirectTimer);
     }
