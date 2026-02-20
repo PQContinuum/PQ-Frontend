@@ -27,6 +27,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { galleryApi, UpdateMediaVisibilityRequest } from "@/lib/api-client";
+import { HlsVideo } from "@/components/media/HlsVideo";
 
 interface ShareToGalleryModalProps {
   isOpen: boolean;
@@ -252,7 +253,7 @@ export function ShareToGalleryModal({
                 {/* Media Preview */}
                 <div className="relative h-40 bg-muted overflow-hidden">
                   {mediaType === "video" ? (
-                    <video
+                    <HlsVideo
                       src={mediaUrl}
                       className="w-full h-full object-cover"
                       muted

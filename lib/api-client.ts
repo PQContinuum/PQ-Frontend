@@ -830,6 +830,21 @@ export const videoGenApi = {
 };
 
 // ============================================================================
+// CLOUDFLARE API
+// ============================================================================
+
+export const cloudflareApi = {
+  /**
+   * Generate MP4 download for a Cloudflare Stream video
+   */
+  createVideoDownload: (uid: string, wait: boolean = true) =>
+    apiPost<{ status: string; url: string | null; percentComplete?: number | null }>(
+      `/cloudflare/videos/${uid}/download${wait ? "?wait=true" : ""}`,
+      {}
+    ),
+};
+
+// ============================================================================
 // TTS API
 // ============================================================================
 
@@ -1234,6 +1249,7 @@ export interface GalleryItem {
   // Video specific
   videoUrl?: string;
   thumbnailUrl?: string | null;
+  previewUrl?: string | null;
   aspectRatio?: string;
   duration?: string;
   // Image specific

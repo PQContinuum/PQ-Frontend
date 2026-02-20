@@ -47,6 +47,7 @@ import { CharacterForm } from '@/app/chat/components/lisa/CharacterForm';
 import { ShareCharacterModal } from '@/app/chat/components/lisa/ShareCharacterModal';
 import { VISUAL_STYLE_OPTIONS, CHARACTER_TYPE_OPTIONS } from '@/lib/lisa/constants';
 import type { Character, CharacterType, VisualStyle, PublicCharactersParams } from '@/lib/lisa/types';
+import { downloadVideoMp4 } from '@/lib/media-download';
 
 type MainTabType = 'my-content' | 'public-gallery';
 type ContentType = 'all' | 'videos' | 'images' | 'characters';
@@ -95,18 +96,29 @@ function MediaCard({
     }
   };
 
-  const handleDownload = (e: React.MouseEvent) => {
+  const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const url = item.mediaType === 'video' ? item.videoUrl : item.imageUrl;
-    if (url) {
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = item.title || `${item.mediaType}-${item.id}`;
-      a.click();
+    if (!url) return;
+
+    if (item.mediaType === 'video') {
+      try {
+        await downloadVideoMp4(url, item.title || `video-${item.id}.mp4`);
+      } catch (error) {
+        console.error('Error downloading video:', error);
+      }
+      return;
     }
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = item.title || `${item.mediaType}-${item.id}`;
+    a.click();
   };
 
   const thumbnailUrl = item.mediaType === 'video' ? item.thumbnailUrl : item.imageUrl;
+  const previewUrl = item.mediaType === 'video' ? item.previewUrl : null;
+  const hasThumbnail = Boolean(thumbnailUrl);
 
   return (
     <div
@@ -129,6 +141,17 @@ function MediaCard({
               <ImageIcon className="w-12 h-12 text-gray-300" />
             )}
           </div>
+        )}
+
+        {item.mediaType === 'video' && previewUrl && (
+          <img
+            src={previewUrl}
+            alt={`${item.title} preview`}
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-200 ${
+              hasThumbnail ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'
+            }`}
+            loading="lazy"
+          />
         )}
 
         {/* Play button for videos */}
@@ -564,7 +587,11 @@ export default function MultimediaPage() {
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {featuredMedia.slice(0, 4).map((item) => {
-                const thumbnailSrc = item.mediaType === 'video' ? item.thumbnailUrl : item.imageUrl;
+                const previewSrc = item.mediaType === 'video' ? item.previewUrl : null;
+                const thumbnailSrc = item.mediaType === 'video'
+                  ? (item.thumbnailUrl || item.previewUrl)
+                  : item.imageUrl;
+                const hasThumbnail = Boolean(thumbnailSrc && item.thumbnailUrl);
                 return (
                   <div
                     key={item.id}
@@ -585,6 +612,16 @@ export default function MultimediaPage() {
                           <ImageIcon className="w-8 h-8 text-gray-400" />
                         )}
                       </div>
+                    )}
+                    {item.mediaType === 'video' && previewSrc && (
+                      <img
+                        src={previewSrc}
+                        alt={`${item.title || 'Media'} preview`}
+                        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-200 ${
+                          hasThumbnail ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'
+                        }`}
+                        loading="lazy"
+                      />
                     )}
                     {item.mediaType === 'video' && (
                       <div className="absolute inset-0 flex items-center justify-center">

@@ -18,8 +18,10 @@ import { ShareToGalleryModal } from './ShareToGalleryModal';
 import { galleryApi } from '@/lib/api-client';
 import { MathContent } from '@/components/math-renderer';
 import { AIResponse } from '@/components/ai-response';
+import { HlsVideo } from '@/components/media/HlsVideo';
 import { ShareResponseModal } from './ShareResponseModal';
 import { encodeSharePayload } from '@/lib/share';
+import { downloadVideoMp4 } from '@/lib/media-download';
 
 import 'highlight.js/styles/github.css';
 
@@ -298,16 +300,7 @@ const ChatVideo = ({ src, jobId, isPublic, prompt, thumbnailUrl, previewUrl }: C
     if (!src) return;
 
     try {
-      const response = await fetch(src);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `video-generado-${Date.now()}.mp4`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
+      await downloadVideoMp4(src, `video-generado-${Date.now()}.mp4`);
     } catch (error) {
       console.error('Error downloading video:', error);
     }
@@ -363,7 +356,7 @@ const ChatVideo = ({ src, jobId, isPublic, prompt, thumbnailUrl, previewUrl }: C
               </span>
             </span>
           )}
-          <video
+          <HlsVideo
             src={src}
             controls
             poster={thumbnailUrl || undefined}
@@ -373,6 +366,7 @@ const ChatVideo = ({ src, jobId, isPublic, prompt, thumbnailUrl, previewUrl }: C
             onLoadedData={() => setIsLoading(false)}
             onError={() => setHasError(true)}
             preload={thumbnailUrl ? "none" : "metadata"}
+            playsInline
           />
 
           {/* Hover overlay with action buttons */}

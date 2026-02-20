@@ -141,6 +141,7 @@ export const GalleryItemSchema = z.object({
   // Video specific
   videoUrl: z.string().optional(),
   thumbnailUrl: z.string().nullable().optional(),
+  previewUrl: z.string().nullable().optional(),
   aspectRatio: z.string().optional(),
   duration: z.string().optional(),
   // Image specific
