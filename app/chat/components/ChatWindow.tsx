@@ -9,10 +9,12 @@ import {
   useGenerationMode,
   useIsGenerating,
   useGeneratingMessageId,
+  useLinkFetch,
 } from '@/app/chat/store';
 
 import { MessageBubble } from './MessageBubble';
 import { TypingIndicator } from './TypingIndicator';
+import { LinkFetchIndicator } from './LinkFetchIndicator';
 
 export const ChatWindow = memo(function ChatWindow() {
   const messages = useMessages();
@@ -21,6 +23,7 @@ export const ChatWindow = memo(function ChatWindow() {
   const generationMode = useGenerationMode();
   const isGenerating = useIsGenerating();
   const generatingMessageId = useGeneratingMessageId();
+  const linkFetch = useLinkFetch();
   const containerRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const previousMessageCount = useRef(messages.length);
@@ -65,7 +68,11 @@ export const ChatWindow = memo(function ChatWindow() {
       {/* Solo mostrar TypingIndicator si NO se está generando imagen o video */}
       {isStreaming && generationMode === 'none' && (
         <div className="px-2">
-          <TypingIndicator />
+          {linkFetch?.status === 'fetching' ? (
+            <LinkFetchIndicator linkType={linkFetch.type} />
+          ) : (
+            <TypingIndicator />
+          )}
         </div>
       )}
       <div ref={endRef} />

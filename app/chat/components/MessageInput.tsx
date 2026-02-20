@@ -33,6 +33,7 @@ import {
   useUserLocation,
   usePendingProjectId,
   useSetPendingProjectId,
+  useSetLinkFetch,
 } from '@/app/chat/store';
 import { useCreateConversation } from '@/hooks/use-conversations';
 import { useQueryClient } from '@tanstack/react-query';
@@ -60,6 +61,8 @@ import {
 import { LisaWizardDialog } from './lisa/LisaWizardDialog';
 import { useWebSearchStore } from '@/store/useWebSearchStore';
 import type { WebSearchResult } from '@/types/websearch';
+import type { LinkResolvedResponse } from '@/types/link-resolver';
+import { extractFirstUrl, getLinkTypeFromUrl } from '@/lib/link-resolver';
 
 /**
  * FEATURE FLAGS - Control de acceso a funcionalidades
@@ -85,6 +88,7 @@ type SSEPayload = {
   snapshot?: string;
   message?: string;
   response?: { error?: { message?: string } };
+  linkInfo?: LinkResolvedResponse | null;
   [key: string]: unknown;
 };
 
@@ -309,12 +313,13 @@ export const MessageInput = memo(function MessageInput() {
     textarea.style.height = `${newHeight}px`;
   }, []);
 
-  const { addMessage, updateMessage, updateMessageCitations, updateMessageWebSearchError, updateMessageGenerationState, setStreaming, setConversationId, setGeoCulturalMode, setUserLocation, startGeneration, stopGeneration } = useChatStore(
+  const { addMessage, updateMessage, updateMessageCitations, updateMessageWebSearchError, updateMessageLinkInfo, updateMessageGenerationState, setStreaming, setConversationId, setGeoCulturalMode, setUserLocation, startGeneration, stopGeneration } = useChatStore(
     useShallow((state) => ({
       addMessage: state.addMessage,
       updateMessage: state.updateMessage,
       updateMessageCitations: state.updateMessageCitations,
       updateMessageWebSearchError: state.updateMessageWebSearchError,
+      updateMessageLinkInfo: state.updateMessageLinkInfo,
       updateMessageGenerationState: state.updateMessageGenerationState,
       setStreaming: state.setStreaming,
       setConversationId: state.setConversationId,
@@ -328,6 +333,7 @@ export const MessageInput = memo(function MessageInput() {
   const conversationId = useConversationId();
   const pendingProjectId = usePendingProjectId();
   const setPendingProjectId = useSetPendingProjectId();
+  const setLinkFetch = useSetLinkFetch();
 
   const createConversationMutation = useCreateConversation();
   const { data: projects = [] } = useProjects();
@@ -855,8 +861,20 @@ export const MessageInput = memo(function MessageInput() {
       // Clear per-message web search state for the new assistant message.
       updateMessageCitations(assistantMessageId, null);
       updateMessageWebSearchError(assistantMessageId, null);
+      updateMessageLinkInfo(assistantMessageId, null);
       setInput('');
       setStreaming(true);
+
+      const detectedUrl = extractFirstUrl(value);
+      if (detectedUrl) {
+        setLinkFetch({
+          url: detectedUrl,
+          type: getLinkTypeFromUrl(detectedUrl),
+          status: 'fetching',
+        });
+      } else {
+        setLinkFetch(null);
+      }
 
       let currentConversationId = conversationId;
       let assistantContent = '';
@@ -915,6 +933,27 @@ export const MessageInput = memo(function MessageInput() {
             buffer = buffer.slice(boundary + 2);
             const event = parseSSEChunk(chunk);
             if (event) {
+              if (event.event === 'response.start' || event.event === 'geocultural.start') {
+                const linkInfo = (event.data as { linkInfo?: LinkResolvedResponse | null })?.linkInfo;
+                if (linkInfo) {
+                  if (detectedUrl) {
+                    updateMessageLinkInfo(assistantMessageId, {
+                      type: linkInfo.linkType,
+                      url: detectedUrl,
+                    });
+                  }
+                  setLinkFetch({
+                    url: detectedUrl || '',
+                    type: linkInfo.linkType,
+                    status: 'resolved',
+                    info: linkInfo,
+                  });
+                } else {
+                  updateMessageLinkInfo(assistantMessageId, null);
+                  setLinkFetch(null);
+                }
+              }
+
               if (event.event === 'websearch.results') {
                 const results = (event.data as { results?: unknown })?.results;
                 if (Array.isArray(results)) {
@@ -1031,6 +1070,7 @@ export const MessageInput = memo(function MessageInput() {
       } finally {
         setStreaming(false);
         setIsSearching(false);
+        setLinkFetch(null);
       }
     },
     [
@@ -1042,6 +1082,7 @@ export const MessageInput = memo(function MessageInput() {
       updateMessage,
       updateMessageCitations,
       updateMessageWebSearchError,
+      updateMessageLinkInfo,
       conversationId,
       setConversationId,
       createConversationMutation,
@@ -1059,6 +1100,7 @@ export const MessageInput = memo(function MessageInput() {
       setIsSearching,
       setLastError,
       setLastResults,
+      setLinkFetch,
     ],
   );
 

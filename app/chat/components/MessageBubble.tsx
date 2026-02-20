@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Check, Copy, Share2 } from 'lucide-react';
 
 import type { ChatMessage } from '@/app/chat/store';
+import type { LinkType } from '@/types/link-resolver';
 import { GeoCulturalResponse } from './GeoCulturalResponse';
 import { AttachmentsPreview } from './AttachmentsPreview';
 import { SpeechButton } from './SpeechButton';
@@ -21,6 +22,90 @@ import { ShareResponseModal } from './ShareResponseModal';
 import { encodeSharePayload } from '@/lib/share';
 
 import 'highlight.js/styles/github.css';
+
+type LinkBadgeMeta = {
+  label: string;
+  bg: string;
+  text: string;
+  dot: string;
+  icon: JSX.Element;
+};
+
+const LINK_BADGE_META: Record<LinkType, LinkBadgeMeta> = {
+  x: {
+    label: 'x.com',
+    bg: '#0f0f0f',
+    text: '#ffffff',
+    dot: '#0f0f0f',
+    icon: <span className="text-[11px] font-semibold">X</span>,
+  },
+  facebook: {
+    label: 'facebook.com',
+    bg: '#1877F2',
+    text: '#ffffff',
+    dot: '#1877F2',
+    icon: <span className="text-[11px] font-semibold">f</span>,
+  },
+  instagram: {
+    label: 'instagram.com',
+    bg: 'linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)',
+    text: '#ffffff',
+    dot: '#dc2743',
+    icon: <span className="text-[9px] font-semibold">IG</span>,
+  },
+  tiktok: {
+    label: 'tiktok.com',
+    bg: 'linear-gradient(135deg, #25F4EE 0%, #0f0f0f 45%, #FE2C55 100%)',
+    text: '#ffffff',
+    dot: '#FE2C55',
+    icon: <span className="text-[9px] font-semibold">TT</span>,
+  },
+  web: {
+    label: 'web',
+    bg: '#0f766e',
+    text: '#ffffff',
+    dot: '#0f766e',
+    icon: (
+      <svg viewBox="0 0 24 24" className="size-3" fill="none" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3a9 9 0 100 18 9 9 0 000-18z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h18" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2.5 2.5 2.5 15 0 18" />
+      </svg>
+    ),
+  },
+};
+
+function getHostname(url: string): string {
+  try {
+    const hostname = new URL(url).hostname;
+    return hostname.replace(/^www\./, '');
+  } catch {
+    return url;
+  }
+}
+
+function LinkSourceBadge({ info }: { info: { type: LinkType; url: string } }) {
+  const meta = LINK_BADGE_META[info.type] ?? LINK_BADGE_META.web;
+  const displayHost = getHostname(info.url);
+
+  return (
+    <a
+      href={info.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/80 px-3 py-1.5 text-xs font-medium text-[#111111]/70 shadow-sm transition hover:shadow-md hover:translate-y-[-1px] dark:border-white/10 dark:bg-zinc-900/80 dark:text-zinc-200"
+    >
+      <span
+        className="flex h-6 w-6 items-center justify-center rounded-full text-white"
+        style={{ background: meta.bg, color: meta.text }}
+      >
+        {meta.icon}
+      </span>
+      <span className="truncate max-w-[180px]">{displayHost || meta.label}</span>
+      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: meta.dot }} />
+    </a>
+  );
+}
 
 // MathJax expects TeX delimiters like $...$ / $$...$$.
 // In Markdown, delimiters like \(...\) and \[...\] lose the backslashes (they are treated as escapes).
@@ -1439,6 +1524,11 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
             </div>
           </div>
         </div>
+        {!isUser && !isStreaming && message.linkInfo?.url && (
+          <div className="flex justify-start pl-2">
+            <LinkSourceBadge info={message.linkInfo} />
+          </div>
+        )}
         {/* Copy / Share / Speech actions (assistant messages only) */}
         {!isUser && !isStreaming && message.content && !isMediaMessage && (
           <div className="flex justify-start pl-2">

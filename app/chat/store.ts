@@ -4,6 +4,7 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import type { NamedSet } from 'zustand/middleware';
 import type { WebSearchResult } from '@/types/websearch';
+import type { LinkResolvedResponse, LinkType } from '@/types/link-resolver';
 
 export type ChatRole = 'user' | 'assistant';
 
@@ -23,6 +24,10 @@ export type ChatMessage = {
   content: string;
   citations?: WebSearchResult[];
   webSearchError?: string | null;
+  linkInfo?: {
+    type: LinkType;
+    url: string;
+  };
   attachments?: Array<{
     id: string;
     fileName: string;
@@ -32,6 +37,13 @@ export type ChatMessage = {
   }>;
   // Estado de generación persistido - se usa para mostrar skeleton y sincronizar entre dispositivos
   generationState?: MessageGenerationState | null;
+};
+
+export type LinkFetchState = {
+  url: string;
+  type: LinkType;
+  status: 'fetching' | 'resolved';
+  info?: LinkResolvedResponse | null;
 };
 
 export const TYPING_STATES = [
@@ -75,6 +87,7 @@ type ChatStore = {
   pendingProjectId: string | null; // Project to associate when creating new conversation
   geoCulturalMode: boolean;
   userLocation: UserLocation | null;
+  linkFetch: LinkFetchState | null;
 
   // Generation state - qué tipo de contenido se está generando
   generationMode: GenerationMode;
@@ -86,6 +99,7 @@ type ChatStore = {
   updateMessage: (id: string, updater: (previous: string) => string) => void;
   updateMessageCitations: (id: string, citations: WebSearchResult[] | null) => void;
   updateMessageWebSearchError: (id: string, message: string | null) => void;
+  updateMessageLinkInfo: (id: string, linkInfo: ChatMessage['linkInfo'] | null) => void;
   updateMessageGenerationState: (id: string, state: MessageGenerationState | null) => void;
   replaceMessages: (messages: ChatMessage[]) => void;
   setStreaming: (value: boolean) => void;
@@ -95,6 +109,7 @@ type ChatStore = {
   setUserLocation: (location: UserLocation | null) => void;
   startGeneration: (mode: GenerationMode, messageId: string) => void;
   stopGeneration: () => void;
+  setLinkFetch: (state: LinkFetchState | null) => void;
   reset: () => void;
 };
 
@@ -155,6 +170,7 @@ const createChatStore = create<ChatStore>()(
       pendingProjectId: null,
       geoCulturalMode: false,
       userLocation: null,
+      linkFetch: null,
 
       // Generation state
       generationMode: 'none',
@@ -204,6 +220,17 @@ const createChatStore = create<ChatStore>()(
           'updateMessageWebSearchError'
         ),
 
+      updateMessageLinkInfo: (id, linkInfo) =>
+        set(
+          (state) => ({
+            messages: state.messages.map((msg) =>
+              msg.id === id ? { ...msg, linkInfo: linkInfo || undefined } : msg
+            ),
+          }),
+          false,
+          'updateMessageLinkInfo'
+        ),
+
       updateMessageGenerationState: (id, generationState) =>
         set(
           (state) => ({
@@ -228,6 +255,8 @@ const createChatStore = create<ChatStore>()(
                   state.messages[idx].webSearchError !== msg.webSearchError ||
                   JSON.stringify(state.messages[idx].citations || null) !==
                     JSON.stringify(msg.citations || null) ||
+                  JSON.stringify(state.messages[idx].linkInfo || null) !==
+                    JSON.stringify(msg.linkInfo || null) ||
                   JSON.stringify(state.messages[idx].generationState || null) !==
                     JSON.stringify(msg.generationState || null)
               );
@@ -283,6 +312,9 @@ const createChatStore = create<ChatStore>()(
           'stopGeneration'
         ),
 
+      setLinkFetch: (state) =>
+        set({ linkFetch: state }, false, 'setLinkFetch'),
+
       reset: () => {
         typingCycleController.stop(set);
         set(
@@ -294,6 +326,7 @@ const createChatStore = create<ChatStore>()(
             pendingProjectId: null,
             geoCulturalMode: false,
             userLocation: null,
+            linkFetch: null,
             generationMode: 'none',
             isGenerating: false,
             generatingMessageId: null,
@@ -319,6 +352,7 @@ export const useAddMessage = () => useChatStore((state) => state.addMessage);
 export const useUpdateMessage = () => useChatStore((state) => state.updateMessage);
 export const useUpdateMessageCitations = () => useChatStore((state) => state.updateMessageCitations);
 export const useUpdateMessageWebSearchError = () => useChatStore((state) => state.updateMessageWebSearchError);
+export const useUpdateMessageLinkInfo = () => useChatStore((state) => state.updateMessageLinkInfo);
 export const useUpdateMessageGenerationState = () => useChatStore((state) => state.updateMessageGenerationState);
 export const useReplaceMessages = () => useChatStore((state) => state.replaceMessages);
 export const useSetStreaming = () => useChatStore((state) => state.setStreaming);
@@ -327,6 +361,8 @@ export const usePendingProjectId = () => useChatStore((state) => state.pendingPr
 export const useSetPendingProjectId = () => useChatStore((state) => state.setPendingProjectId);
 export const useSetGeoCulturalMode = () => useChatStore((state) => state.setGeoCulturalMode);
 export const useSetUserLocation = () => useChatStore((state) => state.setUserLocation);
+export const useLinkFetch = () => useChatStore((state) => state.linkFetch);
+export const useSetLinkFetch = () => useChatStore((state) => state.setLinkFetch);
 
 // Generation state selectors
 export const useGenerationMode = () => useChatStore((state) => state.generationMode);
