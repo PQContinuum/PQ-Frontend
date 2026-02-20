@@ -28,11 +28,19 @@ function getHostname(input: string): string | null {
   return parsed ? parsed.hostname.toLowerCase() : null;
 }
 
+const FACEBOOK_HOSTS = [
+  'facebook.com',
+  'fb.com',
+  'fb.watch',
+  'fb.me',
+  'fb.gg',
+];
+
 export function getLinkTypeFromUrl(url: string): LinkType {
   const hostname = getHostname(url);
   if (!hostname) return 'web';
   if (hostMatches(hostname, 'x.com') || hostMatches(hostname, 'twitter.com')) return 'x';
-  if (hostMatches(hostname, 'facebook.com')) return 'facebook';
+  if (FACEBOOK_HOSTS.some((host) => hostMatches(hostname, host))) return 'facebook';
   if (hostMatches(hostname, 'instagram.com')) return 'instagram';
   if (hostMatches(hostname, 'tiktok.com')) return 'tiktok';
   return 'web';
@@ -41,7 +49,7 @@ export function getLinkTypeFromUrl(url: string): LinkType {
 export function extractFirstUrl(text: string): string | null {
   if (!text) return null;
   const urlRegex =
-    /\b(https?:\/\/[^\s<>()]+|www\.[^\s<>()]+|(?:x\.com|twitter\.com|facebook\.com|instagram\.com|tiktok\.com)(?:\/[^\s<>()]+)?)/i;
+    /\b(https?:\/\/[^\s<>()]+|www\.[^\s<>()]+|(?:x\.com|twitter\.com|facebook\.com|fb\.com|fb\.watch|fb\.me|fb\.gg|instagram\.com|tiktok\.com)(?:\/[^\s<>()]+)?)/i;
   const match = text.match(urlRegex);
   if (!match) return null;
 
