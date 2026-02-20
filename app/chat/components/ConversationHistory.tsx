@@ -34,15 +34,19 @@ import type { ConversationWithMessages } from '@/hooks/use-conversations';
 import { useQueryClient } from '@tanstack/react-query';
 import { conversationsApi } from '@/lib/api-client';
 import type { WebSearchResult } from '@/types/websearch';
+import { extractFirstUrl, getLinkTypeFromUrl } from '@/lib/link-resolver';
 
 // Helper para transformar mensajes de API a ChatMessage con generationState
 function mapApiMessagesToChatMessages(
   messages: ConversationWithMessages['messages']
 ): ChatMessage[] {
+  let pendingLinkInfo: ChatMessage['linkInfo'] | null = null;
+
   return messages.map((msg) => {
     let generationState: MessageGenerationState | undefined = undefined;
     let citations: WebSearchResult[] | undefined = undefined;
     let webSearchError: string | null | undefined = undefined;
+    let linkInfo: ChatMessage['linkInfo'] | undefined = undefined;
 
     // Parsear metadata si existe
     if (msg.metadata) {
@@ -59,9 +63,31 @@ function mapApiMessagesToChatMessages(
         if (typeof metadata?.webSearchError === 'string') {
           webSearchError = metadata.webSearchError;
         }
+        if (metadata?.linkInfo && typeof metadata.linkInfo?.url === 'string' && typeof metadata.linkInfo?.type === 'string') {
+          linkInfo = {
+            url: metadata.linkInfo.url,
+            type: metadata.linkInfo.type,
+          };
+        }
       } catch {
         // Ignore parse errors
       }
+    }
+
+    if (msg.role === 'user') {
+      const detectedUrl = extractFirstUrl(msg.content);
+      pendingLinkInfo = detectedUrl
+        ? { url: detectedUrl, type: getLinkTypeFromUrl(detectedUrl) }
+        : null;
+    } else if (msg.role === 'assistant') {
+      if (!linkInfo && pendingLinkInfo) {
+        linkInfo = pendingLinkInfo;
+      }
+      if (pendingLinkInfo) {
+        pendingLinkInfo = null;
+      }
+    } else {
+      pendingLinkInfo = null;
     }
 
     return {
@@ -72,6 +98,7 @@ function mapApiMessagesToChatMessages(
       generationState,
       citations,
       webSearchError: webSearchError ?? null,
+      linkInfo,
     };
   });
 }

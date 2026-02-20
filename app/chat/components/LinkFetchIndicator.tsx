@@ -25,7 +25,7 @@ const PLATFORM_META: Record<LinkType, PlatformMeta> = {
     bg: '#1877F2',
     text: '#ffffff',
     dot: '#1877F2',
-    icon: <span className="text-[11px] font-semibold">f</span>,
+    icon: <span className="text-[14px] font-bold leading-none">f</span>,
   },
   instagram: {
     label: 'Instagram',
