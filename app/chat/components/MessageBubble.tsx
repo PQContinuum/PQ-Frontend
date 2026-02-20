@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type ComponentPropsWithoutRef, useMemo, useEffect, useCallback } from 'react';
+import { useState, type ComponentPropsWithoutRef, type ReactNode, useMemo, useEffect, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
 import remarkGfm from 'remark-gfm';
@@ -30,7 +30,7 @@ type LinkBadgeMeta = {
   bg: string;
   text: string;
   dot: string;
-  icon: JSX.Element;
+  icon: ReactNode;
 };
 
 const LINK_BADGE_META: Record<LinkType, LinkBadgeMeta> = {
