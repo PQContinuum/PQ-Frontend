@@ -1,5 +1,7 @@
 'use client';
 
+import type { ReactNode } from 'react';
+
 import type { LinkType } from '@/types/link-resolver';
 
 type PlatformMeta = {
@@ -7,7 +9,7 @@ type PlatformMeta = {
   bg: string;
   text: string;
   dot: string;
-  icon: JSX.Element;
+  icon: ReactNode;
 };
 
 const PLATFORM_META: Record<LinkType, PlatformMeta> = {
