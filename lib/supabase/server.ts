@@ -1,11 +1,12 @@
 import { createServerClient } from "@supabase/ssr"
 import { cookies, headers } from "next/headers"
+import { getRequestHost, isContinuumHost } from "@/lib/request"
 
 // Check if request is from production domain
 async function isProductionDomain(): Promise<boolean> {
   const headersList = await headers()
-  const host = headersList.get("host") || ""
-  return host.endsWith("continuumai.app")
+  const host = getRequestHost(headersList)
+  return isContinuumHost(host)
 }
 
 export async function createSupabaseServerClient() {

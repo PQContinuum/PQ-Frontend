@@ -1,17 +1,24 @@
 import { NextResponse } from "next/server"
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
+import { getRequestHost, getRequestOrigin, isContinuumHost } from "@/lib/request"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.continuumai.llc/api/v1'
 
 // Check if request is from production domain
 function isProductionDomain(request: Request): boolean {
+  const host = getRequestHost(request.headers)
+  if (host) {
+    return isContinuumHost(host)
+  }
   const url = new URL(request.url)
-  return url.hostname.endsWith("continuumai.app")
+  return isContinuumHost(url.hostname)
 }
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url)
+  const fallbackUrl = new URL(request.url)
+  const { searchParams } = fallbackUrl
+  const origin = getRequestOrigin(request.headers) ?? fallbackUrl.origin
   const code = searchParams.get("code")
   const isProduction = isProductionDomain(request)
 

@@ -1,10 +1,11 @@
 import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
+import { getRequestHost, isContinuumHost } from "@/lib/request"
 
 // Check if request is from production domain
 function isProductionDomain(request: NextRequest): boolean {
-  const host = request.headers.get("host") || ""
-  return host.endsWith("continuumai.app")
+  const host = getRequestHost(request.headers)
+  return isContinuumHost(host)
 }
 
 export async function middleware(request: NextRequest) {
