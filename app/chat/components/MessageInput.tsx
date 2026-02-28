@@ -48,7 +48,7 @@ import type { GeoCulturalAnalysisText } from '@/app/chat/components/MessageBubbl
 import type { StructuredAddress } from '@/lib/geolocation/address-types';
 import { useImageGeneration } from '@/hooks/useImageGeneration';
 import type { ImageGenSize, ImageGenQuality } from '@/lib/memory/plan-limits';
-import { IMAGE_STYLE_PRESETS, getAvailablePresets } from '@/lib/image-gen/style-presets';
+import { IMAGE_STYLE_PRESETS, getAvailablePresets, type ImageStylePreset } from '@/lib/image-gen/style-presets';
 import { useVoiceInput, formatDuration } from '@/hooks/useVoiceInput';
 import {
   useVideoGeneration,
@@ -202,6 +202,73 @@ const QUALITY_OPTIONS: {
   { value: 'medium', label: 'Balanceada', description: 'Balance velocidad/calidad', color: 'text-blue-600' },
   { value: 'high', label: 'Alta', description: 'Máxima calidad', color: 'text-amber-600' },
 ];
+
+// Componente memoizado para el picker de estilos de imagen
+const StylePresetPicker = memo(function StylePresetPicker({
+  availablePresets,
+  lockedPresets,
+  selectedId,
+  hasPremiumStyles,
+  onSelect,
+  onClose,
+}: {
+  availablePresets: ImageStylePreset[];
+  lockedPresets: ImageStylePreset[];
+  selectedId: string;
+  hasPremiumStyles: boolean;
+  onSelect: (id: string) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="absolute bottom-full left-0 mb-2 w-[340px] bg-white rounded-2xl border border-gray-100 shadow-xl p-3 z-50">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-sm font-semibold text-gray-700">Estilo de imagen</span>
+        <button
+          onClick={onClose}
+          className="p-1 hover:bg-gray-100 rounded-lg transition"
+        >
+          <X className="size-4 text-gray-400" />
+        </button>
+      </div>
+      <div className="grid grid-cols-4 gap-2">
+        {availablePresets.map((preset) => (
+          <button
+            key={preset.id}
+            onClick={() => onSelect(preset.id)}
+            className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${
+              selectedId === preset.id
+                ? `${preset.bgColor} ${preset.borderColor} border-2 shadow-sm`
+                : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
+            }`}
+          >
+            <span className="text-xl">{preset.icon}</span>
+            <span className={`text-xs font-medium ${
+              selectedId === preset.id ? preset.color : 'text-gray-600'
+            }`}>
+              {preset.name}
+            </span>
+          </button>
+        ))}
+        {lockedPresets.map((preset) => (
+          <button
+            key={preset.id}
+            disabled
+            className="flex flex-col items-center gap-1 p-2 rounded-xl bg-gray-50 opacity-50 cursor-not-allowed relative"
+          >
+            <span className="text-xl grayscale">{preset.icon}</span>
+            <span className="text-xs font-medium text-gray-400">{preset.name}</span>
+            <Lock className="absolute top-1 right-1 size-3 text-gray-400" />
+          </button>
+        ))}
+      </div>
+      <p className="text-xs text-gray-400 mt-3 text-center">
+        {hasPremiumStyles
+          ? 'Todos los estilos disponibles'
+          : 'Actualiza tu plan para más estilos'}
+      </p>
+    </div>
+  );
+});
 
 export const MessageInput = memo(function MessageInput() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -630,21 +697,13 @@ export const MessageInput = memo(function MessageInput() {
 
   // Handle video generation
   const handleGenerateVideo = useCallback(async () => {
-    console.log('[handleGenerateVideo] CALLED', { input: input.trim(), isGeneratingVideo, videoModeType, videoImageUrl: videoImageUrl ? videoImageUrl.substring(0, 50) + '...' : '(empty)' });
     let prompt = input.trim();
-    if (!prompt) {
-      console.log('[handleGenerateVideo] ABORT: prompt vacío');
-      return;
-    }
-    if (isGeneratingVideo) {
-      console.log('[handleGenerateVideo] ABORT: ya está generando');
-      return;
-    }
+    if (!prompt) return;
+    if (isGeneratingVideo) return;
     const hasVideoReference = videoModeType === 'image-to-video' && Boolean(videoImageUrl);
 
     // Validate image-to-video mode
     if (videoModeType === 'image-to-video' && !videoImageUrl) {
-      console.log('[handleGenerateVideo] ABORT: modo image-to-video pero sin imagen');
       addMessage({
         id: createId(),
         role: 'assistant',
@@ -893,6 +952,7 @@ export const MessageInput = memo(function MessageInput() {
       let currentConversationId = conversationId;
       let assistantContent = '';
       let geoCulturalContent: (GeoCulturalAnalysisText & Record<string, unknown>) | null = null;
+      let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
 
       try {
         // Web Search UI state (shows spinner on the toggle)
@@ -936,7 +996,7 @@ export const MessageInput = memo(function MessageInput() {
         setShowFileUpload(false);
 
         if (!response.body) throw new Error('Response body is missing.');
-        const reader = response.body.getReader();
+        reader = response.body.getReader();
         const decoder = new TextDecoder();
         let buffer = '';
 
@@ -1082,6 +1142,10 @@ export const MessageInput = memo(function MessageInput() {
           updateMessage(assistantMessageId, () => message);
         }
       } finally {
+        // Cerrar el stream reader para liberar recursos
+        if (reader) {
+          reader.cancel().catch(() => {});
+        }
         setStreaming(false);
         setIsSearching(false);
         setLinkFetch(null);
@@ -1367,61 +1431,6 @@ export const MessageInput = memo(function MessageInput() {
 
   const isLoading = isStreaming || isGeneratingImage || isGeneratingVideo || isTranscribing || isLisaGenerating || isPastingImage;
 
-  // Style preset picker component
-  const StylePresetPicker = () => (
-    <div className="absolute bottom-full left-0 mb-2 w-[340px] bg-white rounded-2xl border border-gray-100 shadow-xl p-3 z-50">
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-sm font-semibold text-gray-700">Estilo de imagen</span>
-        <button
-          onClick={() => setShowStylePicker(false)}
-          className="p-1 hover:bg-gray-100 rounded-lg transition"
-        >
-          <X className="size-4 text-gray-400" />
-        </button>
-      </div>
-      <div className="grid grid-cols-4 gap-2">
-        {availablePresets.map((preset) => (
-          <button
-            key={preset.id}
-            onClick={() => {
-              setImageStylePreset(preset.id);
-              setShowStylePicker(false);
-            }}
-            className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${
-              imageStylePreset === preset.id
-                ? `${preset.bgColor} ${preset.borderColor} border-2 shadow-sm`
-                : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
-            }`}
-          >
-            <span className="text-xl">{preset.icon}</span>
-            <span className={`text-xs font-medium ${
-              imageStylePreset === preset.id ? preset.color : 'text-gray-600'
-            }`}>
-              {preset.name}
-            </span>
-          </button>
-        ))}
-        {/* Show locked presets */}
-        {IMAGE_STYLE_PRESETS.filter(p => p.premium && !imageUsage?.premiumStyles).map((preset) => (
-          <button
-            key={preset.id}
-            disabled
-            className="flex flex-col items-center gap-1 p-2 rounded-xl bg-gray-50 opacity-50 cursor-not-allowed relative"
-          >
-            <span className="text-xl grayscale">{preset.icon}</span>
-            <span className="text-xs font-medium text-gray-400">{preset.name}</span>
-            <Lock className="absolute top-1 right-1 size-3 text-gray-400" />
-          </button>
-        ))}
-      </div>
-      <p className="text-xs text-gray-400 mt-3 text-center">
-        {imageUsage?.premiumStyles
-          ? 'Todos los estilos disponibles'
-          : 'Actualiza tu plan para más estilos'}
-      </p>
-    </div>
-  );
-
   return (
     <>
       {/* LISA Wizard Dialog */}
@@ -1661,7 +1670,19 @@ export const MessageInput = memo(function MessageInput() {
                       showStylePicker ? selectedPreset.color : 'text-gray-400'
                     }`} />
                   </button>
-                  {showStylePicker && <StylePresetPicker />}
+                  {showStylePicker && (
+                    <StylePresetPicker
+                      availablePresets={availablePresets}
+                      lockedPresets={IMAGE_STYLE_PRESETS.filter(p => p.premium && !imageUsage?.premiumStyles)}
+                      selectedId={imageStylePreset}
+                      hasPremiumStyles={!!imageUsage?.premiumStyles}
+                      onSelect={(id) => {
+                        setImageStylePreset(id);
+                        setShowStylePicker(false);
+                      }}
+                      onClose={() => setShowStylePicker(false)}
+                    />
+                  )}
                 </div>
 
                 {/* Strength slider - only shown when reference image is uploaded */}
@@ -1829,10 +1850,7 @@ export const MessageInput = memo(function MessageInput() {
                 {/* Image upload for image-to-video mode */}
                 {videoModeType === 'image-to-video' && (
                   <VideoImageUpload
-                    onImageUploaded={(url) => {
-                      console.log('[VIDEO UPLOAD] URL recibido:', url);
-                      setVideoImageUrl(url);
-                    }}
+                    onImageUploaded={(url) => setVideoImageUrl(url)}
                     onImageRemoved={() => setVideoImageUrl('')}
                     currentImageUrl={videoImageUrl}
                     disabled={isLoading}
@@ -2170,7 +2188,6 @@ export const MessageInput = memo(function MessageInput() {
               aria-label="Enviar prompt"
               onClick={(e) => {
                 e.preventDefault();
-                console.log('[SUBMIT BTN] clicked', { videoMode, imageMode, input: input.trim().substring(0, 20), isLoading, isGeneratingVideo, videoModeType, videoImageUrl: !!videoImageUrl });
                 if (videoMode) {
                   handleGenerateVideo();
                 } else if (imageMode) {
@@ -2180,7 +2197,7 @@ export const MessageInput = memo(function MessageInput() {
                 }
               }}
               disabled={(!input.trim() || isLoading) && !isRecording}
-              className="relative z-[999] flex shrink-0 items-center justify-center rounded-full p-2.5 text-white transition disabled:cursor-not-allowed bg-[#00552b] hover:bg-[#00552b]/80 disabled:bg-[#00552b]/40 touch-manipulation"
+              className="relative flex shrink-0 items-center justify-center rounded-full p-2.5 text-white transition disabled:cursor-not-allowed bg-[#00552b] hover:bg-[#00552b]/80 disabled:bg-[#00552b]/40 touch-manipulation"
             >
               {(isGeneratingImage || isGeneratingVideo) ? (
                 <Loader2 className="size-5 animate-spin" />

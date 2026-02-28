@@ -278,8 +278,33 @@ const createChatStore = create<ChatStore>()(
         }
       },
 
-      setConversationId: (id) =>
-        set({ conversationId: id }, false, 'setConversationId'),
+      setConversationId: (id) => {
+        const prevId = createChatStore.getState().conversationId;
+        const isChanging = id !== prevId;
+
+        set(
+          {
+            conversationId: id,
+            // Resetear estado de generación al cambiar de conversación
+            // para evitar que quede "stuck" si se cambia durante streaming
+            ...(isChanging
+              ? {
+                  isStreaming: false,
+                  isGenerating: false,
+                  generationMode: 'none' as GenerationMode,
+                  generatingMessageId: null,
+                  linkFetch: null,
+                }
+              : {}),
+          },
+          false,
+          'setConversationId'
+        );
+
+        if (isChanging) {
+          typingCycleController.stop(set);
+        }
+      },
 
       setPendingProjectId: (id) =>
         set({ pendingProjectId: id }, false, 'setPendingProjectId'),
