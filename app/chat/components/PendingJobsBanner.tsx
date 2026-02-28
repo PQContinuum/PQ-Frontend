@@ -49,7 +49,7 @@ export function PendingJobsBanner({ className }: PendingJobsBannerProps) {
     <div
       className={cn(
         // Positioning helper class
-        "pending-jobs-banner fixed z-50 left-4 right-4 md:left-1/2 md:-translate-x-1/2",
+        "pending-jobs-banner fixed z-50 left-4 right-4 md:left-1/2 md:-translate-x-1/2 pointer-events-none",
         // Container
         "md:w-auto md:min-w-[280px] md:max-w-[360px]",
         // Animation
@@ -64,7 +64,8 @@ export function PendingJobsBanner({ className }: PendingJobsBannerProps) {
           "rounded-xl shadow-xl",
           "border border-white/10",
           // Padding
-          "px-4 py-3"
+          "px-4 py-3",
+          "pointer-events-auto"
         )}
       >
         {/* Main content */}
