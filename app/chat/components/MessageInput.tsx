@@ -445,6 +445,7 @@ export const MessageInput = memo(function MessageInput() {
   const handleGenerateImage = useCallback(async () => {
     let prompt = input.trim();
     if (!prompt || isGeneratingImage) return;
+    const hasImageReference = Boolean(imageReferenceUrl);
 
     // Check if prompt needs enhancement
     const promptCheck = checkPromptNeedsEnhancement(prompt, 'image');
@@ -494,7 +495,7 @@ export const MessageInput = memo(function MessageInput() {
         }
         // Otherwise continue with original prompt
       }
-    } else if (promptCheck.needsEnhancement && messages.length === 0) {
+    } else if (promptCheck.needsEnhancement && messages.length === 0 && !hasImageReference) {
       // No context available to enhance
       addMessage({
         id: createId(),
@@ -628,6 +629,7 @@ export const MessageInput = memo(function MessageInput() {
   const handleGenerateVideo = useCallback(async () => {
     let prompt = input.trim();
     if (!prompt || isGeneratingVideo) return;
+    const hasVideoReference = videoModeType === 'image-to-video' && Boolean(videoImageUrl);
 
     // Validate image-to-video mode
     if (videoModeType === 'image-to-video' && !videoImageUrl) {
@@ -682,7 +684,7 @@ export const MessageInput = memo(function MessageInput() {
         }
         // Otherwise continue with original prompt
       }
-    } else if (promptCheck.needsEnhancement && messages.length === 0) {
+    } else if (promptCheck.needsEnhancement && messages.length === 0 && !hasVideoReference) {
       // No context available to enhance
       addMessage({
         id: createId(),
