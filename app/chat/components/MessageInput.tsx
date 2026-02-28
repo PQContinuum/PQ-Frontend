@@ -3,6 +3,7 @@
 import {
   FormEvent,
   KeyboardEvent as ReactKeyboardEvent,
+  MouseEvent,
   useCallback,
   useRef,
   useState,
@@ -534,6 +535,7 @@ export const MessageInput = memo(function MessageInput() {
     setStreaming(true);
     startGeneration('image', assistantMessageId);
 
+    try {
     // Create conversation if needed
     let currentConversationId = conversationId;
     if (!currentConversationId) {
@@ -620,9 +622,10 @@ export const MessageInput = memo(function MessageInput() {
         console.error('Error saving assistant message:', error);
       }
     }
-
-    setStreaming(false);
-    stopGeneration();
+    } finally {
+      setStreaming(false);
+      stopGeneration();
+    }
   }, [input, imageSize, imageQuality, imageStylePreset, imageReferenceUrl, imageStrength, imageGalleryOptions, generateImage, generateWithStreaming, isGeneratingImage, addMessage, updateMessage, updateMessageGenerationState, setStreaming, startGeneration, stopGeneration, imageUsage, conversationId, createConversationMutation, setConversationId, queryClient, pendingProjectId, setPendingProjectId, messages]);
 
   // Handle video generation
@@ -720,6 +723,8 @@ export const MessageInput = memo(function MessageInput() {
     setStreaming(true);
     startGeneration('video', assistantMessageId);
 
+    let progressInterval: ReturnType<typeof setInterval> | null = null;
+    try {
     // Create conversation if needed
     let currentConversationId = conversationId;
     if (!currentConversationId) {
@@ -750,7 +755,7 @@ export const MessageInput = memo(function MessageInput() {
     }
 
     // Update message with progress using ref to get latest value
-    const progressInterval = setInterval(() => {
+    progressInterval = setInterval(() => {
       const currentProgress = videoProgressRef.current;
       if (currentProgress) {
         updateMessage(assistantMessageId, () => `🎬 ${currentProgress}`);
@@ -765,18 +770,15 @@ export const MessageInput = memo(function MessageInput() {
       generateAudio: true,
       conversationId: currentConversationId || undefined,
       galleryOptions: videoGalleryOptions,
-      // No pasamos messageId porque el mensaje aún no existe en BD
     });
 
     clearInterval(progressInterval);
+    progressInterval = null;
 
     let assistantContent: string;
     if (result.success) {
-      // Job created successfully - video is being generated in background
-      // Show a processing message with jobId for recovery
       assistantContent = `🎬 Video en proceso de generación. Puedes cerrar esta ventana y regresar más tarde.`;
       updateMessage(assistantMessageId, () => assistantContent);
-      // Keep generating state - will be updated when job completes via polling
       updateMessageGenerationState(assistantMessageId, {
         type: 'video',
         status: 'generating',
@@ -785,7 +787,6 @@ export const MessageInput = memo(function MessageInput() {
     } else {
       assistantContent = `❌ ${result.error}`;
       updateMessage(assistantMessageId, () => assistantContent);
-      // Mark as error
       updateMessageGenerationState(assistantMessageId, { type: 'video', status: 'error' });
     }
 
@@ -809,18 +810,15 @@ export const MessageInput = memo(function MessageInput() {
         console.error('Error saving assistant message:', error);
       }
     }
-
-    // Note: We don't call setStreaming(false) or stopGeneration() immediately
-    // because the video is still generating in background. The useVideoGeneration
-    // hook will update the state when the job completes via polling.
-    // However, for now we'll stop the local generating state since the job
-    // system handles it independently.
-    setStreaming(false);
-    stopGeneration();
+    } finally {
+      if (progressInterval) clearInterval(progressInterval);
+      setStreaming(false);
+      stopGeneration();
+    }
   }, [input, videoModeType, videoImageUrl, videoDuration, videoAspectRatio, videoGalleryOptions, generateVideo, isGeneratingVideo, addMessage, updateMessage, updateMessageGenerationState, setStreaming, startGeneration, stopGeneration, conversationId, createConversationMutation, setConversationId, queryClient, pendingProjectId, setPendingProjectId, messages]);
 
   const submitMessage = useCallback(
-    async (event?: FormEvent<HTMLFormElement>) => {
+    async (event?: FormEvent<HTMLFormElement> | MouseEvent<HTMLButtonElement>) => {
       event?.preventDefault();
 
       // If in video mode, generate video instead
@@ -1096,6 +1094,8 @@ export const MessageInput = memo(function MessageInput() {
       setShowFileUpload,
       imageMode,
       handleGenerateImage,
+      videoMode,
+      handleGenerateVideo,
       pendingProjectId,
       setPendingProjectId,
       enableWebSearch,
@@ -2149,9 +2149,11 @@ export const MessageInput = memo(function MessageInput() {
             )}
 
             <button
-              type="submit"
+              type="button"
+              aria-label="Enviar prompt"
+              onClick={(e) => submitMessage(e)}
               disabled={(!input.trim() || isLoading) && !isRecording}
-              className="flex shrink-0 items-center justify-center rounded-full p-2 text-white transition disabled:cursor-not-allowed bg-[#00552b] hover:bg-[#00552b]/80 disabled:bg-[#00552b]/40"
+              className="relative z-[999] flex shrink-0 items-center justify-center rounded-full p-2.5 text-white transition disabled:cursor-not-allowed bg-[#00552b] hover:bg-[#00552b]/80 disabled:bg-[#00552b]/40 touch-manipulation"
             >
               {isGeneratingImage ? (
                 <Loader2 className="size-5 animate-spin" />

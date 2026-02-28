@@ -1052,13 +1052,12 @@
 }
 
 .pending-jobs-banner {
-  bottom: calc(140px + env(safe-area-inset-bottom, 0px));
+  top: calc(1rem + env(safe-area-inset-top, 0px));
+  bottom: auto;
 }
 
 @media (min-width: 768px) {
   .pending-jobs-banner {
-    bottom: auto;
-    top: 1rem;
     right: auto;
   }
 }
