@@ -48,9 +48,8 @@ export function PendingJobsBanner({ className }: PendingJobsBannerProps) {
   return (
     <div
       className={cn(
-        // Positioning - bottom on mobile, top on desktop
-        "fixed z-50",
-        "bottom-24 left-4 right-4 md:bottom-auto md:top-4 md:left-1/2 md:-translate-x-1/2",
+        // Positioning helper class
+        "pending-jobs-banner fixed z-50 left-4 right-4 md:left-1/2 md:-translate-x-1/2",
         // Container
         "md:w-auto md:min-w-[280px] md:max-w-[360px]",
         // Animation

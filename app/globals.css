@@ -1050,3 +1050,15 @@
     box-shadow: 0 0 0 2px rgba(0, 85, 43, 0.5), 0 0 0 4px rgba(0, 85, 43, 0.2);
   }
 }
+
+.pending-jobs-banner {
+  bottom: calc(140px + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 768px) {
+  .pending-jobs-banner {
+    bottom: auto;
+    top: 1rem;
+    right: auto;
+  }
+}
