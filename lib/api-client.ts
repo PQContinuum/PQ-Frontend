@@ -819,13 +819,17 @@ export const videoGenApi = {
   /**
    * Upload an image for image-to-video mode
    */
-  uploadImage: (file: File) => {
+  uploadImage: async (file: File): Promise<{ imageUrl: string; storagePath: string }> => {
     const formData = new FormData();
     formData.append("file", file);
-    return apiPostFormData<{ imageUrl: string; storagePath: string }>(
+    const data = await apiPostFormData<{ url: string; imageUrl?: string; storagePath?: string }>(
       "/video-gen/upload-image",
       formData
     );
+    return {
+      imageUrl: data.imageUrl || data.url,
+      storagePath: data.storagePath || '',
+    };
   },
 };
 

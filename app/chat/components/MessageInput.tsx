@@ -630,12 +630,26 @@ export const MessageInput = memo(function MessageInput() {
 
   // Handle video generation
   const handleGenerateVideo = useCallback(async () => {
+    console.log('[handleGenerateVideo] CALLED', { input: input.trim(), isGeneratingVideo, videoModeType, videoImageUrl: videoImageUrl ? videoImageUrl.substring(0, 50) + '...' : '(empty)' });
     let prompt = input.trim();
-    if (!prompt || isGeneratingVideo) return;
+    if (!prompt) {
+      console.log('[handleGenerateVideo] ABORT: prompt vacío');
+      return;
+    }
+    if (isGeneratingVideo) {
+      console.log('[handleGenerateVideo] ABORT: ya está generando');
+      return;
+    }
     const hasVideoReference = videoModeType === 'image-to-video' && Boolean(videoImageUrl);
 
     // Validate image-to-video mode
     if (videoModeType === 'image-to-video' && !videoImageUrl) {
+      console.log('[handleGenerateVideo] ABORT: modo image-to-video pero sin imagen');
+      addMessage({
+        id: createId(),
+        role: 'assistant',
+        content: '⚠️ Sube una imagen primero para el modo imagen a video.',
+      });
       return;
     }
 
@@ -1815,7 +1829,10 @@ export const MessageInput = memo(function MessageInput() {
                 {/* Image upload for image-to-video mode */}
                 {videoModeType === 'image-to-video' && (
                   <VideoImageUpload
-                    onImageUploaded={setVideoImageUrl}
+                    onImageUploaded={(url) => {
+                      console.log('[VIDEO UPLOAD] URL recibido:', url);
+                      setVideoImageUrl(url);
+                    }}
                     onImageRemoved={() => setVideoImageUrl('')}
                     currentImageUrl={videoImageUrl}
                     disabled={isLoading}
@@ -2151,11 +2168,21 @@ export const MessageInput = memo(function MessageInput() {
             <button
               type="button"
               aria-label="Enviar prompt"
-              onClick={(e) => submitMessage(e)}
+              onClick={(e) => {
+                e.preventDefault();
+                console.log('[SUBMIT BTN] clicked', { videoMode, imageMode, input: input.trim().substring(0, 20), isLoading, isGeneratingVideo, videoModeType, videoImageUrl: !!videoImageUrl });
+                if (videoMode) {
+                  handleGenerateVideo();
+                } else if (imageMode) {
+                  handleGenerateImage();
+                } else {
+                  submitMessage(e);
+                }
+              }}
               disabled={(!input.trim() || isLoading) && !isRecording}
               className="relative z-[999] flex shrink-0 items-center justify-center rounded-full p-2.5 text-white transition disabled:cursor-not-allowed bg-[#00552b] hover:bg-[#00552b]/80 disabled:bg-[#00552b]/40 touch-manipulation"
             >
-              {isGeneratingImage ? (
+              {(isGeneratingImage || isGeneratingVideo) ? (
                 <Loader2 className="size-5 animate-spin" />
               ) : (
                 <ArrowUp className="size-5" />
