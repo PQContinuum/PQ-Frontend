@@ -289,6 +289,7 @@ interface ChatVideoProps {
 const ChatVideo = ({ src, jobId, isPublic, prompt, thumbnailUrl, previewUrl }: ChatVideoProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
   const [showShareModal, setShowShareModal] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
   const [galleryStatus, setGalleryStatus] = useState<{ isPublic: boolean; title?: string } | null>(
@@ -313,8 +314,18 @@ const ChatVideo = ({ src, jobId, isPublic, prompt, thumbnailUrl, previewUrl }: C
 
   if (hasError) {
     return (
-      <span className="block w-full max-w-[560px] aspect-video rounded-2xl bg-gray-100 flex items-center justify-center">
+      <span className="block w-full max-w-[560px] aspect-video rounded-2xl bg-gray-100 flex flex-col items-center justify-center gap-3">
         <span className="text-sm text-gray-400">Error al cargar video</span>
+        <button
+          onClick={() => {
+            setHasError(false);
+            setIsLoading(true);
+            setRetryKey((k) => k + 1);
+          }}
+          className="px-4 py-1.5 text-xs font-medium text-white bg-[#00552b] hover:bg-[#00441f] rounded-lg transition-colors"
+        >
+          Reintentar
+        </button>
       </span>
     );
   }
@@ -357,6 +368,7 @@ const ChatVideo = ({ src, jobId, isPublic, prompt, thumbnailUrl, previewUrl }: C
             </span>
           )}
           <HlsVideo
+            key={retryKey}
             src={src}
             controls
             poster={thumbnailUrl || undefined}
