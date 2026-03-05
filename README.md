@@ -1,5 +1,6 @@
 # next-ai-base
 
+
 Minimal, production-ready scaffold for an AI-focused chat application built with Next.js 15 App Router and a modern TypeScript toolchain.
 
 ## Tech Stack
