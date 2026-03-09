@@ -240,14 +240,14 @@ export function getQualityDescription(quality: ImageGenQuality): string {
 }
 
 // ============================================================================
-// VIDEO GENERATION (Google Veo 3 via Fal.ai) LIMITS
+// VIDEO GENERATION (OpenAI Sora 2) LIMITS
 // Supports audio with dialogue in Spanish Latino (based on prompt language)
 // ============================================================================
 
-// Veo 3 durations: 5s or 8s (mapped from user selection)
-export type VideoGenDuration = '5' | '10'; // '10' gets mapped to '8' for Veo 3
+// Sora durations: '5' maps to 4s, '10' maps to 12s
+export type VideoGenDuration = '5' | '10';
 
-// Veo 3 aspect ratios (1:1 gets mapped to 16:9)
+// Sora sizes: 16:9→1280x720, 9:16→720x1280, 1:1→1280x720 (no native 1:1)
 export type VideoGenAspectRatio = '16:9' | '9:16' | '1:1';
 
 // Video generation modes
@@ -273,14 +273,13 @@ export type VideoGenPlanLimits = {
 };
 
 /**
- * LÍMITES DE GENERACIÓN DE VIDEO POR PLAN (Google Veo 3 via Fal.ai)
+ * LÍMITES DE GENERACIÓN DE VIDEO POR PLAN (OpenAI Sora 2)
  * ==================================================================
- * Costos Veo 3:
- * - ~$0.50/segundo de video generado
- * - 5s = ~$2.50, 8s = ~$4.00
+ * Costos Sora 2:
+ * - 4s (corto) = ~$0.40
+ * - 12s (largo) = ~$1.20
  *
- * IMPORTANTE: Veo 3 es premium pero genera audio con diálogo en español
- * El audio incluye: diálogo, efectos de sonido, ambiente, sincronización de labios
+ * Sora genera audio sincronizado automáticamente (diálogo, efectos, ambiente)
  * Para español: escribir el prompt en español
  */
 export const VIDEO_GEN_LIMITS: Record<PlanName, VideoGenPlanLimits> = {
@@ -288,41 +287,41 @@ export const VIDEO_GEN_LIMITS: Record<PlanName, VideoGenPlanLimits> = {
     maxVideosPerDay: 1,
     maxVideosPerMonth: 2,
     videoGenEnabled: true,
-    allowedDurations: ['5'],           // Solo 5 segundos
+    allowedDurations: ['5'],           // Solo 4 segundos
     allowedAspectRatios: ['16:9'],     // Solo horizontal
-    allowedModes: ['text-to-video', 'image-to-video'], // Ambos modos
-    audioEnabled: true,                // Audio con diálogo en español
-    estimatedMaxCostUSD: 5.00,         // 2 × $2.50 (5s con audio)
+    allowedModes: ['text-to-video', 'image-to-video'],
+    audioEnabled: true,                // Sora incluye audio automáticamente
+    estimatedMaxCostUSD: 1.00,         // 2 × $0.40
   },
   Basic: {
     maxVideosPerDay: 2,
     maxVideosPerMonth: 10,
     videoGenEnabled: true,
-    allowedDurations: ['5'],           // Solo 5 segundos
+    allowedDurations: ['5'],           // Solo 4 segundos
     allowedAspectRatios: ['16:9', '9:16', '1:1'],
-    allowedModes: ['text-to-video', 'image-to-video'], // Ambos modos
-    audioEnabled: true,                // Audio con diálogo en español
-    estimatedMaxCostUSD: 25.00,        // 10 × $2.50 (5s con audio)
+    allowedModes: ['text-to-video', 'image-to-video'],
+    audioEnabled: true,                // Sora incluye audio automáticamente
+    estimatedMaxCostUSD: 4.00,         // 10 × $0.40
   },
   Professional: {
     maxVideosPerDay: 5,
     maxVideosPerMonth: 30,
     videoGenEnabled: true,
-    allowedDurations: ['5', '10'],     // Ambas duraciones (10 → 8s en Veo 3)
+    allowedDurations: ['5', '10'],     // 4s y 12s
     allowedAspectRatios: ['16:9', '9:16', '1:1'],
     allowedModes: ['text-to-video', 'image-to-video'],
-    audioEnabled: true,                // Audio con diálogo en español
-    estimatedMaxCostUSD: 90.00,        // Mix: 20×$2.50 + 10×$4.00
+    audioEnabled: true,                // Sora incluye audio automáticamente
+    estimatedMaxCostUSD: 24.00,        // Mix: 20×$0.40 + 10×$1.20
   },
   Enterprise: {
     maxVideosPerDay: 15,
     maxVideosPerMonth: 100,
     videoGenEnabled: true,
-    allowedDurations: ['5', '10'],
+    allowedDurations: ['5', '10'],     // 4s y 12s
     allowedAspectRatios: ['16:9', '9:16', '1:1'],
     allowedModes: ['text-to-video', 'image-to-video'],
-    audioEnabled: true,                // Audio con diálogo en español
-    estimatedMaxCostUSD: 300.00,       // Mix generoso
+    audioEnabled: true,                // Sora incluye audio automáticamente
+    estimatedMaxCostUSD: 80.00,        // Mix generoso
   },
 };
 
@@ -337,16 +336,13 @@ export function getVideoGenLimits(planName: PlanName | null | undefined): VideoG
 }
 
 /**
- * Calcula el costo de un video según sus parámetros (Google Veo 3)
+ * Calcula el costo de un video según sus parámetros (OpenAI Sora 2)
  */
 export function calculateVideoCost(
   duration: VideoGenDuration
 ): number {
-  // Veo 3 pricing: ~$0.50/second
-  // Duration '5' → 6s, '10' → 8s for Veo 3
-  const seconds = duration === '10' ? 8 : 6;
-  const costPerSecond = 0.50;
-  return seconds * costPerSecond;
+  // Sora 2 pricing: '5' → 4s = $0.40, '10' → 12s = $1.20
+  return duration === '10' ? 1.20 : 0.40;
 }
 
 /**

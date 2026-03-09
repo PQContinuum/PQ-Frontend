@@ -320,8 +320,8 @@ export const VIDEO_ASPECT_RATIOS: { value: VideoGenAspectRatio; label: string; i
  * Video duration options
  */
 export const VIDEO_DURATIONS: { value: VideoGenDuration; label: string; description: string }[] = [
-  { value: '5', label: '5s', description: 'Clip corto' },
-  { value: '10', label: '10s', description: 'Clip largo' },
+  { value: '5', label: '4s', description: 'Clip corto' },
+  { value: '10', label: '12s', description: 'Clip largo' },
 ];
 
 /**

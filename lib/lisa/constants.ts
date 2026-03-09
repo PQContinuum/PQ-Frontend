@@ -287,8 +287,8 @@ export interface DurationOption {
 }
 
 export const DURATION_OPTIONS: DurationOption[] = [
-  { value: '5', label: '5 segundos', description: 'Clip corto', premium: false },
-  { value: '10', label: '10 segundos', description: 'Clip largo', premium: true },
+  { value: '5', label: '4 segundos', description: 'Clip corto', premium: false },
+  { value: '10', label: '12 segundos', description: 'Clip largo', premium: true },
 ];
 
 export interface AspectRatioOption {
