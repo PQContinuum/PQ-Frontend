@@ -45,7 +45,7 @@ export function getSupabaseBrowserClient() {
           },
           setItem: (key, value) => {
             if (typeof document === "undefined") return
-            const maxAge = 60 * 60 * 24 * 365 // 1 year
+            const maxAge = 60 * 60 * 24 * 30 // 30 days
             let cookieString = `${key}=${encodeURIComponent(value)}; path=/; max-age=${maxAge}; SameSite=Lax`
 
             if (cookieDomain) {

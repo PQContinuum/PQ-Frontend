@@ -65,8 +65,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl)
   }
 
-  // Si el usuario está autenticado y está en /auth, redirigir a /chat
-  if (user && request.nextUrl.pathname === '/auth') {
+  // Si el usuario está autenticado y está en / o /auth, redirigir a /chat
+  if (user && (request.nextUrl.pathname === '/auth' || request.nextUrl.pathname === '/')) {
     const redirectUrl = new URL('/chat', request.url)
     return NextResponse.redirect(redirectUrl)
   }
