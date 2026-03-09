@@ -74,7 +74,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
   });
   const [usage, setUsage] = useState<ImageGenUsage | null>(null);
 
-  // Generate an image (non-streaming)
+  // Generate an image (non-streaming) with retry for mobile network errors
   const generate = useCallback(
     async (prompt: string, options: GenerateOptions = {}): Promise<GenerateResult> => {
       if (!prompt.trim()) {
@@ -85,69 +85,101 @@ export function useImageGeneration(): UseImageGenerationReturn {
 
       setState({ isGenerating: true, error: null, image: null, partialImage: null, partialIndex: -1 });
 
-      try {
-        const data = await imageGenApi.generate({
-          prompt: prompt.trim(),
-          quality: options.quality || 'low',
-          size: options.size || '1024x1024',
-          stylePreset: options.stylePreset || 'auto',
-          referenceImageUrl: options.referenceImageUrl,
-          imageStrength: options.imageStrength,
-          // Gallery options for public/private sharing
-          isPublic: options.galleryOptions?.isPublic,
-          title: options.galleryOptions?.title,
-          description: options.galleryOptions?.description,
-          tags: options.galleryOptions?.tags,
-        });
+      const request = {
+        prompt: prompt.trim(),
+        quality: options.quality || 'low',
+        size: options.size || '1024x1024',
+        stylePreset: options.stylePreset || 'auto',
+        referenceImageUrl: options.referenceImageUrl,
+        imageStrength: options.imageStrength,
+        isPublic: options.galleryOptions?.isPublic,
+        title: options.galleryOptions?.title,
+        description: options.galleryOptions?.description,
+        tags: options.galleryOptions?.tags,
+      };
 
-        const imageResult = {
-          url: data.imageUrl,
-          revisedPrompt: data.revisedPrompt,
-          size: options.size || '1024x1024',
-          quality: options.quality || 'low',
-          stylePreset: options.stylePreset,
-        };
+      // Retry logic: 1 retry for network errors (TypeError: Load failed on Safari/mobile)
+      const MAX_RETRIES = 1;
+      let lastError: unknown;
 
-        setState({
-          isGenerating: false,
-          error: null,
-          image: imageResult,
-          partialImage: null,
-          partialIndex: -1,
-        });
+      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        try {
+          const data = await imageGenApi.generate(request);
 
-        if (data.usage) {
-          setUsage((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  remainingToday: prev.dailyLimit - data.usage.dailyCount,
-                  remainingMonth: prev.monthlyLimit - data.usage.monthlyCount,
-                  todayCount: data.usage.dailyCount,
-                  monthCount: data.usage.monthlyCount,
-                }
-              : null
-          );
+          const imageResult = {
+            url: data.imageUrl,
+            revisedPrompt: data.revisedPrompt,
+            size: options.size || '1024x1024',
+            quality: options.quality || 'low',
+            stylePreset: options.stylePreset,
+          };
+
+          setState({
+            isGenerating: false,
+            error: null,
+            image: imageResult,
+            partialImage: null,
+            partialIndex: -1,
+          });
+
+          if (data.usage) {
+            setUsage((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    remainingToday: prev.dailyLimit - data.usage.dailyCount,
+                    remainingMonth: prev.monthlyLimit - data.usage.monthlyCount,
+                    todayCount: data.usage.dailyCount,
+                    monthCount: data.usage.monthlyCount,
+                  }
+                : null
+            );
+          }
+
+          return { success: true, url: imageResult.url, revisedPrompt: imageResult.revisedPrompt };
+        } catch (error) {
+          lastError = error;
+
+          // Only retry on network errors (TypeError: Load failed / Failed to fetch)
+          // These are transient errors common on mobile Safari when the app goes to background
+          const isNetworkError = error instanceof TypeError &&
+            (error.message === 'Load failed' || error.message === 'Failed to fetch' || error.message === 'NetworkError when attempting to fetch resource.');
+
+          if (isNetworkError && attempt < MAX_RETRIES) {
+            console.warn(`[useImageGeneration] Network error on attempt ${attempt + 1}, retrying...`, error.message);
+            // Brief delay before retry
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            continue;
+          }
+
+          break;
         }
-
-        return { success: true, url: imageResult.url, revisedPrompt: imageResult.revisedPrompt };
-      } catch (error) {
-        console.error('[useImageGeneration] Error:', error);
-        // Use userMessage from ApiError for user-friendly error messages
-        const errorMsg = error instanceof ApiError
-          ? error.userMessage
-          : error instanceof Error
-            ? error.message
-            : 'Error al generar imagen';
-        setState({
-          isGenerating: false,
-          error: errorMsg,
-          image: null,
-          partialImage: null,
-          partialIndex: -1,
-        });
-        return { success: false, error: errorMsg };
       }
+
+      console.error('[useImageGeneration] Error:', lastError);
+
+      // Determine user-friendly error message
+      let errorMsg: string;
+      if (lastError instanceof ApiError) {
+        errorMsg = lastError.userMessage;
+      } else if (lastError instanceof TypeError &&
+        (lastError.message === 'Load failed' || lastError.message === 'Failed to fetch' || lastError.message === 'NetworkError when attempting to fetch resource.')) {
+        // Mobile-specific network error: Safari kills fetch when app goes to background
+        errorMsg = 'Error de conexión. Asegúrate de mantener la app abierta mientras se genera la imagen e intenta de nuevo.';
+      } else if (lastError instanceof Error) {
+        errorMsg = lastError.message;
+      } else {
+        errorMsg = 'Error al generar imagen';
+      }
+
+      setState({
+        isGenerating: false,
+        error: errorMsg,
+        image: null,
+        partialImage: null,
+        partialIndex: -1,
+      });
+      return { success: false, error: errorMsg };
     },
     []
   );

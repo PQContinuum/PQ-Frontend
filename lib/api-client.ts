@@ -229,17 +229,33 @@ export async function apiGet<T>(
  */
 export async function apiPost<T>(
   endpoint: string,
-  body?: unknown
+  body?: unknown,
+  options?: { timeoutMs?: number; signal?: AbortSignal }
 ): Promise<T> {
   const headers = await getAuthHeaders();
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: "POST",
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  let signal = options?.signal;
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
-  return handleResponse<T>(response);
+  // If a timeout is specified and no external signal, create an AbortController
+  if (options?.timeoutMs && !signal) {
+    const controller = new AbortController();
+    signal = controller.signal;
+    timeoutId = setTimeout(() => controller.abort(), options.timeoutMs);
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: "POST",
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+      signal,
+    });
+
+    return handleResponse<T>(response);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
 }
 
 /**
@@ -738,10 +754,10 @@ export interface ImageGenUsage {
 
 export const imageGenApi = {
   /**
-   * Generate an image
+   * Generate an image (3 min timeout for long prompts / mobile stability)
    */
   generate: (request: ImageGenRequest) =>
-    apiPost<ImageGenResponse>("/image-gen", request),
+    apiPost<ImageGenResponse>("/image-gen", request, { timeoutMs: 180_000 }),
 
   /**
    * Get usage statistics
