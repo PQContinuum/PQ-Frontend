@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AuthCta } from "./AuthCta";
 
 export function SiteFooter({ lang = "es" }: { lang?: "es" | "en" }) {
   const isEn = lang === "en";
@@ -34,9 +35,12 @@ export function SiteFooter({ lang = "es" }: { lang?: "es" | "en" }) {
               <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
             </svg>
           </a>
-          <Link href="/chat" className="btn-primary" style={{ padding: "8px 24px", fontSize: 14, borderRadius: 20 }}>
-            {isEn ? "Try for free" : "Probar gratis"}
-          </Link>
+          <AuthCta
+            lang={lang}
+            fallbackLabel={isEn ? "Try for free" : "Probar gratis"}
+            className="btn-primary"
+            style={{ padding: "8px 24px", fontSize: 14, borderRadius: 20 }}
+          />
         </div>
 
         <div style={{ display: "flex", gap: 16, justifyContent: "center", fontSize: 12, color: "var(--text-secondary)" }}>

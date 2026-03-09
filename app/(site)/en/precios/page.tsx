@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { SiteHeader, SiteFooter, BgMesh } from "@/components/site";
+import { SiteHeader, SiteFooter, BgMesh, AuthCta } from "@/components/site";
 import Link from "next/link";
 
 export const metadata: Metadata = {
@@ -196,9 +196,7 @@ export default function PricingPageEN() {
                   or your account will switch to restricted mode.
                 </p>
 
-                <Link href="/chat" className="btn-primary large">
-                  Activate Free Trial
-                </Link>
+                <AuthCta lang="en" size="large" fallbackLabel="Activate Free Trial" className="btn-primary large" />
               </div>
             </div>
           </div>

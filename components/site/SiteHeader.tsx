@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { useSession } from "./useSession";
 
 interface NavLink {
   href: string;
@@ -14,14 +14,8 @@ interface NavLink {
 export function SiteHeader({ lang = "es" }: { lang?: "es" | "en" }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const { email, initial } = useSession();
   const pathname = usePathname();
-
-  useEffect(() => {
-    void getSupabaseBrowserClient().auth.getUser().then((res: { data: { user: { email?: string } | null } }) => {
-      setUserEmail(res.data.user?.email ?? null);
-    });
-  }, []);
 
   const isEn = lang === "en";
   const base = isEn ? "/en" : "";
@@ -109,15 +103,15 @@ export function SiteHeader({ lang = "es" }: { lang?: "es" | "en" }) {
                 EN
               </Link>
             </div>
-            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-              {userEmail ? (
+            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+              {email ? (
                 <Link
                   href="/chat"
-                  className="btn-primary"
-                  style={{ padding: "6px 14px", fontSize: 13, borderRadius: 20, display: "inline-flex", alignItems: "center", gap: 6 }}
+                  className="site-user-pill"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                  {isEn ? "Go to Chat" : "Ir al Chat"} <span className="arrow">&#8594;</span>
+                  <span className="site-user-avatar">{initial}</span>
+                  <span>{isEn ? "My Space" : "Mi Espacio"}</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                 </Link>
               ) : (
                 <>
@@ -183,10 +177,11 @@ export function SiteHeader({ lang = "es" }: { lang?: "es" | "en" }) {
           </div>
 
           <div className="mobile-actions" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {userEmail ? (
-              <Link href="/chat" className="btn-primary large" onClick={() => setMobileOpen(false)} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                {isEn ? "Go to Chat" : "Ir al Chat"} <span className="arrow">&#8594;</span>
+            {email ? (
+              <Link href="/chat" className="site-user-pill large" onClick={() => setMobileOpen(false)}>
+                <span className="site-user-avatar">{initial}</span>
+                <span>{isEn ? "My Space" : "Mi Espacio"}</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
               </Link>
             ) : (
               <>

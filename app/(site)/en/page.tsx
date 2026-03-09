@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { SiteHeader, SiteFooter, BgMesh, HeroCta } from "@/components/site";
+import { SiteHeader, SiteFooter, BgMesh, HeroCta, AuthCta } from "@/components/site";
 
 export const metadata = {
   title: "ContinuumAI - Not just any AI. Continuous reasoning.",
@@ -134,9 +134,7 @@ export default function HomePageEN() {
             <span className="text-gradient">ContinuumAI</span>
           </h2>
           <div className="reveal" style={{ marginTop: 32 }}>
-            <Link href="/chat" className="btn-primary large">
-              Try for free &rarr;
-            </Link>
+            <AuthCta lang="en" size="large" fallbackLabel="Try for free &rarr;" className="btn-primary large" />
           </div>
         </div>
       </section>
