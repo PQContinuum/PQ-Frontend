@@ -316,6 +316,10 @@ export const MessageInput = memo(function MessageInput() {
     usage: videoUsage,
   } = useVideoGeneration();
 
+  // Synchronous lock to prevent double-click triggering multiple generations
+  // React state updates are async, so useRef is needed for immediate guard
+  const generationLockRef = useRef(false);
+
   // Ref to track latest video progress for use in intervals
   const videoProgressRef = useRef<string | null>(null);
   useEffect(() => {
@@ -512,7 +516,8 @@ export const MessageInput = memo(function MessageInput() {
   // Handle image generation
   const handleGenerateImage = useCallback(async () => {
     let prompt = input.trim();
-    if (!prompt || isGeneratingImage) return;
+    if (!prompt || isGeneratingImage || generationLockRef.current) return;
+    generationLockRef.current = true;
     const hasImageReference = Boolean(imageReferenceUrl);
 
     // Check if prompt needs enhancement
@@ -530,6 +535,7 @@ export const MessageInput = memo(function MessageInput() {
         role: 'assistant',
         content: `⚠️ ${promptCheck.error}`,
       });
+      generationLockRef.current = false;
       return;
     }
 
@@ -559,6 +565,7 @@ export const MessageInput = memo(function MessageInput() {
             role: 'assistant',
             content: `⚠️ No hay contexto de conversación para entender tu solicitud. Por favor, describe específicamente lo que quieres ver en la imagen.`,
           });
+          generationLockRef.current = false;
           return;
         }
         // Otherwise continue with original prompt
@@ -575,6 +582,7 @@ export const MessageInput = memo(function MessageInput() {
         role: 'assistant',
         content: `⚠️ Por favor, describe con más detalle lo que quieres ver en la imagen. Por ejemplo: "Un atardecer en la playa con palmeras y olas suaves"`,
       });
+      generationLockRef.current = false;
       return;
     }
 
@@ -692,6 +700,7 @@ export const MessageInput = memo(function MessageInput() {
     } finally {
       setStreaming(false);
       stopGeneration();
+      generationLockRef.current = false;
     }
   }, [input, imageSize, imageQuality, imageStylePreset, imageReferenceUrl, imageStrength, imageGalleryOptions, generateImage, generateWithStreaming, isGeneratingImage, addMessage, updateMessage, updateMessageGenerationState, setStreaming, startGeneration, stopGeneration, imageUsage, conversationId, createConversationMutation, setConversationId, queryClient, pendingProjectId, setPendingProjectId, messages]);
 
@@ -699,7 +708,8 @@ export const MessageInput = memo(function MessageInput() {
   const handleGenerateVideo = useCallback(async () => {
     let prompt = input.trim();
     if (!prompt) return;
-    if (isGeneratingVideo) return;
+    if (isGeneratingVideo || generationLockRef.current) return;
+    generationLockRef.current = true;
     const hasVideoReference = videoModeType === 'image-to-video' && Boolean(videoImageUrl);
 
     // Validate image-to-video mode
@@ -709,6 +719,7 @@ export const MessageInput = memo(function MessageInput() {
         role: 'assistant',
         content: '⚠️ Sube una imagen primero para el modo imagen a video.',
       });
+      generationLockRef.current = false;
       return;
     }
 
@@ -727,6 +738,7 @@ export const MessageInput = memo(function MessageInput() {
         role: 'assistant',
         content: `⚠️ ${promptCheck.error}`,
       });
+      generationLockRef.current = false;
       return;
     }
 
@@ -756,6 +768,7 @@ export const MessageInput = memo(function MessageInput() {
             role: 'assistant',
             content: `⚠️ No hay contexto de conversación para entender tu solicitud. Por favor, describe específicamente lo que quieres ver en el video.`,
           });
+          generationLockRef.current = false;
           return;
         }
         // Otherwise continue with original prompt
@@ -772,6 +785,7 @@ export const MessageInput = memo(function MessageInput() {
         role: 'assistant',
         content: `⚠️ Por favor, describe con más detalle lo que quieres ver en el video. Por ejemplo: "Un dron volando sobre montañas nevadas al atardecer"`,
       });
+      generationLockRef.current = false;
       return;
     }
 
@@ -887,6 +901,7 @@ export const MessageInput = memo(function MessageInput() {
       if (progressInterval) clearInterval(progressInterval);
       setStreaming(false);
       stopGeneration();
+      generationLockRef.current = false;
     }
   }, [input, videoModeType, videoImageUrl, videoDuration, videoAspectRatio, videoGalleryOptions, generateVideo, isGeneratingVideo, addMessage, updateMessage, updateMessageGenerationState, setStreaming, startGeneration, stopGeneration, conversationId, createConversationMutation, setConversationId, queryClient, pendingProjectId, setPendingProjectId, messages]);
 
@@ -907,7 +922,7 @@ export const MessageInput = memo(function MessageInput() {
       }
 
       const value = input.trim();
-      if (isStreaming) return;
+      if (isStreaming || generationLockRef.current) return;
 
       if (attachments.length > 0 && !value) {
         alert('Por favor escribe un mensaje para enviar junto con los archivos adjuntos');
@@ -915,6 +930,8 @@ export const MessageInput = memo(function MessageInput() {
       }
 
       if (!value) return;
+
+      generationLockRef.current = true;
 
       const userMessageId = createId();
       const assistantMessageId = createId();
@@ -1149,6 +1166,7 @@ export const MessageInput = memo(function MessageInput() {
         setStreaming(false);
         setIsSearching(false);
         setLinkFetch(null);
+        generationLockRef.current = false;
       }
     },
     [
@@ -1271,6 +1289,8 @@ export const MessageInput = memo(function MessageInput() {
     duration?: '5' | '10';
     visualStyle?: string;
   }) => {
+    if (generationLockRef.current) return;
+    generationLockRef.current = true;
     setIsLisaGenerating(true);
     setShowLisaWizard(false);
 
@@ -1411,6 +1431,7 @@ export const MessageInput = memo(function MessageInput() {
       setIsLisaGenerating(false);
       setStreaming(false);
       stopGeneration();
+      generationLockRef.current = false;
     }
   }, [
     conversationId,
