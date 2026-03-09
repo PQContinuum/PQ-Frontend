@@ -240,14 +240,14 @@ export function getQualityDescription(quality: ImageGenQuality): string {
 }
 
 // ============================================================================
-// VIDEO GENERATION (OpenAI Sora 2) LIMITS
+// VIDEO GENERATION LIMITS
 // Supports audio with dialogue in Spanish Latino (based on prompt language)
 // ============================================================================
 
-// Sora durations: '5' maps to 4s, '10' maps to 12s
+// Duraciones: '5' maps to 4s, '10' maps to 12s
 export type VideoGenDuration = '5' | '10';
 
-// Sora sizes: 16:9→1280x720, 9:16→720x1280, 1:1→1280x720 (no native 1:1)
+// Sizes: 16:9→1280x720, 9:16→720x1280, 1:1→1280x720 (no native 1:1)
 export type VideoGenAspectRatio = '16:9' | '9:16' | '1:1';
 
 // Video generation modes
@@ -273,13 +273,13 @@ export type VideoGenPlanLimits = {
 };
 
 /**
- * LÍMITES DE GENERACIÓN DE VIDEO POR PLAN (OpenAI Sora 2)
+ * LÍMITES DE GENERACIÓN DE VIDEO POR PLAN
  * ==================================================================
- * Costos Sora 2:
+ * Costos por video:
  * - 4s (corto) = ~$0.40
  * - 12s (largo) = ~$1.20
  *
- * Sora genera audio sincronizado automáticamente (diálogo, efectos, ambiente)
+ * Audio sincronizado generado automáticamente (diálogo, efectos, ambiente)
  * Para español: escribir el prompt en español
  */
 export const VIDEO_GEN_LIMITS: Record<PlanName, VideoGenPlanLimits> = {
@@ -290,7 +290,7 @@ export const VIDEO_GEN_LIMITS: Record<PlanName, VideoGenPlanLimits> = {
     allowedDurations: ['5'],           // Solo 4 segundos
     allowedAspectRatios: ['16:9'],     // Solo horizontal
     allowedModes: ['text-to-video', 'image-to-video'],
-    audioEnabled: true,                // Sora incluye audio automáticamente
+    audioEnabled: true,                // Audio incluido automáticamente
     estimatedMaxCostUSD: 1.00,         // 2 × $0.40
   },
   Basic: {
@@ -300,7 +300,7 @@ export const VIDEO_GEN_LIMITS: Record<PlanName, VideoGenPlanLimits> = {
     allowedDurations: ['5'],           // Solo 4 segundos
     allowedAspectRatios: ['16:9', '9:16', '1:1'],
     allowedModes: ['text-to-video', 'image-to-video'],
-    audioEnabled: true,                // Sora incluye audio automáticamente
+    audioEnabled: true,                // Audio incluido automáticamente
     estimatedMaxCostUSD: 4.00,         // 10 × $0.40
   },
   Professional: {
@@ -310,7 +310,7 @@ export const VIDEO_GEN_LIMITS: Record<PlanName, VideoGenPlanLimits> = {
     allowedDurations: ['5', '10'],     // 4s y 12s
     allowedAspectRatios: ['16:9', '9:16', '1:1'],
     allowedModes: ['text-to-video', 'image-to-video'],
-    audioEnabled: true,                // Sora incluye audio automáticamente
+    audioEnabled: true,                // Audio incluido automáticamente
     estimatedMaxCostUSD: 24.00,        // Mix: 20×$0.40 + 10×$1.20
   },
   Enterprise: {
@@ -320,7 +320,7 @@ export const VIDEO_GEN_LIMITS: Record<PlanName, VideoGenPlanLimits> = {
     allowedDurations: ['5', '10'],     // 4s y 12s
     allowedAspectRatios: ['16:9', '9:16', '1:1'],
     allowedModes: ['text-to-video', 'image-to-video'],
-    audioEnabled: true,                // Sora incluye audio automáticamente
+    audioEnabled: true,                // Audio incluido automáticamente
     estimatedMaxCostUSD: 80.00,        // Mix generoso
   },
 };
@@ -336,12 +336,12 @@ export function getVideoGenLimits(planName: PlanName | null | undefined): VideoG
 }
 
 /**
- * Calcula el costo de un video según sus parámetros (OpenAI Sora 2)
+ * Calcula el costo de un video según sus parámetros
  */
 export function calculateVideoCost(
   duration: VideoGenDuration
 ): number {
-  // Sora 2 pricing: '5' → 4s = $0.40, '10' → 12s = $1.20
+  // Pricing: '5' → 4s = $0.40, '10' → 12s = $1.20
   return duration === '10' ? 1.20 : 0.40;
 }
 
