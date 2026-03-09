@@ -220,18 +220,23 @@ export function useVideoGeneration(): UseVideoGenerationReturn {
 
       } catch (error) {
         console.error('[useVideoGeneration] Error:', error);
-        // Use userMessage from ApiError for user-friendly error messages
-        // Network error - but the job might have been created on the server
-        const errorMsg = error instanceof ApiError
-          ? error.userMessage
-          : error instanceof Error
-            ? error.message
-            : 'Error de conexión. Tu video puede estar generándose en segundo plano.';
+        // Handle network errors (TypeError: Load failed on iOS, Failed to fetch on Android)
+        let errorMsg: string;
+        if (error instanceof ApiError) {
+          errorMsg = error.userMessage;
+        } else if (error instanceof TypeError &&
+          (error.message === 'Load failed' || error.message === 'Failed to fetch' || error.message === 'NetworkError when attempting to fetch resource.')) {
+          errorMsg = 'Error de conexión. Mantén la app abierta e intenta de nuevo.';
+        } else if (error instanceof Error) {
+          errorMsg = error.message;
+        } else {
+          errorMsg = 'Error de conexión. Tu video puede estar generándose en segundo plano.';
+        }
         setState({
           isGenerating: false,
           error: errorMsg,
           progress: null,
-          jobId: null, // We don't have jobId because request failed
+          jobId: null,
           video: null,
         });
         return { success: false, error: errorMsg };
