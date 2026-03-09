@@ -3,10 +3,6 @@
 import Link from "next/link";
 import { useSession } from "./useSession";
 
-/**
- * Session-aware CTA button. Shows personalized "Mi Espacio" when logged in,
- * falls back to the given label when not.
- */
 export function AuthCta({
   lang = "es",
   size = "default",
@@ -20,15 +16,21 @@ export function AuthCta({
   className?: string;
   style?: React.CSSProperties;
 }) {
-  const { email, initial } = useSession();
+  const { email, initial, ready } = useSession();
   const isEn = lang === "en";
+
+  const wrapStyle: React.CSSProperties = {
+    ...style,
+    opacity: ready ? 1 : 0,
+    transition: "opacity 0.3s ease",
+  };
 
   if (email) {
     return (
       <Link
         href="/chat"
         className={`site-user-pill${size === "large" ? " large" : ""}`}
-        style={style}
+        style={wrapStyle}
       >
         <span className="site-user-avatar">{initial}</span>
         <span>{isEn ? "My Space" : "Mi Espacio"}</span>
@@ -38,7 +40,7 @@ export function AuthCta({
   }
 
   return (
-    <Link href="/chat" className={className} style={style}>
+    <Link href="/chat" className={className} style={wrapStyle}>
       {fallbackLabel ?? (isEn ? "Try for free" : "Probar gratis")}
     </Link>
   );

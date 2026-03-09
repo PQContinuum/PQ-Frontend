@@ -14,7 +14,7 @@ interface NavLink {
 export function SiteHeader({ lang = "es" }: { lang?: "es" | "en" }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const { email, initial } = useSession();
+  const { email, initial, ready } = useSession();
   const pathname = usePathname();
 
   const isEn = lang === "en";
@@ -103,7 +103,7 @@ export function SiteHeader({ lang = "es" }: { lang?: "es" | "en" }) {
                 EN
               </Link>
             </div>
-            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <div style={{ display: "flex", gap: 10, alignItems: "center", opacity: ready ? 1 : 0, transition: "opacity 0.3s ease" }}>
               {email ? (
                 <Link
                   href="/chat"
@@ -176,7 +176,7 @@ export function SiteHeader({ lang = "es" }: { lang?: "es" | "en" }) {
             ))}
           </div>
 
-          <div className="mobile-actions" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div className="mobile-actions" style={{ display: "flex", flexDirection: "column", gap: 12, opacity: ready ? 1 : 0, transition: "opacity 0.3s ease" }}>
             {email ? (
               <Link href="/chat" className="site-user-pill large" onClick={() => setMobileOpen(false)}>
                 <span className="site-user-avatar">{initial}</span>
