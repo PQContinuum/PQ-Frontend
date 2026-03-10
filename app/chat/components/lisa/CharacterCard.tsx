@@ -12,6 +12,7 @@ import {
   Lock,
   MoreHorizontal,
   Users,
+  Trash2,
 } from 'lucide-react';
 import { useCloneCharacter, useLikeCharacter, useUnlikeCharacter, useShareCharacter } from '@/hooks/use-characters';
 import type { Character } from '@/lib/lisa/types';
@@ -24,6 +25,7 @@ interface CharacterCardProps {
   onEdit?: (character: Character) => void;
   onShare?: (character: Character) => void;
   onClone?: (character: Character) => void;
+  onDelete?: (character: Character) => void;
   showStats?: boolean;
   isOwner?: boolean;
 }
@@ -34,6 +36,7 @@ export function CharacterCard({
   onEdit,
   onShare,
   onClone,
+  onDelete,
   showStats = true,
   isOwner = false,
 }: CharacterCardProps) {
@@ -153,11 +156,6 @@ export function CharacterCard({
               Privado
             </span>
           )}
-          {character.isFeatured && (
-            <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-700 rounded-full">
-              Destacado
-            </span>
-          )}
         </div>
 
         {/* Menu button */}
@@ -195,6 +193,19 @@ export function CharacterCard({
                       <Share2 className="w-4 h-4" />
                       Compartir
                     </button>
+                    {onDelete && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowMenu(false);
+                          onDelete(character);
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Eliminar
+                      </button>
+                    )}
                   </>
                 )}
                 {character.allowCloning && !isOwner && (

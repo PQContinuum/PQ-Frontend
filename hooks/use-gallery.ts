@@ -303,6 +303,42 @@ export function useUpdateImageVisibility() {
 }
 
 // ============================================================================
+// MUTATIONS - DELETE
+// ============================================================================
+
+/**
+ * Delete a video with optimistic update
+ */
+export function useDeleteVideo() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (videoId: string) => galleryApi.deleteVideo(videoId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: galleryKeys.myMedia() });
+      queryClient.invalidateQueries({ queryKey: galleryKeys.myVideos() });
+      queryClient.invalidateQueries({ queryKey: galleryKeys.public() });
+    },
+  });
+}
+
+/**
+ * Delete an image with optimistic update
+ */
+export function useDeleteImage() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (imageId: string) => galleryApi.deleteImage(imageId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: galleryKeys.myMedia() });
+      queryClient.invalidateQueries({ queryKey: galleryKeys.myImages() });
+      queryClient.invalidateQueries({ queryKey: galleryKeys.public() });
+    },
+  });
+}
+
+// ============================================================================
 // RE-EXPORTS
 // ============================================================================
 

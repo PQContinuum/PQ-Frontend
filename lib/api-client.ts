@@ -1529,6 +1529,30 @@ export const galleryApi = {
    */
   updateImageVisibility: (imageId: string, data: UpdateMediaVisibilityRequest) =>
     apiPatch<GalleryItem>(`/gallery/image/${imageId}/visibility`, data),
+
+  /**
+   * Delete a video
+   */
+  deleteVideo: (videoId: string) =>
+    apiDelete<{ success: boolean }>(`/gallery/video/${videoId}`),
+
+  /**
+   * Delete an image
+   */
+  deleteImage: (imageId: string) =>
+    apiDelete<{ success: boolean }>(`/gallery/image/${imageId}`),
+
+  /**
+   * Batch delete videos
+   */
+  batchDeleteVideos: (ids: string[]) =>
+    apiPost<{ success: boolean }>('/gallery/me/videos', { ids }),
+
+  /**
+   * Batch delete images
+   */
+  batchDeleteImages: (ids: string[]) =>
+    apiPost<{ success: boolean }>('/gallery/me/images', { ids }),
 };
 
 // ============================================================================

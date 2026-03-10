@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Plus,
@@ -8,8 +8,6 @@ import {
   Filter,
   Users,
   Globe,
-  Sparkles,
-  TrendingUp,
   Loader2,
   Grid3x3,
   LayoutGrid,
@@ -18,33 +16,34 @@ import {
   Play,
   Eye,
   Heart,
-  Clock,
   Download,
   Share2,
   MoreHorizontal,
   Lock,
   Check,
   MessageSquare,
+  Trash2,
+  X,
 } from 'lucide-react';
 import {
   useCharacters,
   usePublicCharacters,
-  useFeaturedCharacters,
-  useTrendingCharacters,
 } from '@/hooks/use-characters';
 import {
   useMyMedia,
   useMyVideos,
   useMyImages,
   usePublicGallery,
-  useFeaturedMedia,
   useLikeVideo,
   useLikeImage,
+  useDeleteVideo,
+  useDeleteImage,
   type GalleryItem,
 } from '@/hooks/use-gallery';
 import { CharacterCard } from '@/app/chat/components/lisa/CharacterCard';
 import { CharacterForm } from '@/app/chat/components/lisa/CharacterForm';
 import { ShareCharacterModal } from '@/app/chat/components/lisa/ShareCharacterModal';
+import { DeleteCharacterModal } from '@/app/chat/components/lisa/DeleteCharacterModal';
 import { VISUAL_STYLE_OPTIONS, CHARACTER_TYPE_OPTIONS } from '@/lib/lisa/constants';
 import type { Character, CharacterType, VisualStyle, PublicCharactersParams } from '@/lib/lisa/types';
 import { downloadVideoMp4 } from '@/lib/media-download';
@@ -53,15 +52,20 @@ type MainTabType = 'my-content' | 'public-gallery';
 type ContentType = 'all' | 'videos' | 'images' | 'characters';
 type SortType = 'recent' | 'popular' | 'likes';
 
+// ============================================================================
 // Media Card Component
+// ============================================================================
+
 function MediaCard({
   item,
   onSelect,
   isOwner = false,
+  onDelete,
 }: {
   item: GalleryItem;
   onSelect: (item: GalleryItem) => void;
   isOwner?: boolean;
+  onDelete?: (item: GalleryItem) => void;
 }) {
   const [showMenu, setShowMenu] = useState(false);
   const [isLiked, setIsLiked] = useState(item.hasLiked || false);
@@ -118,27 +122,40 @@ function MediaCard({
 
   const thumbnailUrl = item.mediaType === 'video' ? item.thumbnailUrl : item.imageUrl;
   const previewUrl = item.mediaType === 'video' ? item.previewUrl : null;
+  const videoUrl = item.mediaType === 'video' ? item.videoUrl : null;
   const hasThumbnail = Boolean(thumbnailUrl);
+  const hasPreview = Boolean(previewUrl);
+  // Use video element with preload="metadata" when no thumbnail and no preview
+  const useVideoPreview = item.mediaType === 'video' && !hasThumbnail && !hasPreview && Boolean(videoUrl);
 
   return (
     <div
       onClick={() => onSelect(item)}
-      className="group relative bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-200 cursor-pointer"
+      className="group relative bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl hover:border-gray-200 transition-all duration-300 cursor-pointer hover:-translate-y-0.5"
     >
       {/* Thumbnail */}
-      <div className="relative aspect-video bg-gray-100">
+      <div className="relative aspect-video bg-gray-50">
         {thumbnailUrl ? (
           <img
             src={thumbnailUrl}
-            alt={item.title}
+            alt={item.title || ''}
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+        ) : useVideoPreview ? (
+          <video
+            src={videoUrl!}
+            preload="metadata"
+            muted
+            playsInline
             className="w-full h-full object-cover"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
             {item.mediaType === 'video' ? (
-              <Video className="w-12 h-12 text-gray-300" />
+              <Video className="w-10 h-10 text-gray-300" />
             ) : (
-              <ImageIcon className="w-12 h-12 text-gray-300" />
+              <ImageIcon className="w-10 h-10 text-gray-300" />
             )}
           </div>
         )}
@@ -146,8 +163,8 @@ function MediaCard({
         {item.mediaType === 'video' && previewUrl && (
           <img
             src={previewUrl}
-            alt={`${item.title} preview`}
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-200 ${
+            alt=""
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
               hasThumbnail ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'
             }`}
             loading="lazy"
@@ -156,29 +173,29 @@ function MediaCard({
 
         {/* Play button for videos */}
         {item.mediaType === 'video' && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-14 h-14 bg-black/50 rounded-full flex items-center justify-center group-hover:bg-black/70 transition">
-              <Play className="w-7 h-7 text-white fill-white ml-1" />
+          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center shadow-lg backdrop-blur-sm">
+              <Play className="w-5 h-5 text-gray-900 ml-0.5" fill="currentColor" />
             </div>
           </div>
         )}
 
-        {/* Overlay on hover */}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200" />
+        {/* Subtle overlay on hover */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
 
         {/* Duration badge for videos */}
         {item.mediaType === 'video' && item.duration && (
-          <div className="absolute bottom-2 right-2 px-2 py-0.5 bg-black/70 text-white text-xs rounded">
+          <div className="absolute bottom-2 right-2 px-2 py-0.5 bg-black/60 text-white text-xs rounded-md backdrop-blur-sm font-medium">
             {item.duration}
           </div>
         )}
 
         {/* Type badge */}
         <div className="absolute top-2 left-2">
-          <span className={`flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full ${
+          <span className={`flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-lg backdrop-blur-sm ${
             item.mediaType === 'video'
-              ? 'bg-purple-100 text-purple-700'
-              : 'bg-blue-100 text-blue-700'
+              ? 'bg-purple-500/80 text-white'
+              : 'bg-blue-500/80 text-white'
           }`}>
             {item.mediaType === 'video' ? (
               <Video className="w-3 h-3" />
@@ -189,44 +206,48 @@ function MediaCard({
           </span>
         </div>
 
-        {/* Featured badge */}
-        {item.isFeatured && (
-          <div className="absolute top-2 right-2">
-            <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-700 rounded-full">
-              Destacado
-            </span>
-          </div>
-        )}
-
         {/* Menu button */}
         {isOwner && (
-          <div className="absolute top-2 right-2">
+          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 setShowMenu(!showMenu);
               }}
-              className="p-1.5 bg-white/80 rounded-full hover:bg-white transition"
+              className="p-1.5 bg-white/90 rounded-lg hover:bg-white transition backdrop-blur-sm shadow-sm"
             >
               <MoreHorizontal className="w-4 h-4 text-gray-600" />
             </button>
 
             {showMenu && (
-              <div className="absolute right-0 mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+              <div className="absolute right-0 mt-1 w-40 bg-white rounded-xl shadow-xl border border-gray-100 py-1 z-10">
                 <button
                   onClick={handleDownload}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                 >
                   <Download className="w-4 h-4" />
                   Descargar
                 </button>
                 <button
                   onClick={handleShare}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                 >
                   <Share2 className="w-4 h-4" />
                   Compartir
                 </button>
+                {onDelete && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowMenu(false);
+                      onDelete(item);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Eliminar
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -235,68 +256,41 @@ function MediaCard({
 
       {/* Content */}
       <div className="p-3">
-        {/* Title */}
-        <h3 className="font-medium text-gray-900 line-clamp-1 mb-1">
-          {item.title || 'Sin titulo'}
+        <h3 className="font-semibold text-gray-900 line-clamp-1 text-sm">
+          {item.title || item.prompt?.slice(0, 50) || 'Media'}
         </h3>
 
-        {/* Prompt preview */}
         {item.prompt && (
-          <p className="text-xs text-gray-500 line-clamp-2 mb-2">
+          <p className="text-xs text-gray-400 line-clamp-1 mt-0.5">
             {item.prompt}
           </p>
         )}
 
-        {/* Tags */}
-        {item.tags && item.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-2">
-            {item.tags.slice(0, 3).map((tag, index) => (
-              <span
-                key={index}
-                className="px-1.5 py-0.5 text-xs text-gray-500 bg-gray-100 rounded"
-              >
-                {tag}
-              </span>
-            ))}
-            {item.tags.length > 3 && (
-              <span className="px-1.5 py-0.5 text-xs text-gray-400">
-                +{item.tags.length - 3}
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* Stats */}
-        <div className="flex items-center gap-3 pt-2 border-t border-gray-100">
+        {/* Stats row */}
+        <div className="flex items-center gap-3 mt-2 pt-2 border-t border-gray-50">
           <button
             onClick={handleLike}
-            className={`flex items-center gap-1 text-sm transition ${
-              isLiked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'
+            className={`flex items-center gap-1 text-xs transition ${
+              isLiked ? 'text-red-500' : 'text-gray-400 hover:text-red-500'
             }`}
           >
-            <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
+            <Heart className={`w-3.5 h-3.5 ${isLiked ? 'fill-current' : ''}`} />
             {likeCount > 0 && <span>{likeCount}</span>}
           </button>
-          <span className="flex items-center gap-1 text-sm text-gray-500">
-            <Eye className="w-4 h-4" />
+          <span className="flex items-center gap-1 text-xs text-gray-400">
+            <Eye className="w-3.5 h-3.5" />
             {item.viewCount || 0}
           </span>
           <button
             onClick={handleShare}
-            className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 transition ml-auto"
+            className="flex items-center text-xs text-gray-400 hover:text-gray-600 transition ml-auto"
           >
             {copied ? (
-              <Check className="w-4 h-4 text-green-500" />
+              <Check className="w-3.5 h-3.5 text-green-500" />
             ) : (
-              <Share2 className="w-4 h-4" />
+              <Share2 className="w-3.5 h-3.5" />
             )}
           </button>
-        </div>
-
-        {/* Created at */}
-        <div className="flex items-center gap-1 text-xs text-gray-400 mt-2">
-          <Clock className="w-3 h-3" />
-          {new Date(item.createdAt).toLocaleDateString('es-ES')}
         </div>
       </div>
 
@@ -314,6 +308,80 @@ function MediaCard({
   );
 }
 
+// ============================================================================
+// Delete Media Confirmation Modal
+// ============================================================================
+
+function DeleteMediaModal({
+  item,
+  isOpen,
+  onClose,
+  onConfirm,
+  isDeleting,
+}: {
+  item: GalleryItem | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  isDeleting: boolean;
+}) {
+  if (!isOpen || !item) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="relative w-full max-w-sm mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden">
+        <div className="bg-gradient-to-r from-red-500 to-red-600 p-5 text-white">
+          <button
+            onClick={onClose}
+            className="absolute top-3 right-3 p-1.5 text-white/80 hover:text-white hover:bg-white/20 rounded-full transition"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-white/20 rounded-xl">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold">Eliminar {item.mediaType === 'video' ? 'video' : 'imagen'}</h2>
+              <p className="text-white/80 text-sm">Esta accion no se puede deshacer</p>
+            </div>
+          </div>
+        </div>
+        <div className="p-5 space-y-4">
+          <p className="text-sm text-gray-600">
+            Se eliminara permanentemente <strong>&quot;{item.title || 'este contenido'}&quot;</strong> de tu cuenta.
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              disabled={isDeleting}
+              className="flex-1 px-4 py-2.5 text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition font-medium disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={onConfirm}
+              disabled={isDeleting}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-white bg-red-500 rounded-xl hover:bg-red-600 transition font-medium disabled:opacity-50"
+            >
+              {isDeleting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4" />
+              )}
+              Eliminar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// Main Page
+// ============================================================================
+
 export default function MultimediaPage() {
   const router = useRouter();
   const [mainTab, setMainTab] = useState<MainTabType>('my-content');
@@ -321,6 +389,9 @@ export default function MultimediaPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showDeleteCharacterModal, setShowDeleteCharacterModal] = useState(false);
+  const [characterToDelete, setCharacterToDelete] = useState<Character | null>(null);
+  const [mediaToDelete, setMediaToDelete] = useState<GalleryItem | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [gridSize, setGridSize] = useState<'normal' | 'compact'>('normal');
@@ -342,15 +413,16 @@ export default function MultimediaPage() {
   // Character queries
   const { data: myCharacters, isLoading: isLoadingMyCharacters } = useCharacters();
   const { data: publicData, isLoading: isLoadingPublic } = usePublicCharacters(publicParams);
-  const { data: featuredCharacters } = useFeaturedCharacters(4);
-  const { data: trendingCharacters } = useTrendingCharacters(4);
 
   // Media queries
   const { data: myMedia, isLoading: isLoadingMyMedia } = useMyMedia({ sortBy });
   const { data: myVideos, isLoading: isLoadingMyVideos } = useMyVideos({ sortBy });
   const { data: myImages, isLoading: isLoadingMyImages } = useMyImages({ sortBy });
   const { data: publicMedia, isLoading: isLoadingPublicMedia } = usePublicGallery({ sortBy });
-  const { data: featuredMedia } = useFeaturedMedia(4);
+
+  // Delete mutations
+  const deleteVideoMutation = useDeleteVideo();
+  const deleteImageMutation = useDeleteImage();
 
   // Get the right data based on tabs
   const getMyMediaItems = (): GalleryItem[] => {
@@ -408,30 +480,52 @@ export default function MultimediaPage() {
     });
   };
 
-  const handleCreateSuccess = (character: Character) => {
+  const handleCreateSuccess = () => {
     setShowCreateForm(false);
   };
 
-  const handleSelectCharacter = (character: Character) => {
+  const handleSelectCharacter = useCallback((character: Character) => {
     router.push(`/characters/${character.id}`);
-  };
+  }, [router]);
 
-  const handleEditCharacter = (character: Character) => {
+  const handleEditCharacter = useCallback((character: Character) => {
     router.push(`/characters/${character.id}?edit=true`);
-  };
+  }, [router]);
 
-  const handleShareCharacter = (character: Character) => {
+  const handleShareCharacter = useCallback((character: Character) => {
     setSelectedCharacter(character);
     setShowShareModal(true);
-  };
+  }, []);
 
-  const handleSelectMedia = (item: GalleryItem) => {
-    // For now, could open a modal or navigate to detail page
+  const handleDeleteCharacter = useCallback((character: Character) => {
+    setCharacterToDelete(character);
+    setShowDeleteCharacterModal(true);
+  }, []);
+
+  const handleDeleteMedia = useCallback((item: GalleryItem) => {
+    setMediaToDelete(item);
+  }, []);
+
+  const confirmDeleteMedia = useCallback(async () => {
+    if (!mediaToDelete) return;
+    try {
+      if (mediaToDelete.mediaType === 'video') {
+        await deleteVideoMutation.mutateAsync(mediaToDelete.id);
+      } else {
+        await deleteImageMutation.mutateAsync(mediaToDelete.id);
+      }
+      setMediaToDelete(null);
+    } catch (error) {
+      console.error('Error deleting media:', error);
+    }
+  }, [mediaToDelete, deleteVideoMutation, deleteImageMutation]);
+
+  const handleSelectMedia = useCallback((item: GalleryItem) => {
     const url = item.mediaType === 'video' ? item.videoUrl : item.imageUrl;
     if (url) {
       window.open(url, '_blank');
     }
-  };
+  }, []);
 
   // Determine loading state
   const isLoading = mainTab === 'my-content'
@@ -447,58 +541,131 @@ export default function MultimediaPage() {
   const myCharactersCount = myCharacters?.length || 0;
   const myTotalCount = myVideosCount + myImagesCount + myCharactersCount;
 
+  // Grid class helper
+  const gridClass = gridSize === 'compact'
+    ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3'
+    : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4';
+
+  // Render content grid
+  const renderContentGrid = (mediaItems: GalleryItem[], characters: Character[]) => {
+    if (mediaItems.length === 0 && characters.length === 0) {
+      return (
+        <div className="text-center py-24">
+          <div className="w-20 h-20 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-5">
+            {contentType === 'characters' ? (
+              <Users className="w-9 h-9 text-gray-300" />
+            ) : contentType === 'videos' ? (
+              <Video className="w-9 h-9 text-gray-300" />
+            ) : contentType === 'images' ? (
+              <ImageIcon className="w-9 h-9 text-gray-300" />
+            ) : (
+              <Video className="w-9 h-9 text-gray-300" />
+            )}
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-1">
+            {mainTab === 'my-content' ? 'No tienes contenido' : 'No hay contenido'}
+          </h3>
+          <p className="text-gray-400 text-sm max-w-xs mx-auto">
+            {mainTab === 'my-content'
+              ? 'Genera videos, imagenes o crea personajes desde el chat'
+              : 'No se encontro contenido publico'}
+          </p>
+          {mainTab === 'my-content' && contentType === 'characters' && (
+            <button
+              onClick={() => setShowCreateForm(true)}
+              className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 bg-[#00552b] text-white rounded-xl hover:bg-[#00552b]/90 transition font-medium text-sm"
+            >
+              <Plus className="w-4 h-4" />
+              Crear personaje
+            </button>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <div className={`grid ${gridClass}`}>
+        {mediaItems.map((item) => (
+          <MediaCard
+            key={item.id}
+            item={item}
+            onSelect={handleSelectMedia}
+            isOwner={mainTab === 'my-content'}
+            onDelete={mainTab === 'my-content' ? handleDeleteMedia : undefined}
+          />
+        ))}
+        {characters.map((character) => (
+          <CharacterCard
+            key={character.id}
+            character={character}
+            onSelect={handleSelectCharacter}
+            onEdit={handleEditCharacter}
+            onShare={handleShareCharacter}
+            onDelete={mainTab === 'my-content' ? handleDeleteCharacter : undefined}
+            showStats={mainTab === 'public-gallery'}
+            isOwner={mainTab === 'my-content'}
+          />
+        ))}
+      </div>
+    );
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50/50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between mb-6">
+      <div className="bg-white border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+          <div className="flex items-center justify-between mb-5">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Multimedia</h1>
-              <p className="text-gray-600 mt-1">
+              <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Multimedia</h1>
+              <p className="text-gray-500 text-sm mt-0.5">
                 Videos, imagenes y personajes generados
               </p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <button
                 onClick={() => router.push('/chat')}
-                className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition"
+                className="flex items-center gap-2 px-3.5 py-2 border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition text-sm font-medium"
               >
-                <MessageSquare className="w-5 h-5" />
-                <span className="hidden sm:inline">Ir al Chat</span>
+                <MessageSquare className="w-4 h-4" />
+                <span className="hidden sm:inline">Chat</span>
               </button>
               <button
                 onClick={() => setShowCreateForm(true)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-[#00552b] text-white rounded-lg hover:bg-[#00552b]/90 transition"
+                className="flex items-center gap-2 px-3.5 py-2 bg-[#00552b] text-white rounded-xl hover:bg-[#00552b]/90 transition text-sm font-medium shadow-sm"
               >
-                <Plus className="w-5 h-5" />
-                <span className="hidden sm:inline">Crear personaje</span>
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">Crear</span>
               </button>
             </div>
           </div>
 
           {/* Main Tabs */}
-          <div className="flex gap-4 border-b border-gray-200 -mb-px">
+          <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
             <button
               onClick={() => setMainTab('my-content')}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition ${
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition ${
                 mainTab === 'my-content'
-                  ? 'border-[#00552b] text-[#00552b]'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               <Lock className="w-4 h-4" />
               Mi Contenido
-              <span className="px-2 py-0.5 text-xs bg-gray-100 rounded-full">
-                {myTotalCount}
-              </span>
+              {myTotalCount > 0 && (
+                <span className={`px-1.5 py-0.5 text-xs rounded-md ${
+                  mainTab === 'my-content' ? 'bg-[#00552b]/10 text-[#00552b]' : 'bg-gray-200 text-gray-500'
+                }`}>
+                  {myTotalCount}
+                </span>
+              )}
             </button>
             <button
               onClick={() => setMainTab('public-gallery')}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition ${
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition ${
                 mainTab === 'public-gallery'
-                  ? 'border-[#00552b] text-[#00552b]'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               <Globe className="w-4 h-4" />
@@ -509,274 +676,104 @@ export default function MultimediaPage() {
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
         {/* Content Type Tabs */}
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-          <button
-            onClick={() => setContentType('all')}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap transition ${
-              contentType === 'all'
-                ? 'bg-[#00552b] text-white'
-                : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            Todo
-          </button>
-          <button
-            onClick={() => setContentType('videos')}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap transition ${
-              contentType === 'videos'
-                ? 'bg-[#00552b] text-white'
-                : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            <Video className="w-4 h-4" />
-            Videos
-            {mainTab === 'my-content' && myVideosCount > 0 && (
-              <span className={`px-1.5 py-0.5 text-xs rounded-full ${
-                contentType === 'videos' ? 'bg-white/20' : 'bg-gray-100'
-              }`}>
-                {myVideosCount}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setContentType('images')}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap transition ${
-              contentType === 'images'
-                ? 'bg-[#00552b] text-white'
-                : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            <ImageIcon className="w-4 h-4" />
-            Imagenes
-            {mainTab === 'my-content' && myImagesCount > 0 && (
-              <span className={`px-1.5 py-0.5 text-xs rounded-full ${
-                contentType === 'images' ? 'bg-white/20' : 'bg-gray-100'
-              }`}>
-                {myImagesCount}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setContentType('characters')}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap transition ${
-              contentType === 'characters'
-                ? 'bg-[#00552b] text-white'
-                : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            <Users className="w-4 h-4" />
-            Personajes
-            {mainTab === 'my-content' && myCharactersCount > 0 && (
-              <span className={`px-1.5 py-0.5 text-xs rounded-full ${
-                contentType === 'characters' ? 'bg-white/20' : 'bg-gray-100'
-              }`}>
-                {myCharactersCount}
-              </span>
-            )}
-          </button>
+        <div className="flex gap-2 mb-5 overflow-x-auto pb-1">
+          {[
+            { key: 'all' as ContentType, label: 'Todo', icon: null, count: null },
+            { key: 'videos' as ContentType, label: 'Videos', icon: Video, count: mainTab === 'my-content' ? myVideosCount : null },
+            { key: 'images' as ContentType, label: 'Imagenes', icon: ImageIcon, count: mainTab === 'my-content' ? myImagesCount : null },
+            { key: 'characters' as ContentType, label: 'Personajes', icon: Users, count: mainTab === 'my-content' ? myCharactersCount : null },
+          ].map(({ key, label, icon: Icon, count }) => (
+            <button
+              key={key}
+              onClick={() => setContentType(key)}
+              className={`flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-xl whitespace-nowrap transition ${
+                contentType === key
+                  ? 'bg-[#00552b] text-white shadow-sm'
+                  : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300'
+              }`}
+            >
+              {Icon && <Icon className="w-3.5 h-3.5" />}
+              {label}
+              {count !== null && count > 0 && (
+                <span className={`px-1.5 py-0.5 text-xs rounded-md ${
+                  contentType === key ? 'bg-white/20' : 'bg-gray-100'
+                }`}>
+                  {count}
+                </span>
+              )}
+            </button>
+          ))}
         </div>
 
-        {/* Featured (only on public gallery) */}
-        {mainTab === 'public-gallery' && contentType !== 'characters' && featuredMedia && featuredMedia.length > 0 && (
-          <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Sparkles className="w-5 h-5 text-yellow-500" />
-              <h2 className="font-semibold text-gray-900">Contenido Destacado</h2>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {featuredMedia.slice(0, 4).map((item) => {
-                const previewSrc = item.mediaType === 'video' ? item.previewUrl : null;
-                const thumbnailSrc = item.mediaType === 'video'
-                  ? (item.thumbnailUrl || item.previewUrl)
-                  : item.imageUrl;
-                const hasThumbnail = Boolean(thumbnailSrc && item.thumbnailUrl);
-                return (
-                  <div
-                    key={item.id}
-                    onClick={() => handleSelectMedia(item)}
-                    className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden cursor-pointer group"
-                  >
-                    {thumbnailSrc ? (
-                      <img
-                        src={thumbnailSrc}
-                        alt={item.title || 'Media'}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        {item.mediaType === 'video' ? (
-                          <Video className="w-8 h-8 text-gray-400" />
-                        ) : (
-                          <ImageIcon className="w-8 h-8 text-gray-400" />
-                        )}
-                      </div>
-                    )}
-                    {item.mediaType === 'video' && previewSrc && (
-                      <img
-                        src={previewSrc}
-                        alt={`${item.title || 'Media'} preview`}
-                        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-200 ${
-                          hasThumbnail ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'
-                        }`}
-                        loading="lazy"
-                      />
-                    )}
-                    {item.mediaType === 'video' && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <Play className="w-8 h-8 text-white drop-shadow-lg" />
-                      </div>
-                    )}
-                    <div className="absolute bottom-0 inset-x-0 p-2 bg-gradient-to-t from-black/70 to-transparent">
-                      <p className="text-xs text-white font-medium truncate">{item.title || 'Sin titulo'}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Featured Characters (only on public gallery with characters) */}
-        {mainTab === 'public-gallery' && contentType === 'characters' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            {featuredCharacters && featuredCharacters.length > 0 && (
-              <div className="bg-white rounded-xl border border-gray-200 p-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <Sparkles className="w-5 h-5 text-yellow-500" />
-                  <h2 className="font-semibold text-gray-900">Destacados</h2>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  {featuredCharacters.slice(0, 4).map((char) => (
-                    <div
-                      key={char.id}
-                      onClick={() => handleSelectCharacter(char)}
-                      className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition"
-                    >
-                      {char.referenceImageUrl ? (
-                        <img
-                          src={char.referenceImageUrl}
-                          alt={char.name}
-                          className="w-10 h-10 rounded-lg object-cover"
-                        />
-                      ) : (
-                        <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center">
-                          <Users className="w-5 h-5 text-gray-400" />
-                        </div>
-                      )}
-                      <span className="text-sm font-medium text-gray-900 truncate">
-                        {char.galleryTitle || char.name}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {trendingCharacters && trendingCharacters.length > 0 && (
-              <div className="bg-white rounded-xl border border-gray-200 p-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <TrendingUp className="w-5 h-5 text-green-500" />
-                  <h2 className="font-semibold text-gray-900">Tendencia</h2>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  {trendingCharacters.slice(0, 4).map((char) => (
-                    <div
-                      key={char.id}
-                      onClick={() => handleSelectCharacter(char)}
-                      className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition"
-                    >
-                      {char.referenceImageUrl ? (
-                        <img
-                          src={char.referenceImageUrl}
-                          alt={char.name}
-                          className="w-10 h-10 rounded-lg object-cover"
-                        />
-                      ) : (
-                        <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center">
-                          <Users className="w-5 h-5 text-gray-400" />
-                        </div>
-                      )}
-                      <span className="text-sm font-medium text-gray-900 truncate">
-                        {char.galleryTitle || char.name}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
         {/* Search and filters */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row gap-3 mb-5">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={contentType === 'characters' ? 'Buscar personajes...' : 'Buscar contenido...'}
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:border-[#00552b] focus:outline-none"
+              className="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-[#00552b] focus:ring-1 focus:ring-[#00552b]/20 focus:outline-none text-sm transition"
             />
           </div>
 
           {contentType === 'characters' && (
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-2 px-4 py-2.5 border rounded-lg transition ${
-                showFilters ? 'border-[#00552b] bg-[#00552b]/5' : 'border-gray-300'
+              className={`flex items-center gap-2 px-3.5 py-2.5 border rounded-xl transition text-sm ${
+                showFilters ? 'border-[#00552b] bg-[#00552b]/5 text-[#00552b]' : 'border-gray-200 text-gray-600 hover:border-gray-300'
               }`}
             >
-              <Filter className="w-5 h-5" />
+              <Filter className="w-4 h-4" />
               Filtros
             </button>
           )}
 
-          {/* Sort */}
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortType)}
-            className="px-4 py-2.5 border border-gray-300 rounded-lg focus:border-[#00552b] focus:outline-none bg-white"
+            className="px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-[#00552b] focus:outline-none text-sm text-gray-600"
           >
-            <option value="recent">Mas recientes</option>
-            <option value="popular">Mas populares</option>
+            <option value="recent">Recientes</option>
+            <option value="popular">Populares</option>
             <option value="likes">Mas gustados</option>
           </select>
 
-          <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
+          <div className="flex items-center bg-white border border-gray-200 rounded-xl overflow-hidden">
             <button
               onClick={() => setGridSize('normal')}
               className={`p-2.5 transition ${
-                gridSize === 'normal' ? 'bg-gray-100' : 'hover:bg-gray-50'
+                gridSize === 'normal' ? 'bg-gray-100 text-gray-900' : 'text-gray-400 hover:text-gray-600'
               }`}
             >
-              <LayoutGrid className="w-5 h-5 text-gray-600" />
+              <LayoutGrid className="w-4 h-4" />
             </button>
             <button
               onClick={() => setGridSize('compact')}
               className={`p-2.5 transition ${
-                gridSize === 'compact' ? 'bg-gray-100' : 'hover:bg-gray-50'
+                gridSize === 'compact' ? 'bg-gray-100 text-gray-900' : 'text-gray-400 hover:text-gray-600'
               }`}
             >
-              <Grid3x3 className="w-5 h-5 text-gray-600" />
+              <Grid3x3 className="w-4 h-4" />
             </button>
           </div>
         </div>
 
         {/* Filters panel (for characters) */}
         {showFilters && contentType === 'characters' && (
-          <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6">
+          <div className="bg-white rounded-xl border border-gray-200 p-4 mb-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wider">
                   Tipo
                 </label>
                 <select
                   value={selectedType}
                   onChange={(e) => setSelectedType(e.target.value as CharacterType | 'all')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#00552b] focus:outline-none"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:border-[#00552b] focus:outline-none text-sm"
                 >
                   <option value="all">Todos los tipos</option>
                   {CHARACTER_TYPE_OPTIONS.map((option) => (
@@ -786,15 +783,14 @@ export default function MultimediaPage() {
                   ))}
                 </select>
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wider">
                   Estilo
                 </label>
                 <select
                   value={selectedStyle}
                   onChange={(e) => setSelectedStyle(e.target.value as VisualStyle | 'all')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#00552b] focus:outline-none"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:border-[#00552b] focus:outline-none text-sm"
                 >
                   <option value="all">Todos los estilos</option>
                   {VISUAL_STYLE_OPTIONS.map((option) => (
@@ -810,235 +806,60 @@ export default function MultimediaPage() {
 
         {/* Content Grid */}
         {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 text-[#00552b] animate-spin" />
+          <div className="flex flex-col items-center justify-center py-24">
+            <Loader2 className="w-8 h-8 text-[#00552b] animate-spin mb-3" />
+            <p className="text-sm text-gray-400">Cargando contenido...</p>
           </div>
         ) : (
           <>
-            {/* Mixed content (all) */}
-            {contentType === 'all' && (
-              <>
-                {/* Media items */}
-                {(() => {
-                  const mediaItems = mainTab === 'my-content'
-                    ? filterMedia(getMyMediaItems())
-                    : filterMedia(getPublicMediaItems());
-                  const characters = mainTab === 'my-content'
-                    ? filteredMyCharacters
-                    : filteredPublicCharacters;
+            {contentType === 'all' && (() => {
+              const mediaItems = mainTab === 'my-content'
+                ? filterMedia(getMyMediaItems())
+                : filterMedia(getPublicMediaItems());
+              const characters = mainTab === 'my-content'
+                ? filteredMyCharacters
+                : filteredPublicCharacters;
+              return renderContentGrid(mediaItems, characters);
+            })()}
 
-                  if (mediaItems.length === 0 && characters.length === 0) {
-                    return (
-                      <div className="text-center py-20">
-                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <Video className="w-8 h-8 text-gray-400" />
-                        </div>
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">
-                          {mainTab === 'my-content' ? 'No tienes contenido' : 'No hay contenido'}
-                        </h3>
-                        <p className="text-gray-500">
-                          {mainTab === 'my-content'
-                            ? 'Genera videos e imagenes desde el chat'
-                            : 'No se encontro contenido publico'}
-                        </p>
-                      </div>
-                    );
-                  }
+            {contentType === 'videos' && (() => {
+              const items = mainTab === 'my-content'
+                ? filterMedia(myVideos?.items || [])
+                : filterMedia(publicMedia?.items.filter(i => i.mediaType === 'video') || []);
+              return renderContentGrid(items, []);
+            })()}
 
-                  return (
-                    <div
-                      className={`grid gap-4 ${
-                        gridSize === 'compact'
-                          ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6'
-                          : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
-                      }`}
-                    >
-                      {mediaItems.map((item) => (
-                        <MediaCard
-                          key={item.id}
-                          item={item}
-                          onSelect={handleSelectMedia}
-                          isOwner={mainTab === 'my-content'}
-                        />
-                      ))}
-                      {characters.map((character) => (
-                        <CharacterCard
-                          key={character.id}
-                          character={character}
-                          onSelect={handleSelectCharacter}
-                          onEdit={handleEditCharacter}
-                          onShare={handleShareCharacter}
-                          showStats={mainTab === 'public-gallery'}
-                          isOwner={mainTab === 'my-content'}
-                        />
-                      ))}
-                    </div>
-                  );
-                })()}
-              </>
-            )}
+            {contentType === 'images' && (() => {
+              const items = mainTab === 'my-content'
+                ? filterMedia(myImages?.items || [])
+                : filterMedia(publicMedia?.items.filter(i => i.mediaType === 'image') || []);
+              return renderContentGrid(items, []);
+            })()}
 
-            {/* Videos only */}
-            {contentType === 'videos' && (
-              <>
-                {(() => {
-                  const items = mainTab === 'my-content'
-                    ? filterMedia(myVideos?.items || [])
-                    : filterMedia(publicMedia?.items.filter(i => i.mediaType === 'video') || []);
-
-                  if (items.length === 0) {
-                    return (
-                      <div className="text-center py-20">
-                        <Video className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">
-                          {mainTab === 'my-content' ? 'No tienes videos' : 'No hay videos'}
-                        </h3>
-                        <p className="text-gray-500">
-                          {mainTab === 'my-content'
-                            ? 'Genera videos desde el chat para verlos aqui'
-                            : 'No se encontraron videos publicos'}
-                        </p>
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <div
-                      className={`grid gap-4 ${
-                        gridSize === 'compact'
-                          ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6'
-                          : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
-                      }`}
-                    >
-                      {items.map((item) => (
-                        <MediaCard
-                          key={item.id}
-                          item={item}
-                          onSelect={handleSelectMedia}
-                          isOwner={mainTab === 'my-content'}
-                        />
-                      ))}
-                    </div>
-                  );
-                })()}
-              </>
-            )}
-
-            {/* Images only */}
-            {contentType === 'images' && (
-              <>
-                {(() => {
-                  const items = mainTab === 'my-content'
-                    ? filterMedia(myImages?.items || [])
-                    : filterMedia(publicMedia?.items.filter(i => i.mediaType === 'image') || []);
-
-                  if (items.length === 0) {
-                    return (
-                      <div className="text-center py-20">
-                        <ImageIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">
-                          {mainTab === 'my-content' ? 'No tienes imagenes' : 'No hay imagenes'}
-                        </h3>
-                        <p className="text-gray-500">
-                          {mainTab === 'my-content'
-                            ? 'Genera imagenes desde el chat para verlas aqui'
-                            : 'No se encontraron imagenes publicas'}
-                        </p>
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <div
-                      className={`grid gap-4 ${
-                        gridSize === 'compact'
-                          ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6'
-                          : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
-                      }`}
-                    >
-                      {items.map((item) => (
-                        <MediaCard
-                          key={item.id}
-                          item={item}
-                          onSelect={handleSelectMedia}
-                          isOwner={mainTab === 'my-content'}
-                        />
-                      ))}
-                    </div>
-                  );
-                })()}
-              </>
-            )}
-
-            {/* Characters only */}
-            {contentType === 'characters' && (
-              <>
-                {(() => {
-                  const characters = mainTab === 'my-content'
-                    ? filteredMyCharacters
-                    : filteredPublicCharacters;
-
-                  if (characters.length === 0) {
-                    return (
-                      <div className="text-center py-20">
-                        <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">
-                          {mainTab === 'my-content' ? 'No tienes personajes' : 'No hay personajes'}
-                        </h3>
-                        <p className="text-gray-500 mb-6">
-                          {mainTab === 'my-content'
-                            ? 'Crea tu primer personaje para empezar'
-                            : 'No se encontraron personajes publicos'}
-                        </p>
-                        {mainTab === 'my-content' && (
-                          <button
-                            onClick={() => setShowCreateForm(true)}
-                            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#00552b] text-white rounded-lg hover:bg-[#00552b]/90 transition"
-                          >
-                            <Plus className="w-5 h-5" />
-                            Crear personaje
-                          </button>
-                        )}
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <div
-                      className={`grid gap-4 ${
-                        gridSize === 'compact'
-                          ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6'
-                          : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
-                      }`}
-                    >
-                      {characters.map((character) => (
-                        <CharacterCard
-                          key={character.id}
-                          character={character}
-                          onSelect={handleSelectCharacter}
-                          onEdit={handleEditCharacter}
-                          onShare={handleShareCharacter}
-                          showStats={mainTab === 'public-gallery'}
-                          isOwner={mainTab === 'my-content'}
-                        />
-                      ))}
-                    </div>
-                  );
-                })()}
-              </>
-            )}
+            {contentType === 'characters' && (() => {
+              const characters = mainTab === 'my-content'
+                ? filteredMyCharacters
+                : filteredPublicCharacters;
+              return renderContentGrid([], characters);
+            })()}
           </>
         )}
       </div>
 
       {/* Create character modal */}
       {showCreateForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="relative w-full max-w-lg mx-4 bg-white rounded-2xl shadow-xl max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 rounded-t-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="relative w-full max-w-lg mx-4 bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-5 py-4 rounded-t-2xl flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900">Crear personaje</h2>
+              <button
+                onClick={() => setShowCreateForm(false)}
+                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
-            <div className="p-4">
+            <div className="p-5">
               <CharacterForm
                 onSuccess={handleCreateSuccess}
                 onCancel={() => setShowCreateForm(false)}
@@ -1063,6 +884,31 @@ export default function MultimediaPage() {
           }}
         />
       )}
+
+      {/* Delete character modal */}
+      {characterToDelete && (
+        <DeleteCharacterModal
+          character={characterToDelete}
+          isOpen={showDeleteCharacterModal}
+          onClose={() => {
+            setShowDeleteCharacterModal(false);
+            setCharacterToDelete(null);
+          }}
+          onSuccess={() => {
+            setShowDeleteCharacterModal(false);
+            setCharacterToDelete(null);
+          }}
+        />
+      )}
+
+      {/* Delete media confirmation */}
+      <DeleteMediaModal
+        item={mediaToDelete}
+        isOpen={!!mediaToDelete}
+        onClose={() => setMediaToDelete(null)}
+        onConfirm={confirmDeleteMedia}
+        isDeleting={deleteVideoMutation.isPending || deleteImageMutation.isPending}
+      />
     </div>
   );
 }
