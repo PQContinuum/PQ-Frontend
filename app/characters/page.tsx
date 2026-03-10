@@ -144,7 +144,7 @@ function MediaCard({
           />
         ) : useVideoPreview ? (
           <video
-            src={videoUrl!}
+            src={`${videoUrl!}#t=0.1`}
             preload="metadata"
             muted
             playsInline

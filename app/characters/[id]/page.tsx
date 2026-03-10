@@ -219,11 +219,6 @@ export default function CharacterDetailPage() {
                     Privado
                   </span>
                 )}
-                {character.isFeatured && (
-                  <span className="px-3 py-1.5 text-sm font-medium bg-yellow-100 text-yellow-700 rounded-full">
-                    Destacado
-                  </span>
-                )}
               </div>
             </div>
 
