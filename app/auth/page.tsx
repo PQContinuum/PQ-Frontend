@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { getSupabaseBrowserClient } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
-import { Mail, Lock, Loader2 } from 'lucide-react';
+import { Mail, Lock, Loader2, Check, ExternalLink, X, Shield } from 'lucide-react';
 import { billingApi } from '@/lib/api-client';
 
 export default function AuthPage() {
@@ -15,7 +15,17 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [hasScrolledTerms, setHasScrolledTerms] = useState(false);
   const router = useRouter();
+
+  const handleTermsScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    if (scrollTop + clientHeight >= scrollHeight - 20) {
+      setHasScrolledTerms(true);
+    }
+  }, []);
 
   const getErrorMessage = (error: unknown, fallback: string) => {
     if (error instanceof Error && error.message) {
@@ -34,6 +44,12 @@ export default function AuthPage() {
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (isSignUp && !acceptedTerms) {
+      setError('Debes aceptar los Términos de Servicio y la Política de Privacidad para crear tu cuenta.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setMessage(null);
@@ -86,6 +102,11 @@ export default function AuthPage() {
   };
 
   const handleGoogleSignIn = async () => {
+    if (isSignUp && !acceptedTerms) {
+      setError('Debes aceptar los Términos de Servicio y la Política de Privacidad para crear tu cuenta.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -212,9 +233,74 @@ export default function AuthPage() {
               )}
             </div>
 
+            {/* Checkbox de Términos y Condiciones (solo en signup) */}
+            <AnimatePresence>
+              {isSignUp && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden"
+                >
+                  <div
+                    className={`flex items-start gap-3 rounded-lg border p-3 transition-colors ${
+                      acceptedTerms
+                        ? 'border-[#00552b]/30 bg-[#00552b]/5'
+                        : 'border-black/10 bg-gray-50'
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setAcceptedTerms(!acceptedTerms)}
+                      className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded border-2 transition-all ${
+                        acceptedTerms
+                          ? 'border-[#00552b] bg-[#00552b]'
+                          : 'border-gray-300 bg-white hover:border-[#00552b]/50'
+                      }`}
+                    >
+                      <AnimatePresence>
+                        {acceptedTerms && (
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            exit={{ scale: 0 }}
+                            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                          >
+                            <Check className="size-3.5 text-white" strokeWidth={3} />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </button>
+                    <label className="text-xs leading-relaxed text-[#4c4c4c]">
+                      He leído y acepto los{' '}
+                      <button
+                        type="button"
+                        onClick={() => setShowTermsModal(true)}
+                        className="inline-flex items-center gap-0.5 font-semibold text-[#00552b] underline decoration-[#00552b]/30 underline-offset-2 transition-colors hover:text-[#00552b]/80 hover:decoration-[#00552b]/60"
+                      >
+                        Términos de Servicio
+                        <ExternalLink className="size-3" />
+                      </button>{' '}
+                      y la{' '}
+                      <a
+                        href="/legal/privacidad"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-0.5 font-semibold text-[#00552b] underline decoration-[#00552b]/30 underline-offset-2 transition-colors hover:text-[#00552b]/80 hover:decoration-[#00552b]/60"
+                      >
+                        Política de Privacidad
+                        <ExternalLink className="size-3" />
+                      </a>
+                    </label>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <motion.button
               type="submit"
-              disabled={loading}
+              disabled={loading || (isSignUp && !acceptedTerms)}
               whileHover={{ scale: loading ? 1 : 1.02 }}
               whileTap={{ scale: loading ? 1 : 0.98 }}
               className="w-full rounded-lg bg-[#00552b] py-3 font-semibold text-white transition-colors hover:bg-[#00552b]/90 disabled:cursor-not-allowed disabled:opacity-50"
@@ -243,7 +329,7 @@ export default function AuthPage() {
           <motion.button
             type="button"
             onClick={handleGoogleSignIn}
-            disabled={loading}
+            disabled={loading || (isSignUp && !acceptedTerms)}
             whileHover={{ scale: loading ? 1 : 1.02 }}
             whileTap={{ scale: loading ? 1 : 0.98 }}
             className="flex w-full items-center justify-center gap-3 rounded-lg border border-black/10 bg-white py-3 font-medium text-[#111111] transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
@@ -277,6 +363,7 @@ export default function AuthPage() {
                 setIsSignUp(!isSignUp);
                 setError(null);
                 setMessage(null);
+                setAcceptedTerms(false);
               }}
               disabled={loading}
               className="text-sm text-[#00552b] hover:underline disabled:cursor-not-allowed disabled:opacity-50"
@@ -296,10 +383,195 @@ export default function AuthPage() {
 
         {/* Footer */}
         <p className="mt-4 text-center text-xs text-[#4c4c4c]">
-          Al continuar, aceptas nuestros Términos de Servicio y Política de
-          Privacidad
+          {isSignUp ? (
+            'Debes aceptar los términos antes de crear tu cuenta'
+          ) : (
+            'Al iniciar sesión, aceptas nuestros Términos de Servicio y Política de Privacidad'
+          )}
         </p>
       </motion.div>
+
+      {/* Modal de Términos y Condiciones */}
+      <AnimatePresence>
+        {showTermsModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setShowTermsModal(false);
+            }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+              className="relative flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+            >
+              {/* Header del modal */}
+              <div className="flex items-center justify-between border-b border-black/10 px-6 py-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex size-10 items-center justify-center rounded-xl bg-[#00552b]/10">
+                    <Shield className="size-5 text-[#00552b]" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-[#111111]">Términos de Servicio</h2>
+                    <p className="text-xs text-[#4c4c4c]">Continuum AI</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowTermsModal(false)}
+                  className="flex size-8 items-center justify-center rounded-lg text-[#4c4c4c] transition-colors hover:bg-gray-100"
+                >
+                  <X className="size-5" />
+                </button>
+              </div>
+
+              {/* Contenido scrolleable */}
+              <div
+                className="flex-1 overflow-y-auto px-6 py-4 text-sm leading-relaxed text-[#4c4c4c]"
+                onScroll={handleTermsScroll}
+              >
+                <div className="space-y-4">
+                  <p className="font-semibold text-[#111111]">
+                    Última actualización: Marzo 2026
+                  </p>
+
+                  <p>
+                    Bienvenido a Continuum AI. Al acceder y utilizar nuestros servicios, aceptas estar
+                    sujeto a los siguientes términos y condiciones. Por favor, léelos cuidadosamente.
+                  </p>
+
+                  <h3 className="font-semibold text-[#111111]">1. Aceptación de los Términos</h3>
+                  <p>
+                    Al registrarte y usar Continuum AI, aceptas cumplir con estos Términos de Servicio,
+                    nuestra Política de Privacidad y cualquier política adicional que publiquemos. Si no
+                    estás de acuerdo con alguno de estos términos, no debes usar nuestros servicios.
+                  </p>
+
+                  <h3 className="font-semibold text-[#111111]">2. Descripción del Servicio</h3>
+                  <p>
+                    Continuum AI proporciona herramientas de inteligencia artificial para la generación de
+                    contenido, incluyendo texto, imágenes, video y audio. Los servicios están sujetos a
+                    cambios y actualizaciones sin previo aviso.
+                  </p>
+
+                  <h3 className="font-semibold text-[#111111]">3. Cuenta de Usuario</h3>
+                  <p>
+                    Eres responsable de mantener la confidencialidad de tu cuenta y contraseña. Notifícanos
+                    inmediatamente de cualquier uso no autorizado de tu cuenta.
+                  </p>
+
+                  <h3 className="font-semibold text-[#111111]">4. Uso Aceptable</h3>
+                  <p>
+                    Te comprometes a no usar nuestros servicios para actividades ilegales, generar contenido
+                    dañino, infringir derechos de propiedad intelectual, o cualquier propósito que viole
+                    las leyes aplicables.
+                  </p>
+
+                  <h3 className="font-semibold text-[#111111]">5. Propiedad Intelectual</h3>
+                  <p>
+                    El contenido generado usando nuestras herramientas está sujeto a nuestras políticas de
+                    uso. Continuum AI retiene todos los derechos sobre la plataforma, marca y tecnología
+                    subyacente.
+                  </p>
+
+                  <h3 className="font-semibold text-[#111111]">6. Pagos y Suscripciones</h3>
+                  <p>
+                    Los planes de suscripción se facturan de acuerdo con el plan seleccionado. Las
+                    cancelaciones surten efecto al final del período de facturación actual.
+                  </p>
+
+                  <h3 className="font-semibold text-[#111111]">7. Limitación de Responsabilidad</h3>
+                  <p>
+                    Continuum AI no será responsable por daños indirectos, incidentales o consecuentes
+                    derivados del uso de nuestros servicios. Nuestros servicios se proporcionan &quot;tal cual&quot;
+                    sin garantías de ningún tipo.
+                  </p>
+
+                  <h3 className="font-semibold text-[#111111]">8. Privacidad</h3>
+                  <p>
+                    Tu privacidad es importante para nosotros. Consulta nuestra{' '}
+                    <a
+                      href="/legal/privacidad"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold text-[#00552b] underline"
+                    >
+                      Política de Privacidad
+                    </a>{' '}
+                    para obtener información sobre cómo recopilamos, usamos y protegemos tus datos
+                    personales.
+                  </p>
+
+                  <h3 className="font-semibold text-[#111111]">9. Modificaciones</h3>
+                  <p>
+                    Nos reservamos el derecho de modificar estos términos en cualquier momento. Los cambios
+                    serán notificados a través de nuestra plataforma o por correo electrónico.
+                  </p>
+
+                  <h3 className="font-semibold text-[#111111]">10. Contacto</h3>
+                  <p>
+                    Para preguntas sobre estos términos, contáctanos en{' '}
+                    <span className="font-semibold text-[#00552b]">soporte@continuumai.llc</span>
+                  </p>
+
+                  <div className="rounded-lg border border-[#00552b]/20 bg-[#00552b]/5 p-4 text-center">
+                    <p className="text-xs text-[#4c4c4c]">
+                      Para ver los términos completos, visita{' '}
+                      <a
+                        href="/legal/terminos"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-semibold text-[#00552b] underline"
+                      >
+                        nuestra página de términos
+                      </a>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer del modal con indicador de scroll */}
+              <div className="border-t border-black/10 px-6 py-4">
+                {!hasScrolledTerms && (
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="mb-3 text-center text-xs text-amber-600"
+                  >
+                    Desplázate hasta el final para poder aceptar
+                  </motion.p>
+                )}
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowTermsModal(false)}
+                    className="flex-1 rounded-lg border border-black/10 py-2.5 text-sm font-medium text-[#4c4c4c] transition-colors hover:bg-gray-50"
+                  >
+                    Cerrar
+                  </button>
+                  <motion.button
+                    onClick={() => {
+                      setAcceptedTerms(true);
+                      setShowTermsModal(false);
+                      setError(null);
+                    }}
+                    disabled={!hasScrolledTerms}
+                    whileHover={{ scale: hasScrolledTerms ? 1.02 : 1 }}
+                    whileTap={{ scale: hasScrolledTerms ? 0.98 : 1 }}
+                    className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[#00552b] py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#00552b]/90 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Check className="size-4" />
+                    Acepto los términos
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
