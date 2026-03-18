@@ -13,7 +13,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { ArrowRight, Check, Zap, Building2, Rocket, Crown, Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useUserPlan } from '@/hooks/use-user-plan';
 import { billingApi } from '@/lib/api-client';
@@ -122,9 +122,16 @@ const plans = [
 export default function PaymentPage() {
   const [frequency, setFrequency] = useState<string>('monthly');
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
+  const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
   const { data: userPlan } = useUserPlan();
 
-  const handleCheckout = async (plan: typeof plans[number]) => {
+  useEffect(() => {
+    if (redirectUrl) {
+      window.location.href = redirectUrl;
+    }
+  }, [redirectUrl]);
+
+  const handleCheckout = useCallback(async (plan: typeof plans[number]) => {
     const priceId = plan.stripePriceId[frequency as keyof typeof plan.stripePriceId];
     if (!priceId) return;
 
@@ -135,12 +142,12 @@ export default function PaymentPage() {
         successUrl: `${window.location.origin}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
         cancelUrl: `${window.location.origin}/payment`,
       });
-      window.location.href = response.url;
+      setRedirectUrl(response.url);
     } catch (error) {
       console.error('Error creating checkout session:', error);
       setLoadingPlanId(null);
     }
-  };
+  }, [frequency]);
 
   return (
     <div className="min-h-screen bg-black">
