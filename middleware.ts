@@ -65,10 +65,35 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl)
   }
 
-  // Si el usuario está autenticado y está en / o /auth, redirigir a /chat
+  // Si el usuario está autenticado y está en / o /auth, verificar suscripción
   if (user && (request.nextUrl.pathname === '/auth' || request.nextUrl.pathname === '/')) {
-    const redirectUrl = new URL('/chat', request.url)
-    return NextResponse.redirect(redirectUrl)
+    try {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.continuumai.llc/api/v1'
+      const { data: { session } } = await supabase.auth.getSession()
+
+      if (session?.access_token) {
+        const response = await fetch(`${API_BASE_URL}/users/me`, {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        })
+
+        if (response.ok) {
+          const userData = await response.json()
+          // Solo ir a /chat si tiene suscripción activa y no es Free
+          if (userData.hasActiveSubscription && userData.planName !== 'Free') {
+            return NextResponse.redirect(new URL('/chat', request.url))
+          }
+        }
+      }
+
+      // Sin suscripción activa o error → payment
+      return NextResponse.redirect(new URL('/payment', request.url))
+    } catch {
+      // En caso de error de red, dejar pasar a /chat como fallback
+      return NextResponse.redirect(new URL('/chat', request.url))
+    }
   }
 
   return supabaseResponse

@@ -16,7 +16,7 @@ import { ArrowRight, Check, Zap, Building2, Rocket, Crown, Loader2 } from 'lucid
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useUserPlan } from '@/hooks/use-user-plan';
-import { billingApi } from '@/lib/api-client';
+import { billingApi, userApi } from '@/lib/api-client';
 
 const plans = [
   {
@@ -139,6 +139,16 @@ export default function PaymentPage() {
     setLoadingPlanId(plan.id);
     setCheckoutError(null);
     try {
+      // Asegurar que el usuario existe en el backend antes de crear checkout
+      // (puede fallar si el usuario acaba de registrarse y el backend aún no lo ha sincronizado)
+      try {
+        await userApi.getProfile();
+      } catch {
+        // Si falla, esperar y reintentar una vez
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        await userApi.getProfile();
+      }
+
       const response = await billingApi.createCheckoutSession({
         priceId,
         successUrl: `${window.location.origin}/payment/success?session_id={CHECKOUT_SESSION_ID}`,

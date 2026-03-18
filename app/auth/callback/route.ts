@@ -56,17 +56,32 @@ export async function GET(request: Request) {
 
     if (!error && data?.session?.access_token) {
       try {
-        // Llamar al backend externo para sincronizar usuario y obtener plan
-        const response = await fetch(`${API_BASE_URL}/users/me`, {
-          headers: {
-            'Authorization': `Bearer ${data.session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-        })
+        // Llamar al backend con reintentos para dar tiempo a que se sincronice el usuario
+        // (el backend puede tardar en crear el usuario después del OAuth de Supabase)
+        let userData = null
+        const MAX_RETRIES = 3
+        const RETRY_DELAY_MS = 1500
 
-        if (response.ok) {
-          const userData = await response.json()
+        for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+          const response = await fetch(`${API_BASE_URL}/users/me`, {
+            headers: {
+              'Authorization': `Bearer ${data.session.access_token}`,
+              'Content-Type': 'application/json',
+            },
+          })
 
+          if (response.ok) {
+            userData = await response.json()
+            break
+          }
+
+          // Si no es el último intento, esperar antes de reintentar
+          if (attempt < MAX_RETRIES - 1) {
+            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS))
+          }
+        }
+
+        if (userData) {
           // Si tiene subscription activa y NO es Free, ir a chat
           if (userData.hasActiveSubscription && userData.planName !== 'Free') {
             return NextResponse.redirect(`${origin}/chat`)
