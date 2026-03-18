@@ -67,18 +67,18 @@ export async function GET(request: Request) {
         if (response.ok) {
           const userData = await response.json()
 
-          // Si es Free o no tiene subscription activa, redirigir a payment
-          if (!userData.hasActiveSubscription || userData.planName === 'Free') {
-            return NextResponse.redirect(`${origin}/payment`)
+          // Si tiene subscription activa y NO es Free, ir a chat
+          if (userData.hasActiveSubscription && userData.planName !== 'Free') {
+            return NextResponse.redirect(`${origin}/chat`)
           }
         }
+
+        // Usuario nuevo, sin subscription, Free, o error del backend → payment
+        return NextResponse.redirect(`${origin}/payment`)
       } catch (error) {
         console.error('Error syncing user with backend:', error)
         return NextResponse.redirect(`${origin}/payment`)
       }
-
-      // Usuario con subscription activa → ir a chat
-      return NextResponse.redirect(`${origin}/chat`)
     }
   }
 

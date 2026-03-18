@@ -123,6 +123,7 @@ export default function PaymentPage() {
   const [frequency, setFrequency] = useState<string>('monthly');
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
   const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const { data: userPlan } = useUserPlan();
 
   useEffect(() => {
@@ -136,15 +137,23 @@ export default function PaymentPage() {
     if (!priceId) return;
 
     setLoadingPlanId(plan.id);
+    setCheckoutError(null);
     try {
       const response = await billingApi.createCheckoutSession({
         priceId,
         successUrl: `${window.location.origin}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
         cancelUrl: `${window.location.origin}/payment`,
       });
-      setRedirectUrl(response.url);
+      if (response.url) {
+        setRedirectUrl(response.url);
+      } else {
+        setCheckoutError('No se pudo obtener la URL de pago. Intenta nuevamente.');
+        setLoadingPlanId(null);
+      }
     } catch (error) {
       console.error('Error creating checkout session:', error);
+      const message = error instanceof Error ? error.message : 'Error al procesar el pago.';
+      setCheckoutError(message);
       setLoadingPlanId(null);
     }
   }, [frequency]);
@@ -189,6 +198,13 @@ export default function PaymentPage() {
               </TabsTrigger>
             </TabsList>
           </Tabs>
+
+          {/* Error message */}
+          {checkoutError && (
+            <div className="max-w-md mx-auto rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-400">
+              {checkoutError}
+            </div>
+          )}
 
           {/* Pricing cards */}
           <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
