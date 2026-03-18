@@ -230,10 +230,16 @@ export function SettingsDialog({
                         <p className="text-xs text-[#4c4c4c] mb-3 leading-relaxed">
                           Desbloquea todas las funciones premium de Continuum AI
                         </p>
-                        <span className="inline-flex items-center gap-1 text-xs font-bold text-neutral-500">
-                          <Clock className="size-3" />
-                          Planes premium - Coming Soon
-                        </span>
+                        <Button
+                          onClick={() => {
+                            onOpenChange(false);
+                            window.location.href = '/payment';
+                          }}
+                          className="bg-[#00552b] hover:bg-[#00442a] text-white text-xs px-4 py-2 h-auto font-semibold gap-1.5"
+                        >
+                          <Rocket className="size-3.5" />
+                          Ver planes premium
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -328,7 +334,7 @@ export function SettingsDialog({
                   </div>
 
                   {/* Upgrade CTA */}
-                  {userPlan === 'Gratis' && (
+                  {(userPlan === 'Gratis' || userPlan === 'Free') && (
                     <div className="border-2 border-dashed border-[#00aa56] rounded-xl p-6 text-center bg-green-50/30">
                       <div className="bg-gradient-to-br from-[#00552b]/10 to-[#00aa56]/10 w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3">
                         <Rocket className="size-7 text-[#00aa56]" />
@@ -339,10 +345,16 @@ export function SettingsDialog({
                       <p className="text-sm text-[#4c4c4c] mb-4 max-w-sm mx-auto">
                         Mejora tu plan y desbloquea el potencial completo de Continuum AI
                       </p>
-                      <span className="bg-neutral-200 text-neutral-500 px-6 py-2.5 rounded-lg font-semibold text-sm inline-flex items-center gap-2 cursor-not-allowed">
-                        <Clock className="size-4" />
-                        Coming Soon
-                      </span>
+                      <Button
+                        onClick={() => {
+                          onOpenChange(false);
+                          window.location.href = '/payment';
+                        }}
+                        className="bg-[#00552b] hover:bg-[#00442a] text-white px-6 py-2.5 h-auto font-semibold text-sm gap-2"
+                      >
+                        <Rocket className="size-4" />
+                        Ver planes disponibles
+                      </Button>
                     </div>
                   )}
 

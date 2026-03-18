@@ -10,11 +10,13 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
-import { ArrowRight, Check, Zap, Building2, Rocket, Crown, Clock } from 'lucide-react';
+import { ArrowRight, Check, Zap, Building2, Rocket, Crown, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import Link from 'next/link';
 import { useUserPlan } from '@/hooks/use-user-plan';
+import { billingApi } from '@/lib/api-client';
 
 const plans = [
   {
@@ -48,8 +50,8 @@ const plans = [
       yearly: 3840,
     },
     stripePriceId: {
-      monthly: 'price_1SUE86RvHgVvyOnzMC39XU4e', // Reemplazar con tu Price ID de Stripe
-      yearly: 'price_1SUEFHRvHgVvyOnz57Z9527l',   // Reemplazar con tu Price ID de Stripe
+      monthly: 'price_1TCSHTJ8yISglBa6lhICu4iP',
+      yearly: 'price_1TCSHuJ8yISglBa6Lvq91jjF',
     },
     description: 'Ideal para usuarios individuales que necesitan más.',
     features: [
@@ -71,8 +73,8 @@ const plans = [
       yearly: 16490,
     },
     stripePriceId: {
-      monthly: 'price_1SUE9URvHgVvyOnzk8Bi433c',   // Reemplazar con tu Price ID de Stripe
-      yearly: 'price_1SUEH0RvHgVvyOnzawrqMP5i',     // Reemplazar con tu Price ID de Stripe
+      monthly: 'price_1TCSILJ8yISglBa63VnjElDh',
+      yearly: 'price_1TCSIhJ8yISglBa60FWMrB88',
     },
     description: 'Para quienes trabajan en serio y necesitan más potencia.',
     features: [
@@ -97,8 +99,8 @@ const plans = [
       yearly: 46190,
     },
     stripePriceId: {
-      monthly: 'price_1SUEArRvHgVvyOnz6XX65K22',
-      yearly: 'price_1SUEHtRvHgVvyOnzdiAelIy8',
+      monthly: 'price_1TCSJ6J8yISglBa6ZatmhQO8',
+      yearly: 'price_1TCSJXJ8yISglBa6TgPoSRLd',
     },
     description: 'Soluciones personalizadas para equipos y empresas.',
     features: [
@@ -118,8 +120,27 @@ const plans = [
 ];
 
 export default function PaymentPage() {
-  const [frequency] = useState<string>('monthly');
+  const [frequency, setFrequency] = useState<string>('monthly');
+  const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
   const { data: userPlan } = useUserPlan();
+
+  const handleCheckout = async (plan: typeof plans[number]) => {
+    const priceId = plan.stripePriceId[frequency as keyof typeof plan.stripePriceId];
+    if (!priceId) return;
+
+    setLoadingPlanId(plan.id);
+    try {
+      const response = await billingApi.createCheckoutSession({
+        priceId,
+        successUrl: `${window.location.origin}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancelUrl: `${window.location.origin}/payment`,
+      });
+      window.location.href = response.url;
+    } catch (error) {
+      console.error('Error creating checkout session:', error);
+      setLoadingPlanId(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-black">
@@ -147,8 +168,8 @@ export default function PaymentPage() {
             hacerte la vida más fácil? Nuestros planes escalan contigo.
           </p>
 
-          {/* Tabs for billing frequency - Hidden for now, only free plan */}
-          {/* <Tabs defaultValue={frequency} onValueChange={setFrequency}>
+          {/* Tabs for billing frequency */}
+          <Tabs defaultValue={frequency} onValueChange={setFrequency}>
             <TabsList className="bg-white/5 border border-white/10">
               <TabsTrigger value="monthly" className="data-[state=active]:bg-[#00552b] text-white data-[state=active]:font-semibold">
                 Mensual
@@ -160,11 +181,11 @@ export default function PaymentPage() {
                 </Badge>
               </TabsTrigger>
             </TabsList>
-          </Tabs> */}
+          </Tabs>
 
-          {/* Pricing cards - Only showing free plan for now */}
-          <div className="mt-8 flex justify-center max-w-md mx-auto">
-            {plans.filter((plan) => plan.id === 'free').map((plan) => {
+          {/* Pricing cards */}
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+            {plans.map((plan) => {
               const Icon = plan.icon;
               const isCurrentPlan = userPlan?.planName === plan.name;
 
@@ -252,19 +273,38 @@ export default function PaymentPage() {
                           <ArrowRight className="ml-2 h-4 w-4" />
                         </Button>
                       </Link>
+                    ) : isCurrentPlan ? (
+                      <Button
+                        className="w-full bg-green-500/20 text-green-400 border-green-500/30 cursor-default"
+                        variant="outline"
+                        disabled
+                      >
+                        <Check className="mr-2 h-4 w-4" />
+                        Plan actual
+                      </Button>
                     ) : (
                       <Button
                         className={cn(
-                          'w-full cursor-not-allowed',
+                          'w-full transition-all',
                           plan.popular
-                            ? 'bg-neutral-600 text-neutral-300'
-                            : 'border-white/10 bg-neutral-800 text-neutral-400'
+                            ? 'bg-[#00552b] hover:bg-[#00552b]/90 text-white'
+                            : 'border-white/20 bg-white/5 text-white hover:bg-[#00552b] hover:text-white hover:border-[#00552b]'
                         )}
                         variant={plan.popular ? 'default' : 'outline'}
-                        disabled
+                        disabled={loadingPlanId !== null}
+                        onClick={() => handleCheckout(plan)}
                       >
-                        <Clock className="mr-2 h-4 w-4" />
-                        Coming Soon
+                        {loadingPlanId === plan.id ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Procesando...
+                          </>
+                        ) : (
+                          <>
+                            {plan.cta}
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                          </>
+                        )}
                       </Button>
                     )}
                   </CardFooter>
