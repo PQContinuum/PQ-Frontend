@@ -47,6 +47,7 @@ import { DeleteCharacterModal } from '@/app/chat/components/lisa/DeleteCharacter
 import { VISUAL_STYLE_OPTIONS, CHARACTER_TYPE_OPTIONS } from '@/lib/lisa/constants';
 import type { Character, CharacterType, VisualStyle, PublicCharactersParams } from '@/lib/lisa/types';
 import { downloadVideoMp4 } from '@/lib/media-download';
+import { HlsVideo } from '@/components/media/HlsVideo';
 
 type MainTabType = 'my-content' | 'public-gallery';
 type ContentType = 'all' | 'videos' | 'images' | 'characters';
@@ -395,6 +396,7 @@ export default function MultimediaPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [gridSize, setGridSize] = useState<'normal' | 'compact'>('normal');
+  const [videoPlayer, setVideoPlayer] = useState<GalleryItem | null>(null);
 
   // Filters
   const [selectedType, setSelectedType] = useState<CharacterType | 'all'>('all');
@@ -521,9 +523,13 @@ export default function MultimediaPage() {
   }, [mediaToDelete, deleteVideoMutation, deleteImageMutation]);
 
   const handleSelectMedia = useCallback((item: GalleryItem) => {
-    const url = item.mediaType === 'video' ? item.videoUrl : item.imageUrl;
-    if (url) {
-      window.open(url, '_blank');
+    if (item.mediaType === 'video' && item.videoUrl) {
+      setVideoPlayer(item);
+    } else {
+      const url = item.imageUrl;
+      if (url) {
+        window.open(url, '_blank');
+      }
     }
   }, []);
 
@@ -909,6 +915,40 @@ export default function MultimediaPage() {
         onConfirm={confirmDeleteMedia}
         isDeleting={deleteVideoMutation.isPending || deleteImageMutation.isPending}
       />
+
+      {/* Video Player Modal */}
+      {videoPlayer && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
+          onClick={() => setVideoPlayer(null)}
+        >
+          <div
+            className="relative w-full max-w-4xl mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setVideoPlayer(null)}
+              className="absolute -top-12 right-0 p-2 text-white/80 hover:text-white transition"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <div className="rounded-xl overflow-hidden bg-black">
+              <HlsVideo
+                src={videoPlayer.videoUrl}
+                controls
+                autoPlay
+                className="w-full max-h-[80vh]"
+                poster={videoPlayer.thumbnailUrl || undefined}
+              />
+            </div>
+            {videoPlayer.title && (
+              <p className="text-white/80 text-sm mt-3 text-center">
+                {videoPlayer.title}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
