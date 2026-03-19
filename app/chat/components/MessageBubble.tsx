@@ -254,7 +254,7 @@ const GalleryBadge = ({ isPublic, className = '' }: GalleryBadgeProps) => (
     animate={{ opacity: 1, scale: 1 }}
     className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium backdrop-blur-sm ${
       isPublic
-        ? 'bg-[#00552b]/80 text-white'
+        ? 'bg-[#934f2c]/80 text-white'
         : 'bg-black/60 text-white/90'
     } ${className}`}
   >
@@ -322,7 +322,7 @@ const ChatVideo = ({ src, jobId, isPublic, prompt, thumbnailUrl, previewUrl }: C
             setIsLoading(true);
             setRetryKey((k) => k + 1);
           }}
-          className="px-4 py-1.5 text-xs font-medium text-white bg-[#00552b] hover:bg-[#00441f] rounded-lg transition-colors"
+          className="px-4 py-1.5 text-xs font-medium text-white bg-[#934f2c] hover:bg-[#00441f] rounded-lg transition-colors"
         >
           Reintentar
         </button>
@@ -389,7 +389,7 @@ const ChatVideo = ({ src, jobId, isPublic, prompt, thumbnailUrl, previewUrl }: C
                 <TooltipTrigger asChild>
                   <button
                     onClick={(e) => { e.stopPropagation(); setShowShareModal(true); }}
-                    className="p-2 bg-[#00552b]/80 hover:bg-[#00552b] rounded-lg backdrop-blur-sm transition"
+                    className="p-2 bg-[#934f2c]/80 hover:bg-[#934f2c] rounded-lg backdrop-blur-sm transition"
                   >
                     <svg className="size-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -563,7 +563,7 @@ const ChatImage = ({ src, alt, jobId, isPublic, prompt, ...props }: ChatImagePro
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); setShowGalleryModal(true); }}
-                    className="p-2 bg-[#00552b]/80 hover:bg-[#00552b] rounded-lg backdrop-blur-sm transition"
+                    className="p-2 bg-[#934f2c]/80 hover:bg-[#934f2c] rounded-lg backdrop-blur-sm transition"
                   >
                     <svg className="size-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -650,7 +650,7 @@ const ChatImage = ({ src, alt, jobId, isPublic, prompt, ...props }: ChatImagePro
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); setShowGalleryModal(true); }}
-              className="flex items-center gap-2 px-4 py-2 bg-[#00552b] rounded-full text-sm font-medium text-white hover:bg-[#00442b] transition shadow-lg"
+              className="flex items-center gap-2 px-4 py-2 bg-[#934f2c] rounded-full text-sm font-medium text-white hover:bg-[#00442b] transition shadow-lg"
             >
               <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -724,7 +724,7 @@ const ChatImage = ({ src, alt, jobId, isPublic, prompt, ...props }: ChatImagePro
               >
                 <span className="flex items-center justify-center size-10 rounded-full bg-gray-200">
                   {copied ? (
-                    <svg className="size-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <svg className="size-5 text-[#934f2c]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
                   ) : (
@@ -786,8 +786,8 @@ const ChatImage = ({ src, alt, jobId, isPublic, prompt, ...props }: ChatImagePro
                 onClick={handleDownload}
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition text-left"
               >
-                <span className="flex items-center justify-center size-10 rounded-full bg-green-100">
-                  <svg className="size-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <span className="flex items-center justify-center size-10 rounded-full bg-[#f0b896]">
+                  <svg className="size-5 text-[#934f2c]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
                 </span>
@@ -1204,7 +1204,7 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
         <div className="inline-flex max-w-full w-full rounded-4xl border border-transparent bg-transparent text-black px-4 py-2">
           <div className="space-y-6 w-full">
             {/* Header skeleton */}
-            <div className="flex items-center gap-3 pb-4 border-b border-[#00552b]/10 animate-pulse">
+            <div className="flex items-center gap-3 pb-4 border-b border-[#934f2c]/10 animate-pulse">
               <div className="size-12 rounded-full bg-gradient-to-br from-[#e8e8e8] to-[#d8d8d8]"></div>
               <div className="flex-1 space-y-2">
                 <div className="h-3 bg-[#e8e8e8] rounded w-32"></div>
@@ -1216,7 +1216,7 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
             <div className="space-y-6 animate-pulse">
               {/* Section 1 */}
               <div className="space-y-3">
-                <div className="h-6 bg-gradient-to-r from-[#00552b]/20 to-[#00552b]/10 rounded w-2/5"></div>
+                <div className="h-6 bg-gradient-to-r from-[#934f2c]/20 to-[#934f2c]/10 rounded w-2/5"></div>
                 <div className="space-y-2">
                   <div className="h-4 bg-[#e8e8e8] rounded w-full"></div>
                   <div className="h-4 bg-[#e8e8e8] rounded w-11/12"></div>
@@ -1227,7 +1227,7 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
 
               {/* Section 2 */}
               <div className="space-y-3">
-                <div className="h-6 bg-gradient-to-r from-[#00552b]/20 to-[#00552b]/10 rounded w-1/3"></div>
+                <div className="h-6 bg-gradient-to-r from-[#934f2c]/20 to-[#934f2c]/10 rounded w-1/3"></div>
                 <div className="space-y-2">
                   <div className="h-4 bg-[#e8e8e8] rounded w-full"></div>
                   <div className="h-4 bg-[#e8e8e8] rounded w-10/12"></div>
@@ -1238,8 +1238,8 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
               {/* Decorative icon */}
               <div className="flex items-center justify-center py-6">
                 <div className="relative">
-                  <div className="absolute inset-0 bg-[#00552b]/10 rounded-full blur-xl animate-pulse"></div>
-                  <svg className="size-12 text-[#00552b]/20 relative animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="absolute inset-0 bg-[#934f2c]/10 rounded-full blur-xl animate-pulse"></div>
+                  <svg className="size-12 text-[#934f2c]/20 relative animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
@@ -1247,7 +1247,7 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
 
               {/* Section 3 */}
               <div className="space-y-3">
-                <div className="h-6 bg-gradient-to-r from-[#00552b]/20 to-[#00552b]/10 rounded w-2/5"></div>
+                <div className="h-6 bg-gradient-to-r from-[#934f2c]/20 to-[#934f2c]/10 rounded w-2/5"></div>
                 <div className="space-y-2">
                   <div className="h-4 bg-[#e8e8e8] rounded w-full"></div>
                   <div className="h-4 bg-[#e8e8e8] rounded w-9/12"></div>
@@ -1257,7 +1257,7 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
 
               {/* Section 4 */}
               <div className="space-y-3">
-                <div className="h-6 bg-gradient-to-r from-[#00552b]/20 to-[#00552b]/10 rounded w-1/2"></div>
+                <div className="h-6 bg-gradient-to-r from-[#934f2c]/20 to-[#934f2c]/10 rounded w-1/2"></div>
                 <div className="space-y-2">
                   <div className="h-4 bg-[#e8e8e8] rounded w-full"></div>
                   <div className="h-4 bg-[#e8e8e8] rounded w-11/12"></div>
@@ -1268,7 +1268,7 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
             </div>
 
             {/* Footer skeleton */}
-            <div className="pt-6 border-t border-[#00552b]/10 animate-pulse">
+            <div className="pt-6 border-t border-[#934f2c]/10 animate-pulse">
               <div className="flex items-center justify-center">
                 <div className="h-4 bg-[#e8e8e8] rounded w-48"></div>
               </div>
@@ -1287,10 +1287,10 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
                 rehypePlugins={[rehypeHighlight]}
                 components={{
                   h1: (props) => (
-                    <h1 {...props} className="text-2xl font-bold text-[#111111] mt-8 mb-4 pb-3 border-b-2 border-[#00552b]/20" />
+                    <h1 {...props} className="text-2xl font-bold text-[#111111] mt-8 mb-4 pb-3 border-b-2 border-[#934f2c]/20" />
                   ),
                   h2: (props) => (
-                    <h2 {...props} className="text-xl font-bold text-[#00552b] mt-6 mb-3 flex items-center gap-2" />
+                    <h2 {...props} className="text-xl font-bold text-[#934f2c] mt-6 mb-3 flex items-center gap-2" />
                   ),
                   h3: (props) => (
                     <h3 {...props} className="text-lg font-semibold text-[#111111] mt-5 mb-2.5" />
@@ -1307,22 +1307,22 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
                   li: (props) => (
                     <li {...props} className="text-[15px] text-gray-700 leading-relaxed pl-2">
                       <span className="inline-flex items-start gap-2">
-                        <span className="text-[#00552b] mt-1.5 shrink-0">•</span>
+                        <span className="text-[#934f2c] mt-1.5 shrink-0">•</span>
                         <span className="flex-1">{props.children}</span>
                       </span>
                     </li>
                   ),
                   strong: (props) => (
-                    <strong {...props} className="font-semibold text-[#00552b]" />
+                    <strong {...props} className="font-semibold text-[#934f2c]" />
                   ),
                   em: (props) => (
                     <em {...props} className="italic text-gray-700" />
                   ),
                   blockquote: (props) => (
-                    <blockquote {...props} className="border-l-4 border-[#00552b] bg-[#00552b]/5 pl-4 py-3 my-4 italic text-gray-700" />
+                    <blockquote {...props} className="border-l-4 border-[#934f2c] bg-[#934f2c]/5 pl-4 py-3 my-4 italic text-gray-700" />
                   ),
                   hr: (props) => (
-                    <hr {...props} className="my-6 border-t-2 border-[#00552b]/10" />
+                    <hr {...props} className="my-6 border-t-2 border-[#934f2c]/10" />
                   ),
                   pre: ({ children }) => {
                     const codeElement = children as React.ReactElement;
@@ -1338,7 +1338,7 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
                       return (
                         <code
                           {...props}
-                          className="rounded-md bg-[#00552b]/10 px-2 py-0.5 text-[0.92em] text-[#00552b] font-medium"
+                          className="rounded-md bg-[#934f2c]/10 px-2 py-0.5 text-[0.92em] text-[#934f2c] font-medium"
                         >
                           {children}
                         </code>
@@ -1351,7 +1351,7 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
                       {...props}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="font-medium text-[#00552b] underline underline-offset-2 hover:text-[#00aa56] transition-colors"
+                      className="font-medium text-[#934f2c] underline underline-offset-2 hover:text-[#d9753e] transition-colors"
                     />
                   ),
                 }}
@@ -1365,9 +1365,9 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
         <div className="inline-flex max-w-full w-full rounded-4xl border border-transparent bg-transparent text-black px-4 py-2">
           <div className="w-full space-y-6">
             {/* Header with area badge */}
-            <div className="flex items-center gap-3 pb-4 border-b border-[#00552b]/10">
+            <div className="flex items-center gap-3 pb-4 border-b border-[#934f2c]/10">
               <div className="flex-shrink-0">
-                <div className="size-12 rounded-full bg-gradient-to-br from-[#00552b] to-[#00aa56] flex items-center justify-center shadow-lg">
+                <div className="size-12 rounded-full bg-gradient-to-br from-[#934f2c] to-[#d9753e] flex items-center justify-center shadow-lg">
                   <svg className="size-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -1375,7 +1375,7 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
                 </div>
               </div>
               <div className="flex-1">
-                <h3 className="text-xs font-semibold text-[#00552b]/60 uppercase tracking-wider mb-1">
+                <h3 className="text-xs font-semibold text-[#934f2c]/60 uppercase tracking-wider mb-1">
                   Análisis Geocultural
                 </h3>
                 {geoCulturalText.areaName && (
@@ -1392,9 +1392,9 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
             </div>
 
             {/* Footer decoration */}
-            <div className="pt-6 border-t border-[#00552b]/10">
+            <div className="pt-6 border-t border-[#934f2c]/10">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs text-[#00552b]/40">
+                <div className="flex items-center gap-2 text-xs text-[#934f2c]/40">
                   <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
@@ -1501,7 +1501,7 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
         <div
           className={`border overflow-hidden ${
             isUser
-              ? 'rounded-4xl px-4 py-2 text-[15px] leading-relaxed border-transparent bg-[#00552b] text-white font-medium'
+              ? 'rounded-4xl px-4 py-2 text-[15px] leading-relaxed border-transparent bg-[#934f2c] text-white font-medium'
               : 'rounded-2xl px-5 py-4 sm:px-6 sm:py-5 border-transparent bg-transparent text-black'
           }`}
         >

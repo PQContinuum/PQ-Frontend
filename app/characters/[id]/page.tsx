@@ -147,7 +147,7 @@ export default function CharacterDetailPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-[#00552b] animate-spin" />
+        <Loader2 className="w-8 h-8 text-[#934f2c] animate-spin" />
       </div>
     );
   }
@@ -161,7 +161,7 @@ export default function CharacterDetailPage() {
           <p className="text-gray-500 mb-6">El personaje que buscas no existe o no tienes acceso</p>
           <button
             onClick={() => router.push('/characters')}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#00552b] text-white rounded-lg hover:bg-[#00552b]/90 transition"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#934f2c] text-white rounded-lg hover:bg-[#934f2c]/90 transition"
           >
             <ArrowLeft className="w-5 h-5" />
             Volver a personajes
@@ -209,7 +209,7 @@ export default function CharacterDetailPage() {
               {/* Badges */}
               <div className="absolute top-4 left-4 flex gap-2">
                 {character.isPublic ? (
-                  <span className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium bg-green-100 text-green-700 rounded-full">
+                  <span className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium bg-orange-50 text-[#934f2c] rounded-full">
                     <Globe className="w-4 h-4" />
                     Publico
                   </span>
@@ -326,7 +326,7 @@ export default function CharacterDetailPage() {
                     return lockOption ? (
                       <span
                         key={key}
-                        className="px-3 py-1 text-sm text-[#00552b] bg-[#00552b]/10 rounded-full"
+                        className="px-3 py-1 text-sm text-[#934f2c] bg-[#934f2c]/10 rounded-full"
                       >
                         {lockOption.label}
                       </span>
@@ -386,7 +386,7 @@ export default function CharacterDetailPage() {
             <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
               <button
                 onClick={handleUseInLisa}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#00552b] text-white rounded-lg hover:bg-[#00552b]/90 transition"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#934f2c] text-white rounded-lg hover:bg-[#934f2c]/90 transition"
               >
                 <Sparkles className="w-5 h-5" />
                 Usar en LISA
@@ -443,7 +443,7 @@ export default function CharacterDetailPage() {
                     className="flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
                   >
                     {copied ? (
-                      <Check className="w-5 h-5 text-green-600" />
+                      <Check className="w-5 h-5 text-[#934f2c]" />
                     ) : (
                       <Share2 className="w-5 h-5" />
                     )}

@@ -165,14 +165,14 @@ export function ImageReferenceUpload({
   if (previewUrl && !isUploading) {
     return (
       <div className="relative group flex-shrink-0">
-        <div className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden border-2 border-green-500/60 shadow-sm">
+        <div className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden border-2 border-[#934f2c]/60 shadow-sm">
           <img
             src={previewUrl}
             alt="Imagen de referencia"
             className="w-full h-full object-cover"
           />
           {/* Success indicator */}
-          <div className="absolute bottom-0 right-0 p-0.5 bg-green-500 rounded-tl-md">
+          <div className="absolute bottom-0 right-0 p-0.5 bg-[#934f2c] rounded-tl-md">
             <CheckCircle2 className="size-2 sm:size-2.5 text-white" />
           </div>
         </div>
@@ -200,8 +200,8 @@ export function ImageReferenceUpload({
         w-10 h-10 sm:w-12 sm:h-12 rounded-lg border-2 border-dashed
         transition-all cursor-pointer
         ${isDragging
-          ? 'border-green-500 bg-green-50 scale-105'
-          : 'border-gray-300 hover:border-green-500 hover:bg-green-50/50'
+          ? 'border-[#934f2c] bg-orange-50 scale-105'
+          : 'border-gray-300 hover:border-[#934f2c] hover:bg-orange-50/50'
         }
         ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
         ${error ? 'border-red-300 bg-red-50/50' : ''}
@@ -218,13 +218,13 @@ export function ImageReferenceUpload({
       />
 
       {isUploading ? (
-        <Loader2 className="size-4 sm:size-5 text-green-500 animate-spin" />
+        <Loader2 className="size-4 sm:size-5 text-[#934f2c] animate-spin" />
       ) : error ? (
         <div className="absolute inset-0 flex items-center justify-center p-1">
           <span className="text-[7px] sm:text-[8px] text-red-500 text-center leading-tight">{error}</span>
         </div>
       ) : (
-        <ImagePlus className={`size-4 sm:size-5 ${isDragging ? 'text-green-500' : 'text-gray-400'}`} />
+        <ImagePlus className={`size-4 sm:size-5 ${isDragging ? 'text-[#934f2c]' : 'text-gray-400'}`} />
       )}
     </div>
   );

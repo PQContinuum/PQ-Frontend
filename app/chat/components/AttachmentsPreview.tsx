@@ -114,7 +114,7 @@ const getFileColor = (fileType: string, mimeType?: string, fileName?: string) =>
 
   // Texto plano y markdown - Verde
   if (mimeType?.includes('text/') || mimeType?.includes('markdown')) {
-    return 'from-green-500/90 to-green-600/90 border-green-400/30';
+    return 'from-[#934f2c]/90 to-[#934f2c]/90 border-[#d9753e]/30';
   }
 
   // Default - Gris

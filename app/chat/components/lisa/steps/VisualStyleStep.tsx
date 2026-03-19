@@ -57,13 +57,13 @@ export function VisualStyleStep() {
               onClick={() => setVisualStyle(option.value as VisualStyle)}
               className={`relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200 ${
                 isSelected
-                  ? `border-[#00552b] ${option.bgColor} shadow-md`
+                  ? `border-[#934f2c] ${option.bgColor} shadow-md`
                   : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
               }`}
             >
               {/* Selection indicator */}
               {isSelected && (
-                <div className="absolute top-2 right-2 w-4 h-4 bg-[#00552b] rounded-full flex items-center justify-center">
+                <div className="absolute top-2 right-2 w-4 h-4 bg-[#934f2c] rounded-full flex items-center justify-center">
                   <Check className="w-2.5 h-2.5 text-white" />
                 </div>
               )}

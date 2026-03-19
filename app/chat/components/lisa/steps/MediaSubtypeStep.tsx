@@ -60,28 +60,28 @@ export function MediaSubtypeStep() {
               onClick={() => setMediaSubtype(option.value as MediaSubtype)}
               className={`relative flex items-start gap-4 p-4 rounded-xl border-2 transition-all duration-200 text-left ${
                 isSelected
-                  ? 'border-[#00552b] bg-[#00552b]/5'
+                  ? 'border-[#934f2c] bg-[#934f2c]/5'
                   : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
               }`}
             >
               {/* Selection indicator */}
               {isSelected && (
-                <div className="absolute top-3 right-3 w-4 h-4 bg-[#00552b] rounded-full flex items-center justify-center">
+                <div className="absolute top-3 right-3 w-4 h-4 bg-[#934f2c] rounded-full flex items-center justify-center">
                   <Check className="w-2.5 h-2.5 text-white" />
                 </div>
               )}
 
               {/* Icon */}
-              <div className={`p-2.5 rounded-xl shrink-0 ${isSelected ? 'bg-[#00552b]/10' : 'bg-gray-100'}`}>
+              <div className={`p-2.5 rounded-xl shrink-0 ${isSelected ? 'bg-[#934f2c]/10' : 'bg-gray-100'}`}>
                 {IconComponent && (
-                  <IconComponent className={`w-6 h-6 ${isSelected ? 'text-[#00552b]' : 'text-gray-600'}`} />
+                  <IconComponent className={`w-6 h-6 ${isSelected ? 'text-[#934f2c]' : 'text-gray-600'}`} />
                 )}
               </div>
 
               {/* Content */}
               <div className="flex-1 min-w-0">
                 <h3 className={`font-semibold ${
-                  isSelected ? 'text-[#00552b]' : 'text-gray-900'
+                  isSelected ? 'text-[#934f2c]' : 'text-gray-900'
                 }`}>
                   {option.label}
                 </h3>

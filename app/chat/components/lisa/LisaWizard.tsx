@@ -90,7 +90,7 @@ export function LisaWizard({ onGenerate, onClose, isGenerating }: LisaWizardProp
         <div className="flex items-center gap-2 mb-4">
           <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-[#00552b] to-emerald-500 transition-all duration-300"
+              className="h-full bg-gradient-to-r from-[#934f2c] to-emerald-500 transition-all duration-300"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -119,9 +119,9 @@ export function LisaWizard({ onGenerate, onClose, isGenerating }: LisaWizardProp
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
                     isActive
-                      ? 'bg-[#00552b] text-white shadow-lg shadow-[#00552b]/30'
+                      ? 'bg-[#934f2c] text-white shadow-lg shadow-[#934f2c]/30'
                       : isCompleted
-                      ? 'bg-[#00552b]/20 text-[#00552b]'
+                      ? 'bg-[#934f2c]/20 text-[#934f2c]'
                       : 'bg-gray-100 text-gray-400'
                   }`}
                 >
@@ -134,7 +134,7 @@ export function LisaWizard({ onGenerate, onClose, isGenerating }: LisaWizardProp
                 <span
                   className={`text-[10px] font-medium hidden sm:block ${
                     isActive
-                      ? 'text-[#00552b]'
+                      ? 'text-[#934f2c]'
                       : isCompleted
                       ? 'text-gray-600'
                       : 'text-gray-400'
@@ -170,7 +170,7 @@ export function LisaWizard({ onGenerate, onClose, isGenerating }: LisaWizardProp
             <button
               onClick={onGenerate}
               disabled={!canProceed() || isGenerating}
-              className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-[#00552b] to-emerald-600 text-white rounded-xl font-medium shadow-lg shadow-[#00552b]/25 hover:shadow-xl hover:shadow-[#00552b]/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-[#934f2c] to-emerald-600 text-white rounded-xl font-medium shadow-lg shadow-[#934f2c]/25 hover:shadow-xl hover:shadow-[#934f2c]/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isGenerating ? (
                 <>
@@ -188,7 +188,7 @@ export function LisaWizard({ onGenerate, onClose, isGenerating }: LisaWizardProp
             <button
               onClick={nextStep}
               disabled={!canProceed()}
-              className="flex items-center gap-1 px-5 py-2.5 bg-[#00552b] text-white rounded-xl font-medium hover:bg-[#00552b]/90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-1 px-5 py-2.5 bg-[#934f2c] text-white rounded-xl font-medium hover:bg-[#934f2c]/90 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Siguiente
               <ChevronRight className="w-4 h-4" />

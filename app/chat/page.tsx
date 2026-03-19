@@ -86,7 +86,7 @@ function SidebarFooterContent({
             <motion.div
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className={`relative overflow-hidden rounded-lg bg-[#00552b] shadow-md hover:shadow-lg transition-shadow ${
+              className={`relative overflow-hidden rounded-lg bg-[#934f2c] shadow-md hover:shadow-lg transition-shadow ${
                 isCollapsed ? 'mx-auto w-fit' : ''
               }`}
             >
@@ -289,7 +289,7 @@ export default function ChatPage() {
                 <motion.div
                   className="absolute -inset-[2px] rounded-lg opacity-0"
                   style={{
-                    background: 'linear-gradient(90deg, #00552b, #00aa56, #00552b, #00aa56)',
+                    background: 'linear-gradient(90deg, #934f2c, #d9753e, #934f2c, #d9753e)',
                     backgroundSize: '200% 100%'
                   }}
                   whileHover={{
@@ -307,7 +307,7 @@ export default function ChatPage() {
                   className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground relative overflow-hidden bg-[#f6f6f6]"
                 >
                   <motion.div
-                    className="absolute inset-0 bg-gradient-to-r from-[#00552b]/0 via-[#00552b]/10 to-[#00552b]/0"
+                    className="absolute inset-0 bg-gradient-to-r from-[#934f2c]/0 via-[#934f2c]/10 to-[#934f2c]/0"
                     initial={{ x: '-100%' }}
                     whileHover={{ x: '100%' }}
                     animate={isCreatingNew ? { x: '100%' } : {}}
@@ -326,7 +326,7 @@ export default function ChatPage() {
                       className="truncate font-semibold"
                       animate={isCreatingNew ? { opacity: [1, 0.5, 1] } : {}}
                       transition={{ duration: 0.4, ease: "easeInOut" }}
-                      whileHover={{ color: "#00552b" }}
+                      whileHover={{ color: "#934f2c" }}
                     >
                       Nuevo Chat
                     </motion.span>
@@ -381,7 +381,7 @@ export default function ChatPage() {
               </div>
               <button
                 onClick={() => setTtsSettingsOpen(true)}
-                className="flex items-center justify-center size-8 rounded-full text-[#4c4c4c] hover:text-[#00552b] hover:bg-[#00552b]/10 transition-all"
+                className="flex items-center justify-center size-8 rounded-full text-[#4c4c4c] hover:text-[#934f2c] hover:bg-[#934f2c]/10 transition-all"
                 title="Configuración de voz"
                 aria-label="Configuración de voz"
               >
@@ -466,7 +466,7 @@ export default function ChatPage() {
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.3, duration: 0.4 }}
                 >
-                  <h1 className="text-xl md:text-2xl font-light tracking-[0.3em] text-[#00552b] uppercase">
+                  <h1 className="text-xl md:text-2xl font-light tracking-[0.3em] text-[#934f2c] uppercase">
                     Continuum AI
                   </h1>
                 </motion.div>
@@ -494,11 +494,11 @@ export default function ChatPage() {
                   className="relative w-full max-w-2xl mx-auto h-[1px]"
                 >
                   {/* Línea base ultra fina */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#22c55e]/30 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#d9753e]/30 to-transparent" />
                   {/* Glow suave */}
-                  <div className="absolute inset-y-0 left-1/4 right-1/4 bg-gradient-to-r from-transparent via-[#22c55e]/50 to-transparent blur-[3px]" />
+                  <div className="absolute inset-y-0 left-1/4 right-1/4 bg-gradient-to-r from-transparent via-[#d9753e]/50 to-transparent blur-[3px]" />
                   {/* Glow más amplio y difuso */}
-                  <div className="absolute -inset-y-2 left-1/3 right-1/3 bg-gradient-to-r from-transparent via-[#22c55e]/20 to-transparent blur-[8px]" />
+                  <div className="absolute -inset-y-2 left-1/3 right-1/3 bg-gradient-to-r from-transparent via-[#d9753e]/20 to-transparent blur-[8px]" />
                 </motion.div>
 
                 {/* Instrucción de uso - call to action */}

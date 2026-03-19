@@ -70,7 +70,7 @@ export function LocationPermissionDialog({
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-                    className="mx-auto w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-[#00552b] to-[#00aa56] rounded-full flex items-center justify-center mb-4 sm:mb-6"
+                    className="mx-auto w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-[#934f2c] to-[#d9753e] rounded-full flex items-center justify-center mb-4 sm:mb-6"
                   >
                     <Navigation className="size-8 sm:size-10 text-white" />
                   </motion.div>
@@ -122,8 +122,8 @@ export function LocationPermissionDialog({
                         transition={{ delay: 0.6 + index * 0.1 }}
                         className="flex items-center gap-2 sm:gap-3"
                       >
-                        <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-[#00552b]/10 rounded-full flex items-center justify-center">
-                          <item.icon className="size-4 sm:size-5 text-[#00552b]" />
+                        <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-[#934f2c]/10 rounded-full flex items-center justify-center">
+                          <item.icon className="size-4 sm:size-5 text-[#934f2c]" />
                         </div>
                         <p className="text-xs sm:text-sm text-[#4c4c4c]">{item.text}</p>
                       </motion.div>
@@ -135,15 +135,15 @@ export function LocationPermissionDialog({
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
-                      className="mb-4 sm:mb-6 p-3 sm:p-4 bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-xl"
+                      className="mb-4 sm:mb-6 p-3 sm:p-4 bg-gradient-to-br from-orange-50 to-emerald-50 border border-[#e8956a] rounded-xl"
                     >
                       <div className="flex items-center gap-2 mb-2 sm:mb-3 flex-wrap">
-                        <CheckCircle2 className="size-4 sm:size-5 text-green-600" />
-                        <span className="text-sm sm:text-base font-semibold text-green-900">
+                        <CheckCircle2 className="size-4 sm:size-5 text-[#934f2c]" />
+                        <span className="text-sm sm:text-base font-semibold text-[#7a3d1e]">
                           Ubicación obtenida
                         </span>
                         <span className={`text-[10px] sm:text-xs font-medium px-2 py-1 rounded-full ${
-                          quality === 'excellent' ? 'bg-green-200 text-green-900' :
+                          quality === 'excellent' ? 'bg-[#e8956a] text-[#7a3d1e]' :
                           quality === 'good' ? 'bg-blue-200 text-blue-900' :
                           quality === 'fair' ? 'bg-yellow-200 text-yellow-900' :
                           'bg-red-200 text-red-900'
@@ -157,7 +157,7 @@ export function LocationPermissionDialog({
                       <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
                         {address.street && (
                           <div className="flex flex-wrap">
-                            <span className="text-green-700 font-medium">Calle: </span>
+                            <span className="text-[#934f2c] font-medium">Calle: </span>
                             <span className="text-gray-800 ml-1">
                               {[address.street, address.streetNumber].filter(Boolean).join(' ')}
                             </span>
@@ -165,27 +165,27 @@ export function LocationPermissionDialog({
                         )}
                         {address.neighborhood && (
                           <div className="flex flex-wrap">
-                            <span className="text-green-700 font-medium">Colonia: </span>
+                            <span className="text-[#934f2c] font-medium">Colonia: </span>
                             <span className="text-gray-800 ml-1">{address.neighborhood}</span>
                           </div>
                         )}
                         {address.city && (
                           <div className="flex flex-wrap">
-                            <span className="text-green-700 font-medium">Ciudad: </span>
+                            <span className="text-[#934f2c] font-medium">Ciudad: </span>
                             <span className="text-gray-800 ml-1">
                               {[address.city, address.state].filter(Boolean).join(', ')}
                             </span>
                           </div>
                         )}
-                        <div className="pt-1.5 sm:pt-2 border-t border-green-200">
-                          <span className="text-[10px] sm:text-xs text-green-700">
+                        <div className="pt-1.5 sm:pt-2 border-t border-[#e8956a]">
+                          <span className="text-[10px] sm:text-xs text-[#934f2c]">
                             Precisión: ±{address.accuracy.toFixed(1)}m
                           </span>
                         </div>
                       </div>
 
                       {warnings.length > 0 && (
-                        <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-green-200">
+                        <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-[#e8956a]">
                           <p className="text-[10px] sm:text-xs font-semibold text-yellow-700 mb-1">
                             ⚠️ Advertencias:
                           </p>
@@ -210,7 +210,7 @@ export function LocationPermissionDialog({
                         <button
                           onClick={onAllow}
                           disabled={isLoading}
-                          className="w-full bg-gradient-to-r from-[#00552b] to-[#00aa56] text-white font-semibold py-3 sm:py-4 px-4 sm:px-6 rounded-xl sm:rounded-2xl hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+                          className="w-full bg-gradient-to-r from-[#934f2c] to-[#d9753e] text-white font-semibold py-3 sm:py-4 px-4 sm:px-6 rounded-xl sm:rounded-2xl hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                         >
                           {isLoading ? (
                             <span className="flex flex-col items-center justify-center gap-1">

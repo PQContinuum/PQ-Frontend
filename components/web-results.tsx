@@ -49,7 +49,7 @@ export function WebResults({ results, className }: WebResultsProps) {
                   href={r.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block truncate text-sm font-semibold text-[#00552b] hover:underline underline-offset-2"
+                  className="block truncate text-sm font-semibold text-[#934f2c] hover:underline underline-offset-2"
                   title={r.title}
                 >
                   {r.title || r.url}

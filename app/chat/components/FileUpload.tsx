@@ -134,7 +134,7 @@ function getFileIcon(mimeType?: string) {
 
 // Helper function to get color gradient based on MIME type
 function getFileColor(mimeType?: string): string {
-  if (!mimeType) return 'from-green-500 to-green-600';
+  if (!mimeType) return 'from-[#934f2c] to-[#934f2c]';
 
   // Excel - green
   if (mimeType.includes('spreadsheet') || mimeType.includes('excel')) {
@@ -196,7 +196,7 @@ function getFileColor(mimeType?: string): string {
   }
 
   // Default - green
-  return 'from-green-500 to-green-600';
+  return 'from-[#934f2c] to-[#934f2c]';
 }
 
 // Helper function to get file type label based on MIME type
@@ -504,12 +504,12 @@ export function FileUpload({ conversationId, onAttachmentsChange }: FileUploadPr
           onDrop={handleDrop}
           className={`relative border-2 border-dashed rounded-2xl p-8 transition-all duration-300 ${
             dragActive
-              ? 'border-[#00552b] bg-gradient-to-br from-[#00552b]/10 to-[#00aa56]/5 scale-[1.02]'
-              : 'border-gray-300 hover:border-[#00552b]/50 hover:bg-gray-50/50'
+              ? 'border-[#934f2c] bg-gradient-to-br from-[#934f2c]/10 to-[#d9753e]/5 scale-[1.02]'
+              : 'border-gray-300 hover:border-[#934f2c]/50 hover:bg-gray-50/50'
           }`}
         >
           {dragActive && (
-            <div className="absolute inset-0 bg-[#00552b]/5 rounded-2xl animate-pulse pointer-events-none"></div>
+            <div className="absolute inset-0 bg-[#934f2c]/5 rounded-2xl animate-pulse pointer-events-none"></div>
           )}
 
           <input
@@ -529,13 +529,13 @@ export function FileUpload({ conversationId, onAttachmentsChange }: FileUploadPr
             <div className={`relative mb-4 ${uploading ? 'animate-bounce' : ''}`}>
               {uploading ? (
                 <div className="relative">
-                  <div className="absolute inset-0 bg-[#00552b]/20 rounded-full blur-xl"></div>
-                  <Loader2 className="relative w-12 h-12 text-[#00552b] animate-spin" />
+                  <div className="absolute inset-0 bg-[#934f2c]/20 rounded-full blur-xl"></div>
+                  <Loader2 className="relative w-12 h-12 text-[#934f2c] animate-spin" />
                 </div>
               ) : (
                 <div className="relative group">
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#00552b]/20 to-[#00aa56]/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <div className="relative bg-gradient-to-br from-[#00552b] to-[#00aa56] p-3 rounded-2xl shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110">
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#934f2c]/20 to-[#d9753e]/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="relative bg-gradient-to-br from-[#934f2c] to-[#d9753e] p-3 rounded-2xl shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110">
                     <Upload className="w-6 h-6 text-white" />
                   </div>
                 </div>
@@ -584,7 +584,7 @@ export function FileUpload({ conversationId, onAttachmentsChange }: FileUploadPr
             </p>
             <label
               htmlFor="file-upload-more"
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#00552b] bg-[#00552b]/10 hover:bg-[#00552b]/20 rounded-lg cursor-pointer transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#934f2c] bg-[#934f2c]/10 hover:bg-[#934f2c]/20 rounded-lg cursor-pointer transition-colors"
             >
               {uploading ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -599,7 +599,7 @@ export function FileUpload({ conversationId, onAttachmentsChange }: FileUploadPr
             {attachments.map((attachment, index) => (
               <div
                 key={attachment.id}
-                className="group relative border border-gray-200 rounded-xl p-3 hover:border-[#00552b] hover:shadow-md transition-all duration-200 bg-white"
+                className="group relative border border-gray-200 rounded-xl p-3 hover:border-[#934f2c] hover:shadow-md transition-all duration-200 bg-white"
                 style={{
                   animationDelay: `${index * 50}ms`,
                   animation: 'slideInFromLeft 0.3s ease-out forwards',
@@ -636,7 +636,7 @@ export function FileUpload({ conversationId, onAttachmentsChange }: FileUploadPr
                         {(attachment.fileSize / 1024).toFixed(1)} KB
                       </p>
                       <span className="text-xs text-gray-400">•</span>
-                      <p className="text-xs text-[#00552b] font-medium">
+                      <p className="text-xs text-[#934f2c] font-medium">
                         {attachment.fileType === 'image' ? 'Imagen' : getFileTypeLabel(attachment.mimeType)}
                       </p>
                       {/* Simple extraction status indicator */}
@@ -649,7 +649,7 @@ export function FileUpload({ conversationId, onAttachmentsChange }: FileUploadPr
                       {attachment.fileType === 'document' && attachment.extractedText && (
                         <>
                           <span className="text-xs text-gray-400">•</span>
-                          <Check className="w-3 h-3 text-green-600" />
+                          <Check className="w-3 h-3 text-[#934f2c]" />
                         </>
                       )}
                     </div>

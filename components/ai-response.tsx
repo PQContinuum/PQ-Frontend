@@ -53,7 +53,7 @@ function CitationSup({
 }) {
   const label = String(index);
   const content = (
-    <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-md border border-black/10 bg-white px-1.5 py-0.5 text-[11px] font-semibold text-[#00552b] hover:bg-black/5">
+    <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-md border border-black/10 bg-white px-1.5 py-0.5 text-[11px] font-semibold text-[#934f2c] hover:bg-black/5">
       {label}
     </span>
   );
@@ -217,7 +217,7 @@ export function AIResponse({
             {...props}
             target="_blank"
             rel="noopener noreferrer"
-            className="font-medium text-[#00552b] underline underline-offset-2 hover:text-[#00aa56] transition-colors break-words"
+            className="font-medium text-[#934f2c] underline underline-offset-2 hover:text-[#d9753e] transition-colors break-words"
           >
             {children}
           </a>

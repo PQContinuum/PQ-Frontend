@@ -161,7 +161,7 @@ export function CharacterForm({ onSuccess, onCancel }: CharacterFormProps) {
               onClick={() => setActiveSection(section.id as typeof activeSection)}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition ${
                 activeSection === section.id
-                  ? 'bg-[#00552b] text-white'
+                  ? 'bg-[#934f2c] text-white'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
@@ -187,7 +187,7 @@ export function CharacterForm({ onSuccess, onCancel }: CharacterFormProps) {
               placeholder="Ej: María, El Detective, Robot X-5"
               maxLength={100}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#00552b] focus:outline-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#934f2c] focus:outline-none"
             />
           </div>
 
@@ -202,7 +202,7 @@ export function CharacterForm({ onSuccess, onCancel }: CharacterFormProps) {
               placeholder="Describe brevemente a tu personaje..."
               rows={3}
               maxLength={2000}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#00552b] focus:outline-none resize-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#934f2c] focus:outline-none resize-none"
             />
           </div>
 
@@ -227,7 +227,7 @@ export function CharacterForm({ onSuccess, onCancel }: CharacterFormProps) {
                 </button>
               </div>
             ) : (
-              <label className="flex items-center justify-center gap-2 w-full h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-[#00552b] hover:bg-[#00552b]/5 transition">
+              <label className="flex items-center justify-center gap-2 w-full h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-[#934f2c] hover:bg-[#934f2c]/5 transition">
                 <Upload className="w-5 h-5 text-gray-400" />
                 <span className="text-sm text-gray-500">Subir imagen</span>
                 <input
@@ -256,7 +256,7 @@ export function CharacterForm({ onSuccess, onCancel }: CharacterFormProps) {
                   onClick={() => setPhysicalTraits({ ...physicalTraits, gender: g })}
                   className={`px-3 py-1 text-sm rounded-full border transition ${
                     physicalTraits.gender === g
-                      ? 'bg-[#00552b] text-white border-[#00552b]'
+                      ? 'bg-[#934f2c] text-white border-[#934f2c]'
                       : 'border-gray-300 hover:border-gray-400'
                   }`}
                 >
@@ -272,7 +272,7 @@ export function CharacterForm({ onSuccess, onCancel }: CharacterFormProps) {
             <select
               value={physicalTraits.age || ''}
               onChange={(e) => setPhysicalTraits({ ...physicalTraits, age: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#00552b] focus:outline-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#934f2c] focus:outline-none"
             >
               <option value="">Seleccionar...</option>
               {AGE_OPTIONS.map((a) => (
@@ -288,7 +288,7 @@ export function CharacterForm({ onSuccess, onCancel }: CharacterFormProps) {
               <select
                 value={physicalTraits.hairColor || ''}
                 onChange={(e) => setPhysicalTraits({ ...physicalTraits, hairColor: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#00552b] focus:outline-none text-sm"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#934f2c] focus:outline-none text-sm"
               >
                 <option value="">Seleccionar...</option>
                 {HAIR_COLOR_OPTIONS.map((c) => (
@@ -301,7 +301,7 @@ export function CharacterForm({ onSuccess, onCancel }: CharacterFormProps) {
               <select
                 value={physicalTraits.hairStyle || ''}
                 onChange={(e) => setPhysicalTraits({ ...physicalTraits, hairStyle: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#00552b] focus:outline-none text-sm"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#934f2c] focus:outline-none text-sm"
               >
                 <option value="">Seleccionar...</option>
                 {HAIR_STYLE_OPTIONS.map((s) => (
@@ -318,7 +318,7 @@ export function CharacterForm({ onSuccess, onCancel }: CharacterFormProps) {
               <select
                 value={physicalTraits.eyeColor || ''}
                 onChange={(e) => setPhysicalTraits({ ...physicalTraits, eyeColor: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#00552b] focus:outline-none text-sm"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#934f2c] focus:outline-none text-sm"
               >
                 <option value="">Seleccionar...</option>
                 {EYE_COLOR_OPTIONS.map((c) => (
@@ -331,7 +331,7 @@ export function CharacterForm({ onSuccess, onCancel }: CharacterFormProps) {
               <select
                 value={physicalTraits.bodyType || ''}
                 onChange={(e) => setPhysicalTraits({ ...physicalTraits, bodyType: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#00552b] focus:outline-none text-sm"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#934f2c] focus:outline-none text-sm"
               >
                 <option value="">Seleccionar...</option>
                 {BODY_TYPE_OPTIONS.map((b) => (
@@ -352,7 +352,7 @@ export function CharacterForm({ onSuccess, onCancel }: CharacterFormProps) {
                   onClick={() => setPersonality({ ...personality, mood: m })}
                   className={`px-3 py-1 text-sm rounded-full border transition ${
                     personality.mood === m
-                      ? 'bg-[#00552b] text-white border-[#00552b]'
+                      ? 'bg-[#934f2c] text-white border-[#934f2c]'
                       : 'border-gray-300 hover:border-gray-400'
                   }`}
                 >
@@ -380,7 +380,7 @@ export function CharacterForm({ onSuccess, onCancel }: CharacterFormProps) {
                   onClick={() => setVisualStyle(option.value)}
                   className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition ${
                     visualStyle === option.value
-                      ? `border-[#00552b] ${option.bgColor}`
+                      ? `border-[#934f2c] ${option.bgColor}`
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
@@ -417,20 +417,20 @@ export function CharacterForm({ onSuccess, onCancel }: CharacterFormProps) {
                     onClick={() => setCharacterType(option.value)}
                     className={`flex flex-col items-center gap-1 p-2.5 rounded-lg border-2 transition ${
                       characterType === option.value
-                        ? 'border-[#00552b] bg-[#00552b]/5'
+                        ? 'border-[#934f2c] bg-[#934f2c]/5'
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
                     {IconComponent && (
                       <IconComponent
                         className={`w-5 h-5 ${
-                          characterType === option.value ? 'text-[#00552b]' : 'text-gray-500'
+                          characterType === option.value ? 'text-[#934f2c]' : 'text-gray-500'
                         }`}
                       />
                     )}
                     <span
                       className={`text-xs font-medium ${
-                        characterType === option.value ? 'text-[#00552b]' : 'text-gray-700'
+                        characterType === option.value ? 'text-[#934f2c]' : 'text-gray-700'
                       }`}
                     >
                       {option.label}
@@ -456,7 +456,7 @@ export function CharacterForm({ onSuccess, onCancel }: CharacterFormProps) {
                   key={option.key}
                   className={`flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer transition ${
                     locks[option.key as keyof CharacterLocks]
-                      ? 'border-[#00552b] bg-[#00552b]/5'
+                      ? 'border-[#934f2c] bg-[#934f2c]/5'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
@@ -469,7 +469,7 @@ export function CharacterForm({ onSuccess, onCancel }: CharacterFormProps) {
                         [option.key]: e.target.checked || undefined,
                       })
                     }
-                    className="w-4 h-4 text-[#00552b] border-gray-300 rounded focus:ring-[#00552b]"
+                    className="w-4 h-4 text-[#934f2c] border-gray-300 rounded focus:ring-[#934f2c]"
                   />
                   <span className="text-sm text-gray-700">{option.label}</span>
                 </label>
@@ -516,7 +516,7 @@ export function CharacterForm({ onSuccess, onCancel }: CharacterFormProps) {
                   }}
                   placeholder="Añadir etiqueta..."
                   maxLength={30}
-                  className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:border-[#00552b] focus:outline-none"
+                  className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:border-[#934f2c] focus:outline-none"
                 />
                 <button
                   type="button"
@@ -550,7 +550,7 @@ export function CharacterForm({ onSuccess, onCancel }: CharacterFormProps) {
         <button
           type="submit"
           disabled={!name.trim() || isLoading}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-white bg-[#00552b] rounded-lg hover:bg-[#00552b]/90 transition disabled:opacity-50"
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-white bg-[#934f2c] rounded-lg hover:bg-[#934f2c]/90 transition disabled:opacity-50"
         >
           {isLoading ? (
             <>

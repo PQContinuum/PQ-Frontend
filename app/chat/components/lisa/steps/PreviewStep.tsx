@@ -159,7 +159,7 @@ export function PreviewStep() {
               onClick={toggleEditing}
               className={`flex items-center gap-1 px-2 py-1 text-xs rounded transition ${
                 isEditing
-                  ? 'text-[#00552b] bg-[#00552b]/10'
+                  ? 'text-[#934f2c] bg-[#934f2c]/10'
                   : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
               }`}
             >
@@ -183,7 +183,7 @@ export function PreviewStep() {
             value={compiledPrompt}
             onChange={(e) => setCompiledPrompt(e.target.value)}
             rows={8}
-            className="w-full px-4 py-3 rounded-xl border-2 border-[#00552b] bg-[#00552b]/5 focus:outline-none resize-none text-sm text-gray-700 font-mono"
+            className="w-full px-4 py-3 rounded-xl border-2 border-[#934f2c] bg-[#934f2c]/5 focus:outline-none resize-none text-sm text-gray-700 font-mono"
           />
         ) : (
           <div className="px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-700 whitespace-pre-wrap font-mono max-h-64 overflow-y-auto">
@@ -193,9 +193,9 @@ export function PreviewStep() {
       </div>
 
       {/* Generation hint */}
-      <div className="text-center p-4 bg-gradient-to-r from-[#00552b]/5 to-emerald-500/5 rounded-xl border border-[#00552b]/10">
+      <div className="text-center p-4 bg-gradient-to-r from-[#934f2c]/5 to-emerald-500/5 rounded-xl border border-[#934f2c]/10">
         <p className="flex items-center justify-center gap-2 text-sm text-gray-600">
-          <ArrowRight className="w-4 h-4 text-[#00552b]" />
+          <ArrowRight className="w-4 h-4 text-[#934f2c]" />
           Al presionar <strong>Generar</strong>, se creará {isVideo ? 'tu video' : 'tu imagen'} con estas especificaciones
         </p>
       </div>

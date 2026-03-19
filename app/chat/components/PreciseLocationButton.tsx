@@ -44,7 +44,7 @@ export function PreciseLocationButton() {
       <button
         onClick={handleGetLocation}
         disabled={isLoading}
-        className="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-[#00552b] text-white rounded-lg hover:bg-[#003d1f] disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-sm"
+        className="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-[#934f2c] text-white rounded-lg hover:bg-[#6b3a20] disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-sm"
       >
         {isLoading ? (
           <>
@@ -76,7 +76,7 @@ export function PreciseLocationButton() {
           {/* Quality Badge */}
           <div className="flex items-center gap-2 text-sm">
             <CheckCircle2 className={`w-4 h-4 ${
-              quality === 'excellent' ? 'text-green-600' :
+              quality === 'excellent' ? 'text-[#934f2c]' :
               quality === 'good' ? 'text-blue-600' :
               quality === 'fair' ? 'text-yellow-600' :
               'text-red-600'
@@ -95,7 +95,7 @@ export function PreciseLocationButton() {
               {/* Street */}
               {(address.street || address.streetNumber) && (
                 <div className="flex items-start gap-2">
-                  <Navigation className="w-3.5 h-3.5 text-[#00552b] mt-0.5 shrink-0" />
+                  <Navigation className="w-3.5 h-3.5 text-[#934f2c] mt-0.5 shrink-0" />
                   <div className="flex-1">
                     <p className="text-xs text-gray-500">Dirección</p>
                     <p className="font-semibold">

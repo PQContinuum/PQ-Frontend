@@ -112,7 +112,7 @@ export function FeedbackWidget({ className, variant = "sidebar", isCollapsed: is
             <Button
               variant="ghost"
               size="icon"
-              className="size-8 mx-auto text-muted-foreground hover:text-[#00552b] hover:bg-[#00552b]/10 transition-colors"
+              className="size-8 mx-auto text-muted-foreground hover:text-[#934f2c] hover:bg-[#934f2c]/10 transition-colors"
             >
               <MessageSquareHeart className="size-4" />
             </Button>
@@ -128,7 +128,7 @@ export function FeedbackWidget({ className, variant = "sidebar", isCollapsed: is
       <Button
         variant="ghost"
         size="sm"
-        className="w-full justify-start gap-3 text-[#4c4c4c] hover:text-[#00552b] hover:bg-[#00552b]/10 px-3 py-2.5 h-auto transition-colors"
+        className="w-full justify-start gap-3 text-[#4c4c4c] hover:text-[#934f2c] hover:bg-[#934f2c]/10 px-3 py-2.5 h-auto transition-colors"
       >
         <div className="flex items-center justify-center size-8 rounded-lg bg-white shadow-sm">
           <MessageSquareHeart className="size-4" />
@@ -156,8 +156,8 @@ export function FeedbackWidget({ className, variant = "sidebar", isCollapsed: is
       >
         {isSuccess ? (
           <div className="flex flex-col items-center justify-center py-10 px-4 gap-3">
-            <div className="size-14 rounded-full bg-[#00552b]/10 flex items-center justify-center">
-              <Check className="size-7 text-[#00552b]" />
+            <div className="size-14 rounded-full bg-[#934f2c]/10 flex items-center justify-center">
+              <Check className="size-7 text-[#934f2c]" />
             </div>
             <p className="text-base font-semibold text-[#111111]">Gracias por tu feedback</p>
             <p className="text-sm text-muted-foreground text-center">
@@ -167,10 +167,10 @@ export function FeedbackWidget({ className, variant = "sidebar", isCollapsed: is
         ) : (
           <>
             {/* Header with category selector */}
-            <div className="p-4 border-b bg-gradient-to-r from-[#00552b]/5 to-transparent">
+            <div className="p-4 border-b bg-gradient-to-r from-[#934f2c]/5 to-transparent">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <MessageSquareHeart className="size-5 text-[#00552b]" />
+                  <MessageSquareHeart className="size-5 text-[#934f2c]" />
                   <span className="font-semibold text-[#111111]">Enviar Feedback</span>
                 </div>
                 <Select value={category} onValueChange={(v) => setCategory(v as FeedbackCategory)}>
@@ -194,7 +194,7 @@ export function FeedbackWidget({ className, variant = "sidebar", isCollapsed: is
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Cuéntanos tu experiencia..."
-                className="w-full min-h-[100px] bg-[#f6f6f6] rounded-lg p-3 resize-none text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#00552b]/20 transition-shadow"
+                className="w-full min-h-[100px] bg-[#f6f6f6] rounded-lg p-3 resize-none text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#934f2c]/20 transition-shadow"
                 autoFocus
               />
             </div>
@@ -213,7 +213,7 @@ export function FeedbackWidget({ className, variant = "sidebar", isCollapsed: is
                       className={cn(
                         "size-10 rounded-xl transition-all text-xl flex items-center justify-center border-2",
                         sentiment === s.value
-                          ? "bg-[#00552b]/10 border-[#00552b] scale-110 shadow-md"
+                          ? "bg-[#934f2c]/10 border-[#934f2c] scale-110 shadow-md"
                           : "border-transparent bg-muted/50 opacity-70 hover:opacity-100 grayscale hover:grayscale-0 hover:bg-muted"
                       )}
                       title={s.label}
@@ -235,7 +235,7 @@ export function FeedbackWidget({ className, variant = "sidebar", isCollapsed: is
                   size="sm"
                   onClick={handleSubmit}
                   disabled={!message.trim() || !sentiment || isPending}
-                  className="gap-2 bg-[#00552b] hover:bg-[#00552b]/90 text-white px-4"
+                  className="gap-2 bg-[#934f2c] hover:bg-[#934f2c]/90 text-white px-4"
                 >
                   {isPending ? (
                     <Loader2 className="size-4 animate-spin" />

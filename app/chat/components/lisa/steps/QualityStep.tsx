@@ -49,15 +49,15 @@ export function QualityStep() {
                 onClick={() => setQuality({ aspectRatio: option.value })}
                 className={`flex-1 flex flex-col items-center gap-1 px-4 py-3 rounded-xl border-2 transition-all ${
                   isSelected
-                    ? 'border-[#00552b] bg-[#00552b]/5'
+                    ? 'border-[#934f2c] bg-[#934f2c]/5'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
                 {IconComponent && (
-                  <IconComponent className={`w-5 h-5 ${isSelected ? 'text-[#00552b]' : 'text-gray-500'}`} />
+                  <IconComponent className={`w-5 h-5 ${isSelected ? 'text-[#934f2c]' : 'text-gray-500'}`} />
                 )}
                 <span className={`text-sm font-medium ${
-                  isSelected ? 'text-[#00552b]' : 'text-gray-700'
+                  isSelected ? 'text-[#934f2c]' : 'text-gray-700'
                 }`}>
                   {option.label}
                 </span>
@@ -88,7 +88,7 @@ export function QualityStep() {
                   isLocked
                     ? 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60'
                     : isSelected
-                    ? 'border-[#00552b] bg-[#00552b]/5'
+                    ? 'border-[#934f2c] bg-[#934f2c]/5'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
@@ -96,7 +96,7 @@ export function QualityStep() {
                   <Lock className="absolute top-2 right-2 w-3 h-3 text-gray-400" />
                 )}
                 <span className={`text-sm font-medium ${
-                  isSelected ? 'text-[#00552b]' : 'text-gray-700'
+                  isSelected ? 'text-[#934f2c]' : 'text-gray-700'
                 }`}>
                   {option.label}
                 </span>
@@ -130,7 +130,7 @@ export function QualityStep() {
                       isLocked
                         ? 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60'
                         : isSelected
-                        ? 'border-[#00552b] bg-[#00552b]/5'
+                        ? 'border-[#934f2c] bg-[#934f2c]/5'
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
@@ -138,7 +138,7 @@ export function QualityStep() {
                       <Lock className="absolute top-2 right-2 w-3 h-3 text-gray-400" />
                     )}
                     <span className={`text-sm font-medium ${
-                      isSelected ? 'text-[#00552b]' : 'text-gray-700'
+                      isSelected ? 'text-[#934f2c]' : 'text-gray-700'
                     }`}>
                       {option.label}
                     </span>
@@ -169,7 +169,7 @@ export function QualityStep() {
                       isLocked
                         ? 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60'
                         : isSelected
-                        ? 'border-[#00552b] bg-[#00552b]/5'
+                        ? 'border-[#934f2c] bg-[#934f2c]/5'
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
@@ -177,7 +177,7 @@ export function QualityStep() {
                       <Lock className="absolute top-2 right-2 w-3 h-3 text-gray-400" />
                     )}
                     <span className={`text-sm font-medium ${
-                      isSelected ? 'text-[#00552b]' : 'text-gray-700'
+                      isSelected ? 'text-[#934f2c]' : 'text-gray-700'
                     }`}>
                       {option.label}
                     </span>

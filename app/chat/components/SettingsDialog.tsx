@@ -118,7 +118,7 @@ export function SettingsDialog({
                 onClick={() => setActiveTab('account')}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
                   activeTab === 'account'
-                    ? 'bg-white text-[#00552b] shadow-sm'
+                    ? 'bg-white text-[#934f2c] shadow-sm'
                     : 'text-[#4c4c4c] hover:bg-white/50'
                 }`}
               >
@@ -130,7 +130,7 @@ export function SettingsDialog({
                 onClick={() => setActiveTab('plans')}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
                   activeTab === 'plans'
-                    ? 'bg-white text-[#00552b] shadow-sm'
+                    ? 'bg-white text-[#934f2c] shadow-sm'
                     : 'text-[#4c4c4c] hover:bg-white/50'
                 }`}
               >
@@ -142,7 +142,7 @@ export function SettingsDialog({
                 onClick={() => setActiveTab('data')}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
                   activeTab === 'data'
-                    ? 'bg-white text-[#00552b] shadow-sm'
+                    ? 'bg-white text-[#934f2c] shadow-sm'
                     : 'text-[#4c4c4c] hover:bg-white/50'
                 }`}
               >
@@ -154,7 +154,7 @@ export function SettingsDialog({
                 onClick={() => setActiveTab('lisa')}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
                   activeTab === 'lisa'
-                    ? 'bg-white text-[#00552b] shadow-sm'
+                    ? 'bg-white text-[#934f2c] shadow-sm'
                     : 'text-[#4c4c4c] hover:bg-white/50'
                 }`}
               >
@@ -189,14 +189,14 @@ export function SettingsDialog({
                       Correo Electrónico
                     </label>
                     <div className="flex items-center gap-3">
-                      <div className="bg-gradient-to-br from-[#00552b]/10 to-[#00aa56]/10 rounded-lg p-2.5">
-                        <User className="size-5 text-[#00552b]" />
+                      <div className="bg-gradient-to-br from-[#934f2c]/10 to-[#d9753e]/10 rounded-lg p-2.5">
+                        <User className="size-5 text-[#934f2c]" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-[#111111] truncate">
                           {userEmail || 'No disponible'}
                         </p>
-                        <p className="text-xs text-green-600 font-medium">
+                        <p className="text-xs text-[#934f2c] font-medium">
                           ✓ Verificado
                         </p>
                       </div>
@@ -211,8 +211,8 @@ export function SettingsDialog({
                       </p>
                       <p className="text-3xl font-bold text-[#111111]">12</p>
                     </div>
-                    <div className="bg-gradient-to-br from-green-50 to-green-100/50 rounded-xl p-4 border border-green-200/50">
-                      <p className="text-xs font-bold text-green-700 uppercase tracking-wide mb-1">
+                    <div className="bg-gradient-to-br from-orange-50 to-[#f0b896]/50 rounded-xl p-4 border border-[#e8956a]/50">
+                      <p className="text-xs font-bold text-[#934f2c] uppercase tracking-wide mb-1">
                         Mensajes
                       </p>
                       <p className="text-3xl font-bold text-[#111111]">148</p>
@@ -235,7 +235,7 @@ export function SettingsDialog({
                             onOpenChange(false);
                             window.location.href = '/payment';
                           }}
-                          className="bg-[#00552b] hover:bg-[#00442a] text-white text-xs px-4 py-2 h-auto font-semibold gap-1.5"
+                          className="bg-[#934f2c] hover:bg-[#00442a] text-white text-xs px-4 py-2 h-auto font-semibold gap-1.5"
                         >
                           <Rocket className="size-3.5" />
                           Ver planes premium
@@ -290,20 +290,20 @@ export function SettingsDialog({
                       {userPlan === 'Gratis' ? (
                         <>
                           <li className="flex items-start gap-3 text-sm text-[#4c4c4c]">
-                            <div className="bg-green-100 rounded-full p-1 mt-0.5">
-                              <Check className="size-3 text-green-600" />
+                            <div className="bg-[#f0b896] rounded-full p-1 mt-0.5">
+                              <Check className="size-3 text-[#934f2c]" />
                             </div>
                             <span>Conversaciones básicas</span>
                           </li>
                           <li className="flex items-start gap-3 text-sm text-[#4c4c4c]">
-                            <div className="bg-green-100 rounded-full p-1 mt-0.5">
-                              <Check className="size-3 text-green-600" />
+                            <div className="bg-[#f0b896] rounded-full p-1 mt-0.5">
+                              <Check className="size-3 text-[#934f2c]" />
                             </div>
                             <span>Historial limitado de conversaciones</span>
                           </li>
                           <li className="flex items-start gap-3 text-sm text-[#4c4c4c]">
-                            <div className="bg-green-100 rounded-full p-1 mt-0.5">
-                              <Check className="size-3 text-green-600" />
+                            <div className="bg-[#f0b896] rounded-full p-1 mt-0.5">
+                              <Check className="size-3 text-[#934f2c]" />
                             </div>
                             <span>Soporte por comunidad</span>
                           </li>
@@ -311,20 +311,20 @@ export function SettingsDialog({
                       ) : (
                         <>
                           <li className="flex items-start gap-3 text-sm text-[#4c4c4c]">
-                            <div className="bg-green-100 rounded-full p-1 mt-0.5">
-                              <Check className="size-3 text-green-600" />
+                            <div className="bg-[#f0b896] rounded-full p-1 mt-0.5">
+                              <Check className="size-3 text-[#934f2c]" />
                             </div>
                             <span>Conversaciones ilimitadas</span>
                           </li>
                           <li className="flex items-start gap-3 text-sm text-[#4c4c4c]">
-                            <div className="bg-green-100 rounded-full p-1 mt-0.5">
-                              <Check className="size-3 text-green-600" />
+                            <div className="bg-[#f0b896] rounded-full p-1 mt-0.5">
+                              <Check className="size-3 text-[#934f2c]" />
                             </div>
                             <span>Soporte prioritario 24/7</span>
                           </li>
                           <li className="flex items-start gap-3 text-sm text-[#4c4c4c]">
-                            <div className="bg-green-100 rounded-full p-1 mt-0.5">
-                              <Check className="size-3 text-green-600" />
+                            <div className="bg-[#f0b896] rounded-full p-1 mt-0.5">
+                              <Check className="size-3 text-[#934f2c]" />
                             </div>
                             <span>Integraciones avanzadas y API</span>
                           </li>
@@ -335,9 +335,9 @@ export function SettingsDialog({
 
                   {/* Upgrade CTA */}
                   {(userPlan === 'Gratis' || userPlan === 'Free') && (
-                    <div className="border-2 border-dashed border-[#00aa56] rounded-xl p-6 text-center bg-green-50/30">
-                      <div className="bg-gradient-to-br from-[#00552b]/10 to-[#00aa56]/10 w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <Rocket className="size-7 text-[#00aa56]" />
+                    <div className="border-2 border-dashed border-[#d9753e] rounded-xl p-6 text-center bg-orange-50/30">
+                      <div className="bg-gradient-to-br from-[#934f2c]/10 to-[#d9753e]/10 w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <Rocket className="size-7 text-[#d9753e]" />
                       </div>
                       <h4 className="text-base font-bold text-[#111111] mb-2">
                         ¿Listo para crecer?
@@ -350,7 +350,7 @@ export function SettingsDialog({
                           onOpenChange(false);
                           window.location.href = '/payment';
                         }}
-                        className="bg-[#00552b] hover:bg-[#00442a] text-white px-6 py-2.5 h-auto font-semibold text-sm gap-2"
+                        className="bg-[#934f2c] hover:bg-[#00442a] text-white px-6 py-2.5 h-auto font-semibold text-sm gap-2"
                       >
                         <Rocket className="size-4" />
                         Ver planes disponibles
@@ -360,7 +360,7 @@ export function SettingsDialog({
 
                   {/* Manage Subscription - Prominent CTA */}
                   {userPlan !== 'Gratis' && userPlan !== 'Free' && (
-                    <div className="bg-gradient-to-r from-[#00552b]/5 to-[#00aa56]/5 rounded-xl p-5 border border-[#00552b]/20">
+                    <div className="bg-gradient-to-r from-[#934f2c]/5 to-[#d9753e]/5 rounded-xl p-5 border border-[#934f2c]/20">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
                           <h5 className="text-sm font-bold text-[#111111] mb-1">
@@ -373,7 +373,7 @@ export function SettingsDialog({
                         <Button
                           onClick={handleManageSubscription}
                           disabled={isLoadingPortal}
-                          className="bg-[#00552b] hover:bg-[#00442a] text-white gap-2 px-6 py-3 h-auto text-sm font-semibold shrink-0"
+                          className="bg-[#934f2c] hover:bg-[#00442a] text-white gap-2 px-6 py-3 h-auto text-sm font-semibold shrink-0"
                         >
                           {isLoadingPortal ? (
                             <>
@@ -516,7 +516,7 @@ export function SettingsDialog({
 
                     {isLoadingCharacters ? (
                       <div className="p-8 flex items-center justify-center">
-                        <Loader2 className="size-6 text-[#00552b] animate-spin" />
+                        <Loader2 className="size-6 text-[#934f2c] animate-spin" />
                       </div>
                     ) : !characters || characters.length === 0 ? (
                       <div className="p-8 text-center">
@@ -558,7 +558,7 @@ export function SettingsDialog({
                                   {character.visualStyle || 'Sin estilo'}
                                 </span>
                                 {character.isPublic && (
-                                  <span className="text-xs text-green-600 flex items-center gap-1">
+                                  <span className="text-xs text-[#934f2c] flex items-center gap-1">
                                     <Eye className="size-3" />
                                     Publico
                                   </span>

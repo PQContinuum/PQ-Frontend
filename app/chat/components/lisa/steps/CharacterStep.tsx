@@ -63,7 +63,7 @@ export function CharacterStep() {
 
       {/* Selected character preview */}
       {selectedCharacter && (
-        <div className="relative bg-[#00552b]/5 border-2 border-[#00552b] rounded-xl p-4">
+        <div className="relative bg-[#934f2c]/5 border-2 border-[#934f2c] rounded-xl p-4">
           <button
             onClick={handleDeselect}
             className="absolute top-2 right-2 p-1 hover:bg-gray-200 rounded-full transition"
@@ -83,7 +83,7 @@ export function CharacterStep() {
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-[#00552b]">
+              <h3 className="font-semibold text-[#934f2c]">
                 {selectedCharacter.name}
               </h3>
               {selectedCharacter.description && (
@@ -102,7 +102,7 @@ export function CharacterStep() {
       {/* Create new character button */}
       <button
         onClick={() => setShowForm(true)}
-        className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-600 hover:border-[#00552b] hover:text-[#00552b] hover:bg-[#00552b]/5 transition"
+        className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-600 hover:border-[#934f2c] hover:text-[#934f2c] hover:bg-[#934f2c]/5 transition"
       >
         <Plus className="w-5 h-5" />
         <span>Crear nuevo personaje</span>

@@ -101,7 +101,7 @@ export const ConversationItem = memo(function ConversationItem({
               onKeyDown={handleKeyDown}
               onBlur={handleRename}
               autoFocus
-              className="flex-1 text-sm font-medium bg-white border border-[#00552b] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#00552b]/20"
+              className="flex-1 text-sm font-medium bg-white border border-[#934f2c] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#934f2c]/20"
             />
           </div>
         ) : (
@@ -110,9 +110,9 @@ export const ConversationItem = memo(function ConversationItem({
               onClick={handleSelect}
               isActive={!isSelectionMode && isActive}
               className={cn(
-                "data-[active=true]:bg-[#00552b]/10 data-[active=true]:text-[#00552b] hover:bg-[#00552b]/5 transition-colors",
+                "data-[active=true]:bg-[#934f2c]/10 data-[active=true]:text-[#934f2c] hover:bg-[#934f2c]/5 transition-colors",
                 isSelectionMode ? "pr-4" : "pr-10",
-                isSelectionMode && isSelected && "bg-[#00552b]/10"
+                isSelectionMode && isSelected && "bg-[#934f2c]/10"
               )}
             >
               {isSelectionMode ? (
@@ -120,7 +120,7 @@ export const ConversationItem = memo(function ConversationItem({
                   className={cn(
                     "size-4 flex-shrink-0 rounded border-2 flex items-center justify-center transition-colors",
                     isSelected
-                      ? "bg-[#00552b] border-[#00552b]"
+                      ? "bg-[#934f2c] border-[#934f2c]"
                       : "border-[#4c4c4c] bg-transparent"
                   )}
                 >

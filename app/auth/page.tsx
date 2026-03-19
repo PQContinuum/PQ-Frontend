@@ -138,7 +138,7 @@ export default function AuthPage() {
           {/* Logo y título */}
           <div className="mb-8 text-center">
             <motion.div
-              className="mx-auto mb-4 flex size-20 items-center justify-center rounded-2xl bg-[#00552b]/10"
+              className="mx-auto mb-4 flex size-20 items-center justify-center rounded-2xl bg-[#934f2c]/10"
               whileHover={{ rotate: [0, -10, 10, -10, 0] }}
               transition={{ duration: 0.5 }}
             >
@@ -175,7 +175,7 @@ export default function AuthPage() {
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-4 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-600"
+              className="mb-4 rounded-lg border border-orange-200 bg-orange-50 p-3 text-sm text-[#934f2c]"
             >
               {message}
             </motion.div>
@@ -200,7 +200,7 @@ export default function AuthPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={loading}
                   required
-                  className="w-full rounded-lg border border-black/10 bg-white py-3 pl-11 pr-4 text-[#111111] placeholder:text-[#4c4c4c]/40 focus:border-[#00552b] focus:outline-none focus:ring-2 focus:ring-[#00552b]/20 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="w-full rounded-lg border border-black/10 bg-white py-3 pl-11 pr-4 text-[#111111] placeholder:text-[#4c4c4c]/40 focus:border-[#934f2c] focus:outline-none focus:ring-2 focus:ring-[#934f2c]/20 disabled:cursor-not-allowed disabled:opacity-50"
                 />
               </div>
             </div>
@@ -223,7 +223,7 @@ export default function AuthPage() {
                   disabled={loading}
                   required
                   minLength={6}
-                  className="w-full rounded-lg border border-black/10 bg-white py-3 pl-11 pr-4 text-[#111111] placeholder:text-[#4c4c4c]/40 focus:border-[#00552b] focus:outline-none focus:ring-2 focus:ring-[#00552b]/20 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="w-full rounded-lg border border-black/10 bg-white py-3 pl-11 pr-4 text-[#111111] placeholder:text-[#4c4c4c]/40 focus:border-[#934f2c] focus:outline-none focus:ring-2 focus:ring-[#934f2c]/20 disabled:cursor-not-allowed disabled:opacity-50"
                 />
               </div>
               {isSignUp && (
@@ -246,7 +246,7 @@ export default function AuthPage() {
                   <div
                     className={`flex items-start gap-3 rounded-lg border p-3 transition-colors ${
                       acceptedTerms
-                        ? 'border-[#00552b]/30 bg-[#00552b]/5'
+                        ? 'border-[#934f2c]/30 bg-[#934f2c]/5'
                         : 'border-black/10 bg-gray-50'
                     }`}
                   >
@@ -255,8 +255,8 @@ export default function AuthPage() {
                       onClick={() => setAcceptedTerms(!acceptedTerms)}
                       className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded border-2 transition-all ${
                         acceptedTerms
-                          ? 'border-[#00552b] bg-[#00552b]'
-                          : 'border-gray-300 bg-white hover:border-[#00552b]/50'
+                          ? 'border-[#934f2c] bg-[#934f2c]'
+                          : 'border-gray-300 bg-white hover:border-[#934f2c]/50'
                       }`}
                     >
                       <AnimatePresence>
@@ -277,7 +277,7 @@ export default function AuthPage() {
                       <button
                         type="button"
                         onClick={() => setShowTermsModal(true)}
-                        className="inline-flex items-center gap-0.5 font-semibold text-[#00552b] underline decoration-[#00552b]/30 underline-offset-2 transition-colors hover:text-[#00552b]/80 hover:decoration-[#00552b]/60"
+                        className="inline-flex items-center gap-0.5 font-semibold text-[#934f2c] underline decoration-[#934f2c]/30 underline-offset-2 transition-colors hover:text-[#934f2c]/80 hover:decoration-[#934f2c]/60"
                       >
                         Términos de Servicio
                         <ExternalLink className="size-3" />
@@ -287,7 +287,7 @@ export default function AuthPage() {
                         href="/legal/privacidad"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-0.5 font-semibold text-[#00552b] underline decoration-[#00552b]/30 underline-offset-2 transition-colors hover:text-[#00552b]/80 hover:decoration-[#00552b]/60"
+                        className="inline-flex items-center gap-0.5 font-semibold text-[#934f2c] underline decoration-[#934f2c]/30 underline-offset-2 transition-colors hover:text-[#934f2c]/80 hover:decoration-[#934f2c]/60"
                       >
                         Política de Privacidad
                         <ExternalLink className="size-3" />
@@ -303,7 +303,7 @@ export default function AuthPage() {
               disabled={loading || (isSignUp && !acceptedTerms)}
               whileHover={{ scale: loading ? 1 : 1.02 }}
               whileTap={{ scale: loading ? 1 : 0.98 }}
-              className="w-full rounded-lg bg-[#00552b] py-3 font-semibold text-white transition-colors hover:bg-[#00552b]/90 disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full rounded-lg bg-[#934f2c] py-3 font-semibold text-white transition-colors hover:bg-[#934f2c]/90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -366,7 +366,7 @@ export default function AuthPage() {
                 setAcceptedTerms(false);
               }}
               disabled={loading}
-              className="text-sm text-[#00552b] hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+              className="text-sm text-[#934f2c] hover:underline disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isSignUp ? (
                 <>
@@ -413,8 +413,8 @@ export default function AuthPage() {
               {/* Header del modal */}
               <div className="flex items-center justify-between border-b border-black/10 px-6 py-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex size-10 items-center justify-center rounded-xl bg-[#00552b]/10">
-                    <Shield className="size-5 text-[#00552b]" />
+                  <div className="flex size-10 items-center justify-center rounded-xl bg-[#934f2c]/10">
+                    <Shield className="size-5 text-[#934f2c]" />
                   </div>
                   <div>
                     <h2 className="text-lg font-bold text-[#111111]">Términos de Servicio</h2>
@@ -498,7 +498,7 @@ export default function AuthPage() {
                       href="/legal/privacidad"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="font-semibold text-[#00552b] underline"
+                      className="font-semibold text-[#934f2c] underline"
                     >
                       Política de Privacidad
                     </a>{' '}
@@ -515,17 +515,17 @@ export default function AuthPage() {
                   <h3 className="font-semibold text-[#111111]">10. Contacto</h3>
                   <p>
                     Para preguntas sobre estos términos, contáctanos en{' '}
-                    <span className="font-semibold text-[#00552b]">soporte@continuumai.llc</span>
+                    <span className="font-semibold text-[#934f2c]">soporte@continuumai.llc</span>
                   </p>
 
-                  <div className="rounded-lg border border-[#00552b]/20 bg-[#00552b]/5 p-4 text-center">
+                  <div className="rounded-lg border border-[#934f2c]/20 bg-[#934f2c]/5 p-4 text-center">
                     <p className="text-xs text-[#4c4c4c]">
                       Para ver los términos completos, visita{' '}
                       <a
                         href="/legal/terminos"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="font-semibold text-[#00552b] underline"
+                        className="font-semibold text-[#934f2c] underline"
                       >
                         nuestra página de términos
                       </a>
@@ -561,7 +561,7 @@ export default function AuthPage() {
                     disabled={!hasScrolledTerms}
                     whileHover={{ scale: hasScrolledTerms ? 1.02 : 1 }}
                     whileTap={{ scale: hasScrolledTerms ? 0.98 : 1 }}
-                    className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[#00552b] py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#00552b]/90 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[#934f2c] py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#934f2c]/90 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Check className="size-4" />
                     Acepto los términos

@@ -75,13 +75,13 @@ export function CharacterGallery({
             onClick={() => onSelect(character)}
             className={`relative flex flex-col items-center p-4 rounded-xl border-2 transition-all ${
               isSelected
-                ? 'border-[#00552b] bg-[#00552b]/5 shadow-md'
+                ? 'border-[#934f2c] bg-[#934f2c]/5 shadow-md'
                 : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
             }`}
           >
             {/* Selection indicator */}
             {isSelected && (
-              <div className="absolute top-2 right-2 w-4 h-4 bg-[#00552b] rounded-full flex items-center justify-center">
+              <div className="absolute top-2 right-2 w-4 h-4 bg-[#934f2c] rounded-full flex items-center justify-center">
                 <Check className="w-2.5 h-2.5 text-white" />
               </div>
             )}
@@ -102,7 +102,7 @@ export function CharacterGallery({
             {/* Name */}
             <h4
               className={`mt-2 text-sm font-medium truncate max-w-full ${
-                isSelected ? 'text-[#00552b]' : 'text-gray-900'
+                isSelected ? 'text-[#934f2c]' : 'text-gray-900'
               }`}
             >
               {character.name}

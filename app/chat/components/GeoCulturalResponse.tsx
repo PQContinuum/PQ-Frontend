@@ -140,8 +140,8 @@ export function GeoCulturalResponse({ data }: GeoCulturalResponseProps) {
                   onClick={() => setSelectedPlace(place)}
                 >
                   <Pin
-                    background={selectedPlace?.name === place.name ? '#facc15' : '#00552b'}
-                    borderColor={selectedPlace?.name === place.name ? '#eab308' : '#003d1f'}
+                    background={selectedPlace?.name === place.name ? '#facc15' : '#934f2c'}
+                    borderColor={selectedPlace?.name === place.name ? '#eab308' : '#6b3a20'}
                     glyphColor={selectedPlace?.name === place.name ? '#000' : '#fff'}
                   />
                 </AdvancedMarker>
@@ -181,11 +181,11 @@ export function GeoCulturalResponse({ data }: GeoCulturalResponseProps) {
 
                     <div className="flex items-center gap-3 text-xs text-gray-600 pt-2 border-t border-gray-200">
                       <div className="flex items-center gap-1">
-                        <Navigation className="size-3 text-[#00552b]" />
+                        <Navigation className="size-3 text-[#934f2c]" />
                         <span>{selectedPlace.distance}</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <Clock className="size-3 text-[#00552b]" />
+                        <Clock className="size-3 text-[#934f2c]" />
                         <span>{selectedPlace.travel_time}</span>
                       </div>
                     </div>
@@ -246,7 +246,7 @@ export function GeoCulturalResponse({ data }: GeoCulturalResponseProps) {
             className="flex flex-col space-y-3"
           >
             <h3 className="text-sm font-semibold text-[#111111] flex items-center gap-2">
-              <Building className="size-4 text-[#00552b]" />
+              <Building className="size-4 text-[#934f2c]" />
               <span>Recomendaciones Cercanas</span>
             </h3>
             {data.places.map((place) => (
@@ -258,14 +258,14 @@ export function GeoCulturalResponse({ data }: GeoCulturalResponseProps) {
                 onClick={() => setSelectedPlace(place)}
                 className={`group relative overflow-hidden rounded-xl border bg-white transition-all hover:shadow-xl hover:scale-[1.02] cursor-pointer ${
                   selectedPlace?.name === place.name
-                    ? 'border-[#00552b] shadow-lg ring-2 ring-[#00552b]/20'
-                    : 'border-black/10 hover:border-[#00552b]/30'
+                    ? 'border-[#934f2c] shadow-lg ring-2 ring-[#934f2c]/20'
+                    : 'border-black/10 hover:border-[#934f2c]/30'
                 }`}
               >
                 {/* Photo gallery if available */}
                 <div className={`space-y-3 p-4`}>
                   <div className="flex items-start justify-between gap-2">
-                    <h4 className="font-bold text-[#111111] group-hover:text-[#00552b] transition-colors flex-1 text-base">
+                    <h4 className="font-bold text-[#111111] group-hover:text-[#934f2c] transition-colors flex-1 text-base">
                       {place.name}
                     </h4>
                     {place.rating && place.rating > 0 && (
@@ -310,15 +310,15 @@ export function GeoCulturalResponse({ data }: GeoCulturalResponseProps) {
                   <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                     <div className="flex items-center gap-3 text-xs">
                       <div className="flex items-center gap-1.5 text-gray-600">
-                        <Navigation className="size-3.5 text-[#00552b]" />
+                        <Navigation className="size-3.5 text-[#934f2c]" />
                         <span className="font-medium">{place.distance}</span>
                       </div>
                       <div className="flex items-center gap-1.5 text-gray-600">
-                        <Clock className="size-3.5 text-[#00552b]" />
+                        <Clock className="size-3.5 text-[#934f2c]" />
                         <span className="font-medium">{place.travel_time}</span>
                       </div>
                     </div>
-                    <div className="text-xs font-semibold text-[#00552b] opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="text-xs font-semibold text-[#934f2c] opacity-0 group-hover:opacity-100 transition-opacity">
                       Ver en mapa →
                     </div>
                   </div>

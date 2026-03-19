@@ -252,7 +252,7 @@ function LocationMapConfirmContent({
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-                    className="mx-auto w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-[#00552b] to-[#00aa56] rounded-full flex items-center justify-center mb-4 sm:mb-6"
+                    className="mx-auto w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-[#934f2c] to-[#d9753e] rounded-full flex items-center justify-center mb-4 sm:mb-6"
                   >
                     <MapPin className="size-8 sm:size-10 text-white" />
                   </motion.div>
@@ -318,10 +318,10 @@ function LocationMapConfirmContent({
                           }}
                         >
                           <div className="relative">
-                            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-[#00552b] to-[#00aa56] rounded-full flex items-center justify-center shadow-lg">
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-[#934f2c] to-[#d9753e] rounded-full flex items-center justify-center shadow-lg">
                               <Navigation className="size-5 sm:size-6 text-white" />
                             </div>
-                            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-[#00552b]" />
+                            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-[#934f2c]" />
                           </div>
                         </AdvancedMarker>
                       </Map>
@@ -367,17 +367,17 @@ function LocationMapConfirmContent({
                       <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className="p-3 sm:p-4 bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-xl"
+                        className="p-3 sm:p-4 bg-gradient-to-br from-orange-50 to-emerald-50 border border-[#e8956a] rounded-xl"
                       >
                         <div className="flex items-center gap-2 mb-2 sm:mb-3">
-                          <Check className="size-4 sm:size-5 text-green-600" />
-                          <span className="text-sm sm:text-base font-semibold text-green-900">Ubicación seleccionada</span>
+                          <Check className="size-4 sm:size-5 text-[#934f2c]" />
+                          <span className="text-sm sm:text-base font-semibold text-[#7a3d1e]">Ubicación seleccionada</span>
                         </div>
 
                         <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
                           {currentAddress.street && (
                             <div className="flex flex-wrap">
-                              <span className="text-green-700 font-medium">Calle: </span>
+                              <span className="text-[#934f2c] font-medium">Calle: </span>
                               <span className="text-gray-800 ml-1">
                                 {[currentAddress.street, currentAddress.streetNumber]
                                   .filter(Boolean)
@@ -387,20 +387,20 @@ function LocationMapConfirmContent({
                           )}
                           {currentAddress.neighborhood && (
                             <div className="flex flex-wrap">
-                              <span className="text-green-700 font-medium">Colonia: </span>
+                              <span className="text-[#934f2c] font-medium">Colonia: </span>
                               <span className="text-gray-800 ml-1">{currentAddress.neighborhood}</span>
                             </div>
                           )}
                           {currentAddress.city && (
                             <div className="flex flex-wrap">
-                              <span className="text-green-700 font-medium">Ciudad: </span>
+                              <span className="text-[#934f2c] font-medium">Ciudad: </span>
                               <span className="text-gray-800 ml-1">
                                 {[currentAddress.city, currentAddress.state].filter(Boolean).join(', ')}
                               </span>
                             </div>
                           )}
-                          <div className="pt-1.5 sm:pt-2 border-t border-green-200">
-                            <span className="text-[10px] sm:text-xs text-green-700 break-all">
+                          <div className="pt-1.5 sm:pt-2 border-t border-[#e8956a]">
+                            <span className="text-[10px] sm:text-xs text-[#934f2c] break-all">
                               Coordenadas: {markerPosition.lat.toFixed(7)}, {markerPosition.lng.toFixed(7)}
                             </span>
                           </div>
@@ -419,7 +419,7 @@ function LocationMapConfirmContent({
                     <button
                       onClick={handleConfirm}
                       disabled={isGeocoding}
-                      className="w-full bg-gradient-to-r from-[#00552b] to-[#00aa56] text-white font-semibold py-3 sm:py-4 px-4 sm:px-6 rounded-xl sm:rounded-2xl hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base"
+                      className="w-full bg-gradient-to-r from-[#934f2c] to-[#d9753e] text-white font-semibold py-3 sm:py-4 px-4 sm:px-6 rounded-xl sm:rounded-2xl hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base"
                     >
                       <Check className="size-4 sm:size-5" />
                       Confirmar ubicación

@@ -61,16 +61,16 @@ function PaymentSuccessContent() {
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-8">
       {/* Background grid pattern */}
-      <div className="absolute inset-0 h-full w-full bg-black bg-[linear-gradient(to_right,rgba(0,85,43,0.1)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,85,43,0.1)_1px,transparent_1px)] bg-[size:6rem_4rem]">
-        <div className="absolute bottom-0 left-0 right-0 top-0 bg-[radial-gradient(circle_800px_at_50%_300px,rgba(0,85,43,0.1),transparent)]"></div>
+      <div className="absolute inset-0 h-full w-full bg-black bg-[linear-gradient(to_right,rgba(147,79,44,0.1)_1px,transparent_1px),linear-gradient(to_bottom,rgba(147,79,44,0.1)_1px,transparent_1px)] bg-[size:6rem_4rem]">
+        <div className="absolute bottom-0 left-0 right-0 top-0 bg-[radial-gradient(circle_800px_at_50%_300px,rgba(147,79,44,0.1),transparent)]"></div>
       </div>
 
       <Card className="relative w-full max-w-md border-white/10 bg-white/[0.02] backdrop-blur-sm">
         <CardHeader className="text-center">
           {status === 'loading' && (
             <>
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#00552b]/10">
-                <Loader2 className="h-8 w-8 animate-spin text-[#00552b]" />
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#934f2c]/10">
+                <Loader2 className="h-8 w-8 animate-spin text-[#934f2c]" />
               </div>
               <CardTitle className="text-white">Verificando pago...</CardTitle>
               <CardDescription className="text-neutral-400">
@@ -81,14 +81,14 @@ function PaymentSuccessContent() {
 
           {status === 'success' && (
             <>
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#00552b]/10">
-                <CheckCircle2 className="h-8 w-8 text-[#00552b]" />
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#934f2c]/10">
+                <CheckCircle2 className="h-8 w-8 text-[#934f2c]" />
               </div>
               <CardTitle className="text-white">¡Pago exitoso!</CardTitle>
               <CardDescription className="text-neutral-400">
                 Tu suscripción ha sido activada correctamente.
                 <br />
-                <span className="text-[#00552b] mt-2 inline-block">
+                <span className="text-[#934f2c] mt-2 inline-block">
                   Redirigiendo al chat en 3 segundos...
                 </span>
               </CardDescription>
@@ -114,7 +114,7 @@ function PaymentSuccessContent() {
               Email: <span className="text-white">{sessionData.customerEmail}</span>
             </p>
             <p className="text-sm text-neutral-400">
-              Estado: <span className="text-[#00552b]/50 font-semibold">{sessionData.paymentStatus}</span>
+              Estado: <span className="text-[#934f2c]/50 font-semibold">{sessionData.paymentStatus}</span>
             </p>
           </CardContent>
         )}
@@ -124,7 +124,7 @@ function PaymentSuccessContent() {
             <>
               <Button
                 onClick={() => router.push('/chat')}
-                className="w-full bg-[#00552b] hover:bg-[#00552b]/90 text-white"
+                className="w-full bg-[#934f2c] hover:bg-[#934f2c]/90 text-white"
               >
                 Ir al Chat
               </Button>
@@ -142,7 +142,7 @@ function PaymentSuccessContent() {
             <>
               <Button
                 onClick={() => router.push('/payment')}
-                className="w-full bg-[#00552b] hover:bg-[#00552b]/90 text-white"
+                className="w-full bg-[#934f2c] hover:bg-[#934f2c]/90 text-white"
               >
                 Intentar nuevamente
               </Button>
@@ -167,7 +167,7 @@ export default function PaymentSuccessPage() {
       fallback={
         <div className="min-h-screen bg-black flex items-center justify-center p-8 text-white">
           <div className="flex items-center gap-3">
-            <Loader2 className="h-5 w-5 animate-spin text-[#00552b]" />
+            <Loader2 className="h-5 w-5 animate-spin text-[#934f2c]" />
             <span>Verificando pago...</span>
           </div>
         </div>

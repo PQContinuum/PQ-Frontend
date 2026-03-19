@@ -287,7 +287,7 @@ function MediaCard({
             className="flex items-center text-xs text-gray-400 hover:text-gray-600 transition ml-auto"
           >
             {copied ? (
-              <Check className="w-3.5 h-3.5 text-green-500" />
+              <Check className="w-3.5 h-3.5 text-[#934f2c]" />
             ) : (
               <Share2 className="w-3.5 h-3.5" />
             )}
@@ -579,7 +579,7 @@ export default function MultimediaPage() {
           {mainTab === 'my-content' && contentType === 'characters' && (
             <button
               onClick={() => setShowCreateForm(true)}
-              className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 bg-[#00552b] text-white rounded-xl hover:bg-[#00552b]/90 transition font-medium text-sm"
+              className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 bg-[#934f2c] text-white rounded-xl hover:bg-[#934f2c]/90 transition font-medium text-sm"
             >
               <Plus className="w-4 h-4" />
               Crear personaje
@@ -638,7 +638,7 @@ export default function MultimediaPage() {
               </button>
               <button
                 onClick={() => setShowCreateForm(true)}
-                className="flex items-center gap-2 px-3.5 py-2 bg-[#00552b] text-white rounded-xl hover:bg-[#00552b]/90 transition text-sm font-medium shadow-sm"
+                className="flex items-center gap-2 px-3.5 py-2 bg-[#934f2c] text-white rounded-xl hover:bg-[#934f2c]/90 transition text-sm font-medium shadow-sm"
               >
                 <Plus className="w-4 h-4" />
                 <span className="hidden sm:inline">Crear</span>
@@ -660,7 +660,7 @@ export default function MultimediaPage() {
               Mi Contenido
               {myTotalCount > 0 && (
                 <span className={`px-1.5 py-0.5 text-xs rounded-md ${
-                  mainTab === 'my-content' ? 'bg-[#00552b]/10 text-[#00552b]' : 'bg-gray-200 text-gray-500'
+                  mainTab === 'my-content' ? 'bg-[#934f2c]/10 text-[#934f2c]' : 'bg-gray-200 text-gray-500'
                 }`}>
                   {myTotalCount}
                 </span>
@@ -696,7 +696,7 @@ export default function MultimediaPage() {
               onClick={() => setContentType(key)}
               className={`flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-xl whitespace-nowrap transition ${
                 contentType === key
-                  ? 'bg-[#00552b] text-white shadow-sm'
+                  ? 'bg-[#934f2c] text-white shadow-sm'
                   : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300'
               }`}
             >
@@ -722,7 +722,7 @@ export default function MultimediaPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={contentType === 'characters' ? 'Buscar personajes...' : 'Buscar contenido...'}
-              className="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-[#00552b] focus:ring-1 focus:ring-[#00552b]/20 focus:outline-none text-sm transition"
+              className="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-[#934f2c] focus:ring-1 focus:ring-[#934f2c]/20 focus:outline-none text-sm transition"
             />
           </div>
 
@@ -730,7 +730,7 @@ export default function MultimediaPage() {
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-2 px-3.5 py-2.5 border rounded-xl transition text-sm ${
-                showFilters ? 'border-[#00552b] bg-[#00552b]/5 text-[#00552b]' : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                showFilters ? 'border-[#934f2c] bg-[#934f2c]/5 text-[#934f2c]' : 'border-gray-200 text-gray-600 hover:border-gray-300'
               }`}
             >
               <Filter className="w-4 h-4" />
@@ -741,7 +741,7 @@ export default function MultimediaPage() {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortType)}
-            className="px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-[#00552b] focus:outline-none text-sm text-gray-600"
+            className="px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-[#934f2c] focus:outline-none text-sm text-gray-600"
           >
             <option value="recent">Recientes</option>
             <option value="popular">Populares</option>
@@ -779,7 +779,7 @@ export default function MultimediaPage() {
                 <select
                   value={selectedType}
                   onChange={(e) => setSelectedType(e.target.value as CharacterType | 'all')}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:border-[#00552b] focus:outline-none text-sm"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:border-[#934f2c] focus:outline-none text-sm"
                 >
                   <option value="all">Todos los tipos</option>
                   {CHARACTER_TYPE_OPTIONS.map((option) => (
@@ -796,7 +796,7 @@ export default function MultimediaPage() {
                 <select
                   value={selectedStyle}
                   onChange={(e) => setSelectedStyle(e.target.value as VisualStyle | 'all')}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:border-[#00552b] focus:outline-none text-sm"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:border-[#934f2c] focus:outline-none text-sm"
                 >
                   <option value="all">Todos los estilos</option>
                   {VISUAL_STYLE_OPTIONS.map((option) => (
@@ -813,7 +813,7 @@ export default function MultimediaPage() {
         {/* Content Grid */}
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-24">
-            <Loader2 className="w-8 h-8 text-[#00552b] animate-spin mb-3" />
+            <Loader2 className="w-8 h-8 text-[#934f2c] animate-spin mb-3" />
             <p className="text-sm text-gray-400">Cargando contenido...</p>
           </div>
         ) : (

@@ -171,8 +171,8 @@ export default function PaymentPage() {
   return (
     <div className="min-h-screen bg-black">
       {/* Background grid pattern */}
-      <div className="absolute inset-0 h-full w-full bg-black bg-[linear-gradient(to_right,rgba(0,85,43,0.1)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,85,43,0.1)_1px,transparent_1px)] bg-[size:6rem_4rem]">
-        <div className="absolute bottom-0 left-0 right-0 top-0 bg-[radial-gradient(circle_800px_at_50%_300px,rgba(0,85,43,0.1),transparent)]"></div>
+      <div className="absolute inset-0 h-full w-full bg-black bg-[linear-gradient(to_right,rgba(147,79,44,0.1)_1px,transparent_1px),linear-gradient(to_bottom,rgba(147,79,44,0.1)_1px,transparent_1px)] bg-[size:6rem_4rem]">
+        <div className="absolute bottom-0 left-0 right-0 top-0 bg-[radial-gradient(circle_800px_at_50%_300px,rgba(147,79,44,0.1),transparent)]"></div>
       </div>
 
       <div className="relative flex flex-col gap-16 px-8 py-24 text-center">
@@ -197,12 +197,12 @@ export default function PaymentPage() {
           {/* Tabs for billing frequency */}
           <Tabs defaultValue={frequency} onValueChange={setFrequency}>
             <TabsList className="bg-white/5 border border-white/10">
-              <TabsTrigger value="monthly" className="data-[state=active]:bg-[#00552b] text-white data-[state=active]:font-semibold">
+              <TabsTrigger value="monthly" className="data-[state=active]:bg-[#934f2c] text-white data-[state=active]:font-semibold">
                 Mensual
               </TabsTrigger>
-              <TabsTrigger value="yearly" className="data-[state=active]:bg-[#00552b] text-white data-[state=active]:font-semibold">
+              <TabsTrigger value="yearly" className="data-[state=active]:bg-[#934f2c] text-white data-[state=active]:font-semibold">
                 Anual
-                <Badge variant="secondary" className="ml-2 bg-[#00552b]/20 text-white border-0">
+                <Badge variant="secondary" className="ml-2 bg-[#934f2c]/20 text-white border-0">
                   Ahorra 8%
                 </Badge>
               </TabsTrigger>
@@ -226,25 +226,25 @@ export default function PaymentPage() {
                 <Card
                   className={cn(
                     'relative w-full text-left border-white/5 bg-white/[0.02] backdrop-blur-sm hover:bg-white/[0.04] transition-all duration-300',
-                    plan.popular && !isCurrentPlan && 'ring-2 ring-[#00552b] scale-105',
-                    isCurrentPlan && 'ring-2 ring-green-500 scale-105 bg-green-500/5'
+                    plan.popular && !isCurrentPlan && 'ring-2 ring-[#934f2c] scale-105',
+                    isCurrentPlan && 'ring-2 ring-[#934f2c] scale-105 bg-[#934f2c]/5'
                   )}
                   key={plan.id}
                 >
                   {isCurrentPlan ? (
-                    <Badge className="-translate-x-1/2 -translate-y-1/2 absolute top-0 left-1/2 rounded-full bg-green-500 shadow-lg shadow-green-500/30">
+                    <Badge className="-translate-x-1/2 -translate-y-1/2 absolute top-0 left-1/2 rounded-full bg-[#934f2c] shadow-lg shadow-[#934f2c]/30">
                       <Crown className="w-3 h-3 mr-1" />
                       Tu Plan Actual
                     </Badge>
                   ) : plan.popular ? (
-                    <Badge className="-translate-x-1/2 -translate-y-1/2 absolute top-0 left-1/2 rounded-full bg-[#00552b] hover:bg-[#00552b]/90">
+                    <Badge className="-translate-x-1/2 -translate-y-1/2 absolute top-0 left-1/2 rounded-full bg-[#934f2c] hover:bg-[#934f2c]/90">
                       Más popular
                     </Badge>
                   ) : null}
                   <CardHeader>
                     {/* Icon */}
-                    <div className="w-12 h-12 rounded-2xl bg-[#00552b]/15 flex items-center justify-center mb-4 border border-[#00552b]/30">
-                      <Icon className="w-6 h-6 text-[#00552b]" />
+                    <div className="w-12 h-12 rounded-2xl bg-[#934f2c]/15 flex items-center justify-center mb-4 border border-[#934f2c]/30">
+                      <Icon className="w-6 h-6 text-[#934f2c]" />
                     </div>
 
                     <CardTitle className="font-bold text-2xl text-white">
@@ -282,7 +282,7 @@ export default function PaymentPage() {
                         className="flex items-start gap-3 text-neutral-300 text-sm"
                         key={index}
                       >
-                        <Check className="h-5 w-5 text-[#00552b] flex-shrink-0 mt-0.5" />
+                        <Check className="h-5 w-5 text-[#934f2c] flex-shrink-0 mt-0.5" />
                         <span
                           className={
                             feature.includes('Todo lo del')
@@ -299,7 +299,7 @@ export default function PaymentPage() {
                     {plan.id === 'free' ? (
                       <Link href="/chat" className="w-full">
                         <Button
-                          className="w-full border-white/20 bg-white text-black hover:bg-[#00552b] hover:text-white hover:border-[#00552b] transition-all"
+                          className="w-full border-white/20 bg-white text-black hover:bg-[#934f2c] hover:text-white hover:border-[#934f2c] transition-all"
                           variant="outline"
                         >
                           {plan.cta}
@@ -308,7 +308,7 @@ export default function PaymentPage() {
                       </Link>
                     ) : isCurrentPlan ? (
                       <Button
-                        className="w-full bg-green-500/20 text-green-400 border-green-500/30 cursor-default"
+                        className="w-full bg-[#934f2c]/20 text-[#d9753e] border-[#934f2c]/30 cursor-default"
                         variant="outline"
                         disabled
                       >
@@ -320,8 +320,8 @@ export default function PaymentPage() {
                         className={cn(
                           'w-full transition-all',
                           plan.popular
-                            ? 'bg-[#00552b] hover:bg-[#00552b]/90 text-white'
-                            : 'border-white/20 bg-white/5 text-white hover:bg-[#00552b] hover:text-white hover:border-[#00552b]'
+                            ? 'bg-[#934f2c] hover:bg-[#934f2c]/90 text-white'
+                            : 'border-white/20 bg-white/5 text-white hover:bg-[#934f2c] hover:text-white hover:border-[#934f2c]'
                         )}
                         variant={plan.popular ? 'default' : 'outline'}
                         disabled={loadingPlanId !== null}

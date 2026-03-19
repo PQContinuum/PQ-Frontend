@@ -28,7 +28,7 @@ export function WebSearchToggle({ className }: WebSearchToggleProps) {
         >
           <span className="relative flex items-center">
             {isSearching ? (
-              <Loader2 className="size-4 animate-spin text-[#00552b]" />
+              <Loader2 className="size-4 animate-spin text-[#934f2c]" />
             ) : (
               <Globe className="size-4 text-[#111111]/70" />
             )}

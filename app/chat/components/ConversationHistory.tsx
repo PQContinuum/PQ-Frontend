@@ -439,7 +439,7 @@ export const ConversationHistory = memo(function ConversationHistory() {
     return (
       <SidebarMenuItem>
         <div className="flex items-center justify-center py-8">
-          <Loader2 className="size-6 animate-spin text-[#00552b]" />
+          <Loader2 className="size-6 animate-spin text-[#934f2c]" />
         </div>
       </SidebarMenuItem>
     );
@@ -464,7 +464,7 @@ export const ConversationHistory = memo(function ConversationHistory() {
         <SidebarMenuItem>
           <SidebarMenuButton
             onClick={() => setCreateProjectOpen(true)}
-            className="text-[#4c4c4c] hover:text-[#00552b] hover:bg-[#00552b]/5"
+            className="text-[#4c4c4c] hover:text-[#934f2c] hover:bg-[#934f2c]/5"
           >
             <FolderPlus className="size-4" />
             <span>Crear proyecto</span>
@@ -614,7 +614,7 @@ export const ConversationHistory = memo(function ConversationHistory() {
           <SidebarMenuItem>
             <SidebarMenuButton
               onClick={() => setCreateProjectOpen(true)}
-              className="text-[#4c4c4c] hover:text-[#00552b] hover:bg-[#00552b]/5"
+              className="text-[#4c4c4c] hover:text-[#934f2c] hover:bg-[#934f2c]/5"
             >
               <FolderPlus className="size-4" />
               <span>Crear proyecto</span>
@@ -627,7 +627,7 @@ export const ConversationHistory = memo(function ConversationHistory() {
               <>
                 <button
                   onClick={handleCancelSelectionMode}
-                  className="flex items-center gap-1.5 text-sm text-[#4c4c4c] hover:text-[#00552b] transition-colors"
+                  className="flex items-center gap-1.5 text-sm text-[#4c4c4c] hover:text-[#934f2c] transition-colors"
                 >
                   <X className="size-4" />
                   <span>Cancelar</span>
@@ -644,7 +644,7 @@ export const ConversationHistory = memo(function ConversationHistory() {
             ) : (
               <button
                 onClick={handleToggleSelectionMode}
-                className="flex items-center gap-1.5 text-sm text-[#4c4c4c] hover:text-[#00552b] transition-colors ml-auto"
+                className="flex items-center gap-1.5 text-sm text-[#4c4c4c] hover:text-[#934f2c] transition-colors ml-auto"
               >
                 <CheckSquare className="size-4" />
                 <span>Seleccionar</span>
