@@ -429,7 +429,7 @@ export function ChatGPTImportDialog({ open, onOpenChange }: ChatGPTImportDialogP
                 {/* Upload Area */}
                 <div>
                   <h3 className="text-sm font-bold text-[#111111] mb-3 flex items-center gap-2">
-                    <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-[#934f2c]/20 text-[#934f2c]">
+                    <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-[#FF8B3D]/20 text-[#FF8B3D]">
                       Paso 2
                     </span>
                     Sube tu archivo
@@ -441,8 +441,8 @@ export function ChatGPTImportDialog({ open, onOpenChange }: ChatGPTImportDialogP
                     onDrop={handleDrop}
                     className={`relative border-2 border-dashed rounded-xl p-8 transition-all duration-300 ${
                       dragActive
-                        ? 'border-[#934f2c] bg-[#934f2c]/5 scale-[1.02]'
-                        : 'border-gray-300 hover:border-[#934f2c]/50 hover:bg-gray-50/50'
+                        ? 'border-[#FF8B3D] bg-[#FF8B3D]/5 scale-[1.02]'
+                        : 'border-gray-300 hover:border-[#FF8B3D]/50 hover:bg-gray-50/50'
                     }`}
                   >
                     <input
@@ -458,7 +458,7 @@ export function ChatGPTImportDialog({ open, onOpenChange }: ChatGPTImportDialogP
                       className="flex flex-col items-center cursor-pointer"
                     >
                       <div className="relative mb-4">
-                        <div className="bg-gradient-to-br from-[#934f2c] to-[#d9753e] p-3 rounded-2xl shadow-lg">
+                        <div className="bg-gradient-to-br from-[#FF8B3D] to-[#d9753e] p-3 rounded-2xl shadow-lg">
                           <Upload className="w-6 h-6 text-white" />
                         </div>
                       </div>
@@ -495,8 +495,8 @@ export function ChatGPTImportDialog({ open, onOpenChange }: ChatGPTImportDialogP
                 className="flex flex-col items-center justify-center py-12"
               >
                 <div className="relative">
-                  <div className="absolute inset-0 bg-[#934f2c]/20 rounded-full blur-xl animate-pulse" />
-                  <Loader2 className="relative size-12 text-[#934f2c] animate-spin" />
+                  <div className="absolute inset-0 bg-[#FF8B3D]/20 rounded-full blur-xl animate-pulse" />
+                  <Loader2 className="relative size-12 text-[#FF8B3D] animate-spin" />
                 </div>
                 <p className="mt-6 text-lg font-semibold text-[#111111]">
                   Procesando archivo...
@@ -520,7 +520,7 @@ export function ChatGPTImportDialog({ open, onOpenChange }: ChatGPTImportDialogP
                 {fileMetadata && (
                   <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
                     {fileMetadata.fileType === 'zip' ? (
-                      <FileArchive className="size-5 text-[#934f2c]" />
+                      <FileArchive className="size-5 text-[#FF8B3D]" />
                     ) : (
                       <FileJson className="size-5 text-blue-600" />
                     )}
@@ -537,10 +537,10 @@ export function ChatGPTImportDialog({ open, onOpenChange }: ChatGPTImportDialogP
 
                 {/* Summary Stats */}
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-gradient-to-br from-[#934f2c]/10 to-[#d9753e]/5 rounded-xl p-4 border border-[#934f2c]/20">
+                  <div className="bg-gradient-to-br from-[#FF8B3D]/10 to-[#d9753e]/5 rounded-xl p-4 border border-[#FF8B3D]/20">
                     <div className="flex items-center gap-2 mb-2">
-                      <MessageSquare className="size-4 text-[#934f2c]" />
-                      <span className="text-xs font-semibold text-[#934f2c] uppercase tracking-wide">
+                      <MessageSquare className="size-4 text-[#FF8B3D]" />
+                      <span className="text-xs font-semibold text-[#FF8B3D] uppercase tracking-wide">
                         Conversaciones
                       </span>
                     </div>
@@ -692,7 +692,7 @@ export function ChatGPTImportDialog({ open, onOpenChange }: ChatGPTImportDialogP
                   </Button>
                   <Button
                     onClick={handleImport}
-                    className="flex-1 bg-[#934f2c] hover:bg-[#004422] text-white"
+                    className="flex-1 bg-[#FF8B3D] hover:bg-[#004422] text-white"
                   >
                     <Upload className="size-4 mr-2" />
                     Importar {parsedData.previews.length} conversaciones
@@ -767,7 +767,7 @@ export function ChatGPTImportDialog({ open, onOpenChange }: ChatGPTImportDialogP
                 {/* Success Icon */}
                 <div className="flex flex-col items-center py-4">
                   <div className="bg-[#f0b896] p-4 rounded-full mb-4">
-                    <CheckCircle2 className="size-10 text-[#934f2c]" />
+                    <CheckCircle2 className="size-10 text-[#FF8B3D]" />
                   </div>
                   <h3 className="text-xl font-bold text-[#111111]">
                     Importación completada
@@ -782,10 +782,10 @@ export function ChatGPTImportDialog({ open, onOpenChange }: ChatGPTImportDialogP
                 {/* Results Stats */}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="text-center p-4 bg-orange-50 rounded-xl border border-[#e8956a]">
-                    <p className="text-2xl font-bold text-[#934f2c]">
+                    <p className="text-2xl font-bold text-[#FF8B3D]">
                       {normalizedResult.imported}
                     </p>
-                    <p className="text-xs text-[#934f2c] font-medium">
+                    <p className="text-xs text-[#FF8B3D] font-medium">
                       Importadas
                     </p>
                   </div>
@@ -945,7 +945,7 @@ export function ChatGPTImportDialog({ open, onOpenChange }: ChatGPTImportDialogP
                 {/* Close Button */}
                 <Button
                   onClick={handleClose}
-                  className="w-full bg-[#934f2c] hover:bg-[#004422] text-white"
+                  className="w-full bg-[#FF8B3D] hover:bg-[#004422] text-white"
                 >
                   Cerrar
                 </Button>

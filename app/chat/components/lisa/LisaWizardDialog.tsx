@@ -81,9 +81,9 @@ export function LisaWizardDialog({
       {/* Dialog */}
       <div className="relative w-full max-w-2xl max-h-[90vh] bg-white rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-[#934f2c]/5 to-emerald-500/5">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-[#FF8B3D]/5 to-emerald-500/5">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#934f2c] to-emerald-600 flex items-center justify-center shadow-lg shadow-[#934f2c]/25">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF8B3D] to-emerald-600 flex items-center justify-center shadow-lg shadow-[#FF8B3D]/25">
               <Wand2 className="w-5 h-5 text-white" />
             </div>
             <div>

@@ -71,8 +71,8 @@ export function PendingJobsBanner({ className }: PendingJobsBannerProps) {
         <div className="flex items-center gap-3">
           {/* Animated icon */}
           <div className="relative flex-shrink-0">
-            <div className="absolute inset-0 bg-[#934f2c]/20 rounded-full animate-ping" />
-            <div className="relative flex items-center justify-center h-8 w-8 bg-[#934f2c]/20 rounded-full">
+            <div className="absolute inset-0 bg-[#FF8B3D]/20 rounded-full animate-ping" />
+            <div className="relative flex items-center justify-center h-8 w-8 bg-[#FF8B3D]/20 rounded-full">
               {getJobIcon(firstJob.jobType)}
             </div>
           </div>
@@ -95,7 +95,7 @@ export function PendingJobsBanner({ className }: PendingJobsBannerProps) {
 
           {/* Progress indicator */}
           <div className="flex-shrink-0">
-            <Loader2 className="h-4 w-4 animate-spin text-[#934f2c]" />
+            <Loader2 className="h-4 w-4 animate-spin text-[#FF8B3D]" />
           </div>
 
           {/* Dismiss button */}
@@ -111,7 +111,7 @@ export function PendingJobsBanner({ className }: PendingJobsBannerProps) {
         {/* Progress bar */}
         <div className="mt-3 h-1 bg-white/10 rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-[#934f2c] to-[#d9753e] rounded-full animate-pulse"
+            className="h-full bg-gradient-to-r from-[#FF8B3D] to-[#d9753e] rounded-full animate-pulse"
             style={{ width: "60%" }}
           />
         </div>
@@ -136,15 +136,15 @@ export function PendingJobsIndicator({ onClick }: { onClick?: () => void }) {
       className={cn(
         "inline-flex items-center gap-1.5",
         "px-2.5 py-1 rounded-full",
-        "bg-[#934f2c]/15 text-[#934f2c]",
+        "bg-[#FF8B3D]/15 text-[#FF8B3D]",
         "text-xs font-medium",
-        "hover:bg-[#934f2c]/25 transition-colors",
+        "hover:bg-[#FF8B3D]/25 transition-colors",
         "animate-in fade-in duration-200"
       )}
     >
       <span className="relative flex h-2 w-2">
-        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#934f2c] opacity-75" />
-        <span className="relative inline-flex rounded-full h-2 w-2 bg-[#934f2c]" />
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FF8B3D] opacity-75" />
+        <span className="relative inline-flex rounded-full h-2 w-2 bg-[#FF8B3D]" />
       </span>
       <span>{pendingJobs.length} en proceso</span>
     </button>

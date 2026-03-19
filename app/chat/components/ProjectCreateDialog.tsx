@@ -130,7 +130,7 @@ export function ProjectCreateDialog({
           <Button
             onClick={handleCreate}
             disabled={!name.trim() || createProject.isPending}
-            className="bg-[#934f2c] hover:bg-[#934f2c]/90"
+            className="bg-[#FF8B3D] hover:bg-[#FF8B3D]/90"
           >
             {createProject.isPending ? (
               <>

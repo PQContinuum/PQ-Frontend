@@ -1526,11 +1526,11 @@ export const MessageInput = memo(function MessageInput() {
             >
               <div
                 className="w-1.5 h-1.5 rounded-full"
-                style={{ backgroundColor: pendingProject.color || '#934f2c' }}
+                style={{ backgroundColor: pendingProject.color || '#FF8B3D' }}
               />
               <span
                 className="text-xs font-medium"
-                style={{ color: pendingProject.color || '#934f2c' }}
+                style={{ color: pendingProject.color || '#FF8B3D' }}
               >
                 {pendingProject.name}
               </span>
@@ -1546,11 +1546,11 @@ export const MessageInput = memo(function MessageInput() {
         )}
 
         {geoCulturalMode && (
-          <div className="flex items-center justify-between gap-3 px-4 py-2 bg-gradient-to-r from-[#934f2c]/10 to-[#d9753e]/10 rounded-2xl border border-[#934f2c]/20">
+          <div className="flex items-center justify-between gap-3 px-4 py-2 bg-gradient-to-r from-[#FF8B3D]/10 to-[#d9753e]/10 rounded-2xl border border-[#FF8B3D]/20">
             <div className="flex items-center gap-2 flex-1 min-w-0">
-              <MapPin className="size-4 text-[#934f2c] shrink-0" />
+              <MapPin className="size-4 text-[#FF8B3D] shrink-0" />
               <div className="flex flex-col min-w-0">
-                <span className="text-sm font-medium text-[#934f2c]">
+                <span className="text-sm font-medium text-[#FF8B3D]">
                   {!userLocation && isLocationLoading
                     ? 'Obteniendo ubicación precisa...'
                     : userLocation && address
@@ -1560,7 +1560,7 @@ export const MessageInput = memo(function MessageInput() {
                     : 'Obteniendo ubicación...'}
                 </span>
                 {address && address.neighborhood && (
-                  <span className="text-xs text-[#934f2c]/70 truncate">
+                  <span className="text-xs text-[#FF8B3D]/70 truncate">
                     {[address.neighborhood, address.city].filter(Boolean).join(', ')}
                   </span>
                 )}
@@ -1569,7 +1569,7 @@ export const MessageInput = memo(function MessageInput() {
             {coords && coords.accuracy && quality && (
               <div className="flex items-center gap-2 shrink-0">
                 <span className={`text-xs font-medium ${
-                  quality === 'excellent' ? 'text-[#934f2c]' :
+                  quality === 'excellent' ? 'text-[#FF8B3D]' :
                   quality === 'good' ? 'text-blue-600' :
                   quality === 'fair' ? 'text-yellow-600' :
                   'text-red-600'
@@ -1579,7 +1579,7 @@ export const MessageInput = memo(function MessageInput() {
                    quality === 'fair' ? '📍 Regular' :
                    '📍 Baja'}
                 </span>
-                <span className="text-xs text-[#934f2c]/70 font-medium">
+                <span className="text-xs text-[#FF8B3D]/70 font-medium">
                   (±{Math.round(coords.accuracy)}m)
                 </span>
               </div>
@@ -1602,8 +1602,8 @@ export const MessageInput = memo(function MessageInput() {
             ) : (
               <div className="text-center py-12">
                 <div className="relative inline-block">
-                  <div className="absolute inset-0 bg-[#934f2c]/20 rounded-full blur-xl animate-pulse"></div>
-                  <Loader2 className="relative w-8 h-8 text-[#934f2c] animate-spin" />
+                  <div className="absolute inset-0 bg-[#FF8B3D]/20 rounded-full blur-xl animate-pulse"></div>
+                  <Loader2 className="relative w-8 h-8 text-[#FF8B3D] animate-spin" />
                 </div>
                 <p className="text-sm text-gray-600 mt-4 font-medium">Preparando espacio para tus archivos...</p>
               </div>
@@ -1718,7 +1718,7 @@ export const MessageInput = memo(function MessageInput() {
                       value={imageStrength}
                       onChange={(e) => setImageStrength(parseFloat(e.target.value))}
                       disabled={isLoading}
-                      className="w-10 sm:w-16 h-1 accent-[#934f2c]"
+                      className="w-10 sm:w-16 h-1 accent-[#FF8B3D]"
                     />
                     <span className="text-[10px] sm:text-xs font-medium text-gray-600">
                       {Math.round(imageStrength * 100)}%
@@ -1784,14 +1784,14 @@ export const MessageInput = memo(function MessageInput() {
 
                 {/* Info indicator inline */}
                 {imageReferenceUrl && (
-                  <div className="flex items-center gap-1 text-[10px] sm:text-xs text-[#934f2c]">
+                  <div className="flex items-center gap-1 text-[10px] sm:text-xs text-[#FF8B3D]">
                     <Blend className="size-3" />
                     <span>Img a img</span>
                   </div>
                 )}
                 {imageUsage?.streamingEnabled && !imageReferenceUrl && (
                   <div className="flex items-center gap-1 text-[10px] sm:text-xs text-gray-400">
-                    <div className="w-1.5 h-1.5 bg-[#934f2c] rounded-full animate-pulse" />
+                    <div className="w-1.5 h-1.5 bg-[#FF8B3D] rounded-full animate-pulse" />
                     <span className="hidden sm:inline">Vista previa</span>
                   </div>
                 )}
@@ -1943,7 +1943,7 @@ export const MessageInput = memo(function MessageInput() {
                         disabled={isLoading}
                         className={`px-2.5 py-1 rounded-lg text-xs font-medium transition ${
                           isSelected
-                            ? 'bg-white text-[#934f2c] shadow-sm'
+                            ? 'bg-white text-[#FF8B3D] shadow-sm'
                             : 'text-gray-500 hover:text-gray-700'
                         } disabled:opacity-40`}
                         title={dur.description}
@@ -1966,7 +1966,7 @@ export const MessageInput = memo(function MessageInput() {
 
               {/* Progress indicator */}
               {isGeneratingVideo && videoProgress && (
-                <div className="flex items-center gap-2 mt-2 text-xs text-[#934f2c]">
+                <div className="flex items-center gap-2 mt-2 text-xs text-[#FF8B3D]">
                   <Loader2 className="size-3 animate-spin" />
                   <span>{videoProgress}</span>
                 </div>
@@ -2007,7 +2007,7 @@ export const MessageInput = memo(function MessageInput() {
                   disabled={isLoading}
                   className={`relative flex shrink-0 items-center justify-center rounded-full p-2 transition ${
                     enableWebSearch || geoCulturalMode || showFileUpload || attachments.length > 0 || imageMode || videoMode
-                      ? 'bg-[#934f2c] text-white'
+                      ? 'bg-[#FF8B3D] text-white'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   } disabled:opacity-40 disabled:cursor-not-allowed`}
                 >
@@ -2037,7 +2037,7 @@ export const MessageInput = memo(function MessageInput() {
                   )}
                   <Image className="mr-2 size-4" />
                   <span className="flex-1">Generar imagen</span>
-                  {imageMode && FEATURE_FLAGS.imageGeneration && <Check className="size-4 text-[#934f2c]" />}
+                  {imageMode && FEATURE_FLAGS.imageGeneration && <Check className="size-4 text-[#FF8B3D]" />}
                 </DropdownMenuItem>
 
                 {/* Generar video - Kling V2.6 */}
@@ -2056,17 +2056,17 @@ export const MessageInput = memo(function MessageInput() {
                   )}
                   <Video className="mr-2 size-4" />
                   <span className="flex-1">Generar video</span>
-                  {videoMode && FEATURE_FLAGS.videoGeneration && <Check className="size-4 text-[#934f2c]" />}
+                  {videoMode && FEATURE_FLAGS.videoGeneration && <Check className="size-4 text-[#FF8B3D]" />}
                 </DropdownMenuItem>
 
                 {/* LISA - Editor Guiado */}
                 <DropdownMenuItem
                   onClick={openLisaWizard}
                   disabled={isLoading}
-                  className="cursor-pointer bg-gradient-to-r from-[#934f2c]/5 to-emerald-500/5"
+                  className="cursor-pointer bg-gradient-to-r from-[#FF8B3D]/5 to-emerald-500/5"
                 >
-                  <Wand2 className="mr-2 size-4 text-[#934f2c]" />
-                  <span className="flex-1 font-medium text-[#934f2c]">LISA - Editor Guiado</span>
+                  <Wand2 className="mr-2 size-4 text-[#FF8B3D]" />
+                  <span className="flex-1 font-medium text-[#FF8B3D]">LISA - Editor Guiado</span>
                   <Zap className="size-3 text-emerald-500" />
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -2077,7 +2077,7 @@ export const MessageInput = memo(function MessageInput() {
                 >
                   <Globe className="mr-2 size-4" />
                   <span className="flex-1">Web Search</span>
-                  {enableWebSearch && <Check className="size-4 text-[#934f2c]" />}
+                  {enableWebSearch && <Check className="size-4 text-[#FF8B3D]" />}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={handleLocationToggle}
@@ -2086,7 +2086,7 @@ export const MessageInput = memo(function MessageInput() {
                 >
                   <MapPin className="mr-2 size-4" />
                   <span className="flex-1">GeoCultural</span>
-                  {geoCulturalMode && <Check className="size-4 text-[#934f2c]" />}
+                  {geoCulturalMode && <Check className="size-4 text-[#FF8B3D]" />}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={async () => {
@@ -2174,8 +2174,8 @@ export const MessageInput = memo(function MessageInput() {
                 {/* Transcribing indicator */}
                 {isTranscribing && (
                   <div className="flex items-center gap-2 mr-2">
-                    <Loader2 className="size-4 animate-spin text-[#934f2c]" />
-                    <span className="text-xs font-medium text-[#934f2c]">Transcribiendo...</span>
+                    <Loader2 className="size-4 animate-spin text-[#FF8B3D]" />
+                    <span className="text-xs font-medium text-[#FF8B3D]">Transcribiendo...</span>
                   </div>
                 )}
 
@@ -2187,7 +2187,7 @@ export const MessageInput = memo(function MessageInput() {
                   className={`relative flex shrink-0 items-center justify-center rounded-full p-2 transition ${
                     isRecording
                       ? 'bg-red-500 text-white voice-recording-btn'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-[#934f2c]'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-[#FF8B3D]'
                   } disabled:opacity-40 disabled:cursor-not-allowed`}
                   title={isRecording ? 'Detener grabación' : 'Dictado por voz'}
                 >
@@ -2218,7 +2218,7 @@ export const MessageInput = memo(function MessageInput() {
                 }
               }}
               disabled={(!input.trim() || isLoading) && !isRecording}
-              className="relative flex shrink-0 items-center justify-center rounded-full p-2.5 text-white transition disabled:cursor-not-allowed bg-[#934f2c] hover:bg-[#934f2c]/80 disabled:bg-[#934f2c]/40 touch-manipulation"
+              className="relative flex shrink-0 items-center justify-center rounded-full p-2.5 text-white transition disabled:cursor-not-allowed bg-[#FF8B3D] hover:bg-[#FF8B3D]/80 disabled:bg-[#FF8B3D]/40 touch-manipulation"
             >
               {(isGeneratingImage || isGeneratingVideo) ? (
                 <Loader2 className="size-5 animate-spin" />

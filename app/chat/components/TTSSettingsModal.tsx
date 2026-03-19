@@ -77,8 +77,8 @@ function TTSSettingsModalComponent({ open, onOpenChange }: TTSSettingsModalProps
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-[#111111]">
-            <div className="flex items-center justify-center size-8 rounded-full bg-gradient-to-br from-[#934f2c]/10 to-[#d9753e]/10">
-              <Volume2 className="size-4 text-[#934f2c]" />
+            <div className="flex items-center justify-center size-8 rounded-full bg-gradient-to-br from-[#FF8B3D]/10 to-[#d9753e]/10">
+              <Volume2 className="size-4 text-[#FF8B3D]" />
             </div>
             Configuración de Voz
           </DialogTitle>
@@ -103,10 +103,10 @@ function TTSSettingsModalComponent({ open, onOpenChange }: TTSSettingsModalProps
                     className={`
                       flex items-center justify-center gap-2 px-4 py-3 rounded-xl
                       text-sm font-medium transition-all duration-200
-                      focus:outline-none focus:ring-2 focus:ring-[#934f2c]/30 focus:ring-offset-2
+                      focus:outline-none focus:ring-2 focus:ring-[#FF8B3D]/30 focus:ring-offset-2
                       ${
                         language === langKey
-                          ? 'bg-[#934f2c] text-white shadow-md'
+                          ? 'bg-[#FF8B3D] text-white shadow-md'
                           : 'bg-[#f6f6f6] text-[#4c4c4c] hover:bg-[#eeeeee] border border-black/5'
                       }
                     `}
@@ -135,10 +135,10 @@ function TTSSettingsModalComponent({ open, onOpenChange }: TTSSettingsModalProps
                     className={`
                       flex items-center justify-center gap-2 px-4 py-3 rounded-xl
                       text-sm font-medium transition-all duration-200
-                      focus:outline-none focus:ring-2 focus:ring-[#934f2c]/30 focus:ring-offset-2
+                      focus:outline-none focus:ring-2 focus:ring-[#FF8B3D]/30 focus:ring-offset-2
                       ${
                         gender === genderKey
-                          ? 'bg-[#934f2c] text-white shadow-md'
+                          ? 'bg-[#FF8B3D] text-white shadow-md'
                           : 'bg-[#f6f6f6] text-[#4c4c4c] hover:bg-[#eeeeee] border border-black/5'
                       }
                     `}
@@ -157,13 +157,13 @@ function TTSSettingsModalComponent({ open, onOpenChange }: TTSSettingsModalProps
           </div>
 
           {/* Current Voice Info with Preview */}
-          <div className="bg-gradient-to-br from-[#934f2c]/5 to-[#d9753e]/5 rounded-xl p-4 border border-[#934f2c]/10">
+          <div className="bg-gradient-to-br from-[#FF8B3D]/5 to-[#d9753e]/5 rounded-xl p-4 border border-[#FF8B3D]/10">
             <div className="flex items-start gap-3">
-              <div className="flex items-center justify-center size-10 rounded-full bg-[#934f2c]/10 flex-shrink-0">
-                <Volume2 className="size-5 text-[#934f2c]" />
+              <div className="flex items-center justify-center size-10 rounded-full bg-[#FF8B3D]/10 flex-shrink-0">
+                <Volume2 className="size-5 text-[#FF8B3D]" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-[#934f2c] uppercase tracking-wide mb-1">
+                <p className="text-xs font-semibold text-[#FF8B3D] uppercase tracking-wide mb-1">
                   Voz Actual
                 </p>
                 <p className="text-sm font-bold text-[#111111]">
@@ -183,11 +183,11 @@ function TTSSettingsModalComponent({ open, onOpenChange }: TTSSettingsModalProps
               className={`
                 w-full mt-4 flex items-center justify-center gap-2 px-4 py-3 rounded-xl
                 text-sm font-semibold transition-all duration-200
-                focus:outline-none focus:ring-2 focus:ring-[#934f2c]/30 focus:ring-offset-2
+                focus:outline-none focus:ring-2 focus:ring-[#FF8B3D]/30 focus:ring-offset-2
                 ${
                   isPreviewPlaying || isPlaying
                     ? 'bg-red-500 hover:bg-red-600 text-white'
-                    : 'bg-[#934f2c] hover:bg-[#00442a] text-white'
+                    : 'bg-[#FF8B3D] hover:bg-[#00442a] text-white'
                 }
                 disabled:opacity-50 disabled:cursor-not-allowed
               `}

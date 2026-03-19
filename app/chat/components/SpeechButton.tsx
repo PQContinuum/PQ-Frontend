@@ -124,13 +124,13 @@ function SpeechButtonComponent({ text, className = '' }: SpeechButtonProps) {
       className={`
         inline-flex items-center justify-center
         rounded-full p-1.5
-        text-[#4c4c4c] hover:text-[#934f2c]
-        hover:bg-[#934f2c]/10
+        text-[#4c4c4c] hover:text-[#FF8B3D]
+        hover:bg-[#FF8B3D]/10
         transition-all duration-200
-        focus:outline-none focus:ring-2 focus:ring-[#934f2c]/30 focus:ring-offset-1
+        focus:outline-none focus:ring-2 focus:ring-[#FF8B3D]/30 focus:ring-offset-1
         disabled:cursor-wait
-        ${isPlaying ? 'text-[#934f2c] bg-[#934f2c]/15' : ''}
-        ${isPaused ? 'text-[#934f2c] bg-[#934f2c]/10 ring-2 ring-[#934f2c]/20' : ''}
+        ${isPlaying ? 'text-[#FF8B3D] bg-[#FF8B3D]/15' : ''}
+        ${isPaused ? 'text-[#FF8B3D] bg-[#FF8B3D]/10 ring-2 ring-[#FF8B3D]/20' : ''}
         ${error ? 'text-red-500 hover:text-red-600' : ''}
         ${className}
       `}

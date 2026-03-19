@@ -37,12 +37,12 @@ export function DescriptionStep() {
           className={`w-full px-4 py-3 rounded-xl border-2 resize-none transition-colors ${
             description && !isValid
               ? 'border-amber-300 focus:border-amber-500'
-              : 'border-gray-200 focus:border-[#934f2c]'
+              : 'border-gray-200 focus:border-[#FF8B3D]'
           } focus:outline-none focus:ring-0 text-gray-900 placeholder:text-gray-400`}
         />
 
         <div className="flex items-center justify-between text-sm">
-          <span className={`flex items-center gap-1 ${charCount < minChars ? 'text-amber-600' : 'text-[#934f2c]'}`}>
+          <span className={`flex items-center gap-1 ${charCount < minChars ? 'text-amber-600' : 'text-[#FF8B3D]'}`}>
             {charCount >= minChars ? (
               <>
                 <Check className="w-3.5 h-3.5" />

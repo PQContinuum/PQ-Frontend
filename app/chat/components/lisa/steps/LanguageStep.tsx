@@ -64,17 +64,17 @@ export function LanguageStep() {
                 onClick={() => setLanguage({ language: option.value })}
                 className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 transition-all ${
                   isSelected
-                    ? 'border-[#934f2c] bg-[#934f2c]/5'
+                    ? 'border-[#FF8B3D] bg-[#FF8B3D]/5'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
                 <span className={`text-sm font-bold px-2 py-0.5 rounded ${
-                  isSelected ? 'bg-[#934f2c] text-white' : 'bg-gray-200 text-gray-600'
+                  isSelected ? 'bg-[#FF8B3D] text-white' : 'bg-gray-200 text-gray-600'
                 }`}>
                   {option.code}
                 </span>
                 <span className={`font-medium ${
-                  isSelected ? 'text-[#934f2c]' : 'text-gray-700'
+                  isSelected ? 'text-[#FF8B3D]' : 'text-gray-700'
                 }`}>
                   {option.label}
                 </span>
@@ -100,7 +100,7 @@ export function LanguageStep() {
         <button
           onClick={() => setLanguage({ voiceOver: !language.voiceOver })}
           className={`relative w-12 h-6 rounded-full transition-colors ${
-            language.voiceOver ? 'bg-[#934f2c]' : 'bg-gray-300'
+            language.voiceOver ? 'bg-[#FF8B3D]' : 'bg-gray-300'
           }`}
         >
           <span
@@ -126,12 +126,12 @@ export function LanguageStep() {
                   onClick={() => setLanguage({ voiceStyle: option.value })}
                   className={`px-4 py-3 rounded-xl border-2 text-left transition-all ${
                     isSelected
-                      ? 'border-[#934f2c] bg-[#934f2c]/5'
+                      ? 'border-[#FF8B3D] bg-[#FF8B3D]/5'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
                   <span className={`text-sm font-medium ${
-                    isSelected ? 'text-[#934f2c]' : 'text-gray-700'
+                    isSelected ? 'text-[#FF8B3D]' : 'text-gray-700'
                   }`}>
                     {option.label}
                   </span>
@@ -161,7 +161,7 @@ export function LanguageStep() {
         <button
           onClick={() => setLanguage({ subtitles: !language.subtitles })}
           className={`relative w-12 h-6 rounded-full transition-colors ${
-            language.subtitles ? 'bg-[#934f2c]' : 'bg-gray-300'
+            language.subtitles ? 'bg-[#FF8B3D]' : 'bg-gray-300'
           }`}
         >
           <span

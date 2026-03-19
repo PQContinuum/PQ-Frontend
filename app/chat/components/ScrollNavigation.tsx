@@ -175,7 +175,7 @@ export function ScrollNavigation({
                   bg-gradient-to-br from-white to-gray-50
                   border border-white/80
                   shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1),0_0_0_1px_rgba(0,0,0,0.05)]
-                  text-[#934f2c]
+                  text-[#FF8B3D]
                   transition-all duration-300
                   outline-none
                   dark:from-zinc-800 dark:to-zinc-900 dark:border-white/10
@@ -208,8 +208,8 @@ export function ScrollNavigation({
                   transition-all duration-300
                   outline-none
                   ${highlightBottom
-                    ? 'bg-gradient-to-br from-[#934f2c] to-[#6b3a20] text-white border border-[#934f2c]/50 shadow-[0_4px_20px_-4px_rgba(147,79,44,0.5)] dark:from-[#d9753e] dark:to-[#b5622f] dark:border-[#d9753e]/50 dark:shadow-[0_4px_20px_-4px_rgba(217,117,62,0.4)]'
-                    : 'bg-gradient-to-br from-white to-gray-50 border border-white/80 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1),0_0_0_1px_rgba(0,0,0,0.05)] text-[#934f2c] dark:from-zinc-800 dark:to-zinc-900 dark:border-white/10 dark:text-[#d9753e] dark:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.4)]'
+                    ? 'bg-gradient-to-br from-[#FF8B3D] to-[#6b3a20] text-white border border-[#FF8B3D]/50 shadow-[0_4px_20px_-4px_rgba(255,139,61,0.5)] dark:from-[#d9753e] dark:to-[#b5622f] dark:border-[#d9753e]/50 dark:shadow-[0_4px_20px_-4px_rgba(217,117,62,0.4)]'
+                    : 'bg-gradient-to-br from-white to-gray-50 border border-white/80 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1),0_0_0_1px_rgba(0,0,0,0.05)] text-[#FF8B3D] dark:from-zinc-800 dark:to-zinc-900 dark:border-white/10 dark:text-[#d9753e] dark:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.4)]'
                   }
                 `}
                 aria-label="Ir al final del chat"

@@ -130,7 +130,7 @@ export function CharacterCard({
               }}
               className="p-2.5 bg-white/90 rounded-full hover:bg-white transition"
             >
-              <Sparkles className="w-5 h-5 text-[#934f2c]" />
+              <Sparkles className="w-5 h-5 text-[#FF8B3D]" />
             </button>
             {isOwner && (
               <button
@@ -146,7 +146,7 @@ export function CharacterCard({
         {/* Badges */}
         <div className="absolute top-2 left-2 flex gap-1.5">
           {character.isPublic ? (
-            <span className="flex items-center gap-1 px-2 py-1 text-xs font-medium bg-[#f0b896] text-[#934f2c] rounded-full">
+            <span className="flex items-center gap-1 px-2 py-1 text-xs font-medium bg-[#f0b896] text-[#FF8B3D] rounded-full">
               <Globe className="w-3 h-3" />
               Publico
             </span>

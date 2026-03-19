@@ -131,6 +131,34 @@
   --sidebar-ring: #934f2c;
 }
 
+/* App-only theme override (chat, auth, payment) */
+.theme-app {
+  --primary: #FF8B3D;
+  --primary-foreground: #ffffff;
+  --accent: #FF8B3D;
+  --accent-foreground: #ffffff;
+  --ring: #FF8B3D;
+}
+
+.dark .theme-app {
+  --primary: #FF8B3D;
+  --primary-foreground: #ffffff;
+  --accent: #FF8B3D;
+  --accent-foreground: #ffffff;
+  --border: rgba(255, 139, 61, 0.2);
+  --input: rgba(255, 139, 61, 0.3);
+  --ring: #FF8B3D;
+  --sidebar-primary: #FF8B3D;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-border: rgba(255, 139, 61, 0.2);
+  --sidebar-ring: #FF8B3D;
+  --chart-1: #FF8B3D;
+  --chart-2: #FFA060;
+  --chart-3: #FFB580;
+  --chart-4: #FFCAA0;
+  --chart-5: #FFE0C0;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

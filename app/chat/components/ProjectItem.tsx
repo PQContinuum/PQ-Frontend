@@ -123,7 +123,7 @@ export const ProjectItem = memo(function ProjectItem({
             <SidebarMenuButton
               className={cn(
                 "w-full pr-10 transition-colors",
-                hasActiveConversation && "bg-[#934f2c]/5"
+                hasActiveConversation && "bg-[#FF8B3D]/5"
               )}
             >
               <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -238,7 +238,7 @@ export const ProjectItem = memo(function ProjectItem({
                       isActive={!isSelectionMode && isActive}
                       className={cn(
                         "text-sm pl-3 transition-all duration-200",
-                        isSelectionMode && isSelected && "bg-[#934f2c]/10"
+                        isSelectionMode && isSelected && "bg-[#FF8B3D]/10"
                       )}
                     >
                       {isSelectionMode ? (
@@ -246,7 +246,7 @@ export const ProjectItem = memo(function ProjectItem({
                           className={cn(
                             "size-4 flex-shrink-0 rounded border-2 flex items-center justify-center transition-colors mr-1",
                             isSelected
-                              ? "bg-[#934f2c] border-[#934f2c]"
+                              ? "bg-[#FF8B3D] border-[#FF8B3D]"
                               : "border-[#4c4c4c] bg-transparent"
                           )}
                         >

@@ -100,7 +100,7 @@ export function ShareCharacterModal({
           /* Success state */
           <div className="p-6 text-center">
             <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-[#f0b896] rounded-full">
-              <Check className="w-8 h-8 text-[#934f2c]" />
+              <Check className="w-8 h-8 text-[#FF8B3D]" />
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">
               Personaje publicado
@@ -119,7 +119,7 @@ export function ShareCharacterModal({
               />
               <button
                 onClick={handleCopyLink}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-[#934f2c] rounded-lg hover:bg-[#934f2c]/90 transition"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-[#FF8B3D] rounded-lg hover:bg-[#FF8B3D]/90 transition"
               >
                 {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                 {copied ? 'Copiado' : 'Copiar'}
@@ -128,7 +128,7 @@ export function ShareCharacterModal({
 
             <button
               onClick={handleClose}
-              className="w-full px-4 py-2.5 text-white bg-[#934f2c] rounded-lg hover:bg-[#934f2c]/90 transition"
+              className="w-full px-4 py-2.5 text-white bg-[#FF8B3D] rounded-lg hover:bg-[#FF8B3D]/90 transition"
             >
               Cerrar
             </button>
@@ -161,7 +161,7 @@ export function ShareCharacterModal({
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <div className="flex items-center gap-2">
                 {isPublic ? (
-                  <Globe className="w-5 h-5 text-[#934f2c]" />
+                  <Globe className="w-5 h-5 text-[#FF8B3D]" />
                 ) : (
                   <Lock className="w-5 h-5 text-gray-500" />
                 )}
@@ -173,7 +173,7 @@ export function ShareCharacterModal({
                 type="button"
                 onClick={() => setIsPublic(!isPublic)}
                 className={`relative w-11 h-6 rounded-full transition-colors ${
-                  isPublic ? 'bg-[#934f2c]' : 'bg-gray-300'
+                  isPublic ? 'bg-[#FF8B3D]' : 'bg-gray-300'
                 }`}
               >
                 <span
@@ -197,7 +197,7 @@ export function ShareCharacterModal({
                     onChange={(e) => setGalleryTitle(e.target.value)}
                     placeholder="Nombre para mostrar en galeria"
                     maxLength={100}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#934f2c] focus:outline-none"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#FF8B3D] focus:outline-none"
                   />
                 </div>
 
@@ -212,7 +212,7 @@ export function ShareCharacterModal({
                     placeholder="Describe tu personaje para otros usuarios..."
                     rows={3}
                     maxLength={500}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#934f2c] focus:outline-none resize-none"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#FF8B3D] focus:outline-none resize-none"
                   />
                 </div>
 
@@ -255,7 +255,7 @@ export function ShareCharacterModal({
                         }}
                         placeholder="Anadir etiqueta..."
                         maxLength={30}
-                        className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:border-[#934f2c] focus:outline-none"
+                        className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:border-[#FF8B3D] focus:outline-none"
                       />
                       <button
                         type="button"
@@ -280,7 +280,7 @@ export function ShareCharacterModal({
                     type="checkbox"
                     checked={allowCloning}
                     onChange={(e) => setAllowCloning(e.target.checked)}
-                    className="w-4 h-4 text-[#934f2c] border-gray-300 rounded focus:ring-[#934f2c]"
+                    className="w-4 h-4 text-[#FF8B3D] border-gray-300 rounded focus:ring-[#FF8B3D]"
                   />
                   <div>
                     <p className="text-sm font-medium text-gray-900">Permitir clonacion</p>
@@ -305,7 +305,7 @@ export function ShareCharacterModal({
               <button
                 type="submit"
                 disabled={updateVisibility.isPending}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-white bg-[#934f2c] rounded-lg hover:bg-[#934f2c]/90 transition disabled:opacity-50"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-white bg-[#FF8B3D] rounded-lg hover:bg-[#FF8B3D]/90 transition disabled:opacity-50"
               >
                 {updateVisibility.isPending ? (
                   <>
