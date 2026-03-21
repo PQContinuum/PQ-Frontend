@@ -1,12 +1,15 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { Streamdown } from 'streamdown';
+import { code } from '@streamdown/code';
+import { createMathPlugin } from '@streamdown/math';
 import { Link as LinkIcon, X, Linkedin, Check } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { sanitizeMarkdown } from '@/lib/sanitize-markdown';
+
+const math = createMathPlugin({ singleDollarTextMath: true });
 
 interface ShareResponseModalProps {
   open: boolean;
@@ -97,30 +100,15 @@ export function ShareResponseModal({ open, onOpenChange, title, content, shareUr
         </div>
 
         <div className="relative rounded-[26px] border border-black/10 bg-white px-6 py-5 shadow-[0_20px_60px_rgba(0,0,0,0.08)]">
-          <div className="max-h-[320px] overflow-y-auto pr-2 space-y-4 text-[15px] leading-relaxed text-[#111111]">
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              components={{
-                h1: (props) => <h1 {...props} className="text-xl font-semibold" />,
-                h2: (props) => <h2 {...props} className="text-lg font-semibold" />,
-                h3: (props) => <h3 {...props} className="text-base font-semibold" />,
-                p: (props) => <p {...props} className="text-[15px] leading-relaxed" />,
-                ul: (props) => <ul {...props} className="list-disc pl-5 space-y-2" />,
-                ol: (props) => <ol {...props} className="list-decimal pl-5 space-y-2" />,
-                li: (props) => <li {...props} className="text-[15px] leading-relaxed" />,
-                strong: (props) => <strong {...props} className="font-semibold" />,
-                a: (props) => (
-                  <a
-                    {...props}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-medium text-[#111111] underline underline-offset-2"
-                  />
-                ),
-              }}
+          <div className="max-h-[320px] overflow-y-auto pr-2 space-y-4 text-[15px] leading-relaxed text-[#111111] continuum-prose">
+            <Streamdown
+              mode="static"
+              plugins={{ code, math }}
+              controls={{ code: { copy: true } }}
+              lineNumbers={false}
             >
               {previewContent}
-            </ReactMarkdown>
+            </Streamdown>
           </div>
           <div className="mt-6 flex justify-end text-sm font-semibold text-[#111111]/70">ContinuumAI</div>
         </div>

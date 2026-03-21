@@ -1,10 +1,13 @@
 'use client';
 
 import { use } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { Streamdown } from 'streamdown';
+import { code } from '@streamdown/code';
+import { createMathPlugin } from '@streamdown/math';
 import { decodeSharePayload } from '@/lib/share';
 import { sanitizeMarkdown } from '@/lib/sanitize-markdown';
+
+const math = createMathPlugin({ singleDollarTextMath: true });
 
 interface SharePageProps {
   params: Promise<{ payload: string }>;
@@ -37,30 +40,15 @@ export default function SharePage({ params }: SharePageProps) {
           <h1 className="text-3xl sm:text-4xl font-semibold text-[#111111] tracking-tight">
             {title}
           </h1>
-          <div className="mt-6 space-y-4 text-[15px] leading-relaxed text-[#111111]">
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              components={{
-                h1: (props) => <h1 {...props} className="text-2xl font-semibold" />,
-                h2: (props) => <h2 {...props} className="text-xl font-semibold" />,
-                h3: (props) => <h3 {...props} className="text-lg font-semibold" />,
-                p: (props) => <p {...props} className="text-[15px] leading-relaxed" />,
-                ul: (props) => <ul {...props} className="list-disc pl-5 space-y-2" />,
-                ol: (props) => <ol {...props} className="list-decimal pl-5 space-y-2" />,
-                li: (props) => <li {...props} className="text-[15px] leading-relaxed" />,
-                strong: (props) => <strong {...props} className="font-semibold" />,
-                a: (props) => (
-                  <a
-                    {...props}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-medium text-[#111111] underline underline-offset-2"
-                  />
-                ),
-              }}
+          <div className="mt-6 space-y-4 text-[15px] leading-relaxed text-[#111111] continuum-prose">
+            <Streamdown
+              mode="static"
+              plugins={{ code, math }}
+              controls={{ code: { copy: true } }}
+              lineNumbers={false}
             >
               {content}
-            </ReactMarkdown>
+            </Streamdown>
           </div>
           <div className="mt-8 flex justify-end text-sm font-semibold text-[#111111]/70">ContinuumAI</div>
         </div>

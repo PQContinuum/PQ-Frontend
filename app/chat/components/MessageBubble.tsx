@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, type ComponentPropsWithoutRef, type ReactNode, useMemo, useEffect, useCallback } from 'react';
-import ReactMarkdown from 'react-markdown';
-import rehypeHighlight from 'rehype-highlight';
-import remarkGfm from 'remark-gfm';
+import { useState, type ReactNode, useMemo, useEffect, useCallback } from 'react';
+import { Streamdown } from 'streamdown';
+import { code as codePlugin } from '@streamdown/code';
+import { createMathPlugin } from '@streamdown/math';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, Copy, Share2 } from 'lucide-react';
 
@@ -16,7 +16,6 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip
 import { useGenerationJob, getJobStatusMessage, parseJobInputParams } from '@/hooks/useGenerationJobs';
 import { ShareToGalleryModal } from './ShareToGalleryModal';
 import { galleryApi } from '@/lib/api-client';
-import { MathContent } from '@/components/math-renderer';
 import { AIResponse } from '@/components/ai-response';
 import { HlsVideo } from '@/components/media/HlsVideo';
 import { ShareResponseModal } from './ShareResponseModal';
@@ -24,7 +23,7 @@ import { encodeSharePayload } from '@/lib/share';
 import { downloadVideoMp4 } from '@/lib/media-download';
 import { sanitizeMarkdown } from '@/lib/sanitize-markdown';
 
-import 'highlight.js/styles/github.css';
+const mathPlugin = createMathPlugin({ singleDollarTextMath: true });
 
 type LinkBadgeMeta = {
   label: string;
@@ -843,10 +842,6 @@ type MessageBubbleProps = {
   generationMode?: 'none' | 'image' | 'video' | 'geocultural';
 };
 
-type MarkdownCodeProps = ComponentPropsWithoutRef<'code'> & {
-  className?: string;
-};
-
 const copyToClipboard = async (text: string) => {
   try {
     await navigator.clipboard.writeText(text);
@@ -893,37 +888,6 @@ const buildShareUrl = (title: string, content: string) => {
   const payload = encodeSharePayload({ title, content });
   if (!payload || typeof window === 'undefined') return '';
   return `${window.location.origin}/s/${payload}`;
-};
-
-const CodeBlock = ({
-  language,
-  value,
-}: {
-  language: string;
-  value: string;
-}) => {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = async () => {
-    await copyToClipboard(value);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  };
-
-  return (
-    <div className="group relative max-w-full overflow-hidden">
-      <button
-        type="button"
-        onClick={handleCopy}
-        className="absolute right-3 top-3 rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-medium text-[#111111] opacity-0 shadow-sm transition group-hover:opacity-100 z-10"
-      >
-        {copied ? 'Copied' : 'Copy'}
-      </button>
-      <pre className="overflow-x-auto rounded-2xl border border-black/10 bg-[#f7f7f7] p-4 text-sm text-[#111111] max-w-full">
-        <code className={`language-${language} whitespace-pre-wrap break-all`}>{value}</code>
-      </pre>
-    </div>
-  );
 };
 
 const AssistantActions = ({
@@ -1282,83 +1246,66 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
   // Render geocultural text analysis (new format)
   if (geoCulturalText) {
     const geoMarkdown = (
-<ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                rehypePlugins={[rehypeHighlight]}
-                components={{
-                  h1: (props) => (
-                    <h1 {...props} className="text-2xl font-bold text-[#111111] mt-8 mb-4 pb-3 border-b-2 border-[#FF8B3D]/20" />
-                  ),
-                  h2: (props) => (
-                    <h2 {...props} className="text-xl font-bold text-[#FF8B3D] mt-6 mb-3 flex items-center gap-2" />
-                  ),
-                  h3: (props) => (
-                    <h3 {...props} className="text-lg font-semibold text-[#111111] mt-5 mb-2.5" />
-                  ),
-                  p: (props) => (
-                    <p {...props} className="text-[15px] leading-relaxed text-gray-800 mb-4" />
-                  ),
-                  ul: (props) => (
-                    <ul {...props} className="space-y-2 mb-4 ml-6" />
-                  ),
-                  ol: (props) => (
-                    <ol {...props} className="space-y-2 mb-4 ml-6" />
-                  ),
-                  li: (props) => (
-                    <li {...props} className="text-[15px] text-gray-700 leading-relaxed pl-2">
-                      <span className="inline-flex items-start gap-2">
-                        <span className="text-[#FF8B3D] mt-1.5 shrink-0">•</span>
-                        <span className="flex-1">{props.children}</span>
-                      </span>
-                    </li>
-                  ),
-                  strong: (props) => (
-                    <strong {...props} className="font-semibold text-[#FF8B3D]" />
-                  ),
-                  em: (props) => (
-                    <em {...props} className="italic text-gray-700" />
-                  ),
-                  blockquote: (props) => (
-                    <blockquote {...props} className="border-l-4 border-[#FF8B3D] bg-[#FF8B3D]/5 pl-4 py-3 my-4 italic text-gray-700" />
-                  ),
-                  hr: (props) => (
-                    <hr {...props} className="my-6 border-t-2 border-[#FF8B3D]/10" />
-                  ),
-                  pre: ({ children }) => {
-                    const codeElement = children as React.ReactElement;
-                    const codeProps = codeElement?.props as { className?: string; children?: React.ReactNode };
-                    const className = codeProps?.className || '';
-                    const language = className.replace('language-', '') || 'text';
-                    const value = String(codeProps?.children || '');
-
-                    return <CodeBlock language={language} value={value} />;
-                  },
-                  code({ className, children, ...props }: MarkdownCodeProps) {
-                    const isBlock = className?.includes('language-');
-                    if (!isBlock) {
-                      return (
-                        <code
-                          {...props}
-                          className="rounded-md bg-[#FF8B3D]/10 px-2 py-0.5 text-[0.92em] text-[#FF8B3D] font-medium"
-                        >
-                          {children}
-                        </code>
-                      );
-                    }
-                    return <code {...props} className={className}>{children}</code>;
-                  },
-                  a: (props) => (
-                    <a
-                      {...props}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-medium text-[#FF8B3D] underline underline-offset-2 hover:text-[#d9753e] transition-colors"
-                    />
-                  ),
-                }}
-              >
-                {normalizeMathDelimiters(sanitizeMarkdown(geoCulturalText.reply))}
-              </ReactMarkdown>
+      <Streamdown
+        mode={isStreaming ? 'streaming' : 'static'}
+        isAnimating={isStreaming}
+        plugins={{ code: codePlugin, math: mathPlugin }}
+        controls={{ code: { copy: true } }}
+        parseIncompleteMarkdown={isStreaming}
+        lineNumbers={false}
+        components={{
+          h1: ({ children }) => (
+            <h1 className="text-2xl font-bold text-[#111111] mt-8 mb-4 pb-3 border-b-2 border-[#FF8B3D]/20">{children}</h1>
+          ),
+          h2: ({ children }) => (
+            <h2 className="text-xl font-bold text-[#FF8B3D] mt-6 mb-3 flex items-center gap-2">{children}</h2>
+          ),
+          h3: ({ children }) => (
+            <h3 className="text-lg font-semibold text-[#111111] mt-5 mb-2.5">{children}</h3>
+          ),
+          p: ({ children }) => (
+            <p className="text-[15px] leading-relaxed text-gray-800 mb-4">{children}</p>
+          ),
+          ul: ({ children }) => (
+            <ul className="space-y-2 mb-4 ml-6">{children}</ul>
+          ),
+          ol: ({ children }) => (
+            <ol className="space-y-2 mb-4 ml-6">{children}</ol>
+          ),
+          li: ({ children }) => (
+            <li className="text-[15px] text-gray-700 leading-relaxed pl-2">
+              <span className="inline-flex items-start gap-2">
+                <span className="text-[#FF8B3D] mt-1.5 shrink-0">&bull;</span>
+                <span className="flex-1">{children}</span>
+              </span>
+            </li>
+          ),
+          strong: ({ children }) => (
+            <strong className="font-semibold text-[#FF8B3D]">{children}</strong>
+          ),
+          em: ({ children }) => (
+            <em className="italic text-gray-700">{children}</em>
+          ),
+          blockquote: ({ children }) => (
+            <blockquote className="border-l-4 border-[#FF8B3D] bg-[#FF8B3D]/5 pl-4 py-3 my-4 italic text-gray-700">{children}</blockquote>
+          ),
+          hr: () => (
+            <hr className="my-6 border-t-2 border-[#FF8B3D]/10" />
+          ),
+          a: ({ children, href }) => (
+            <a
+              href={href as string}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-[#FF8B3D] underline underline-offset-2 hover:text-[#d9753e] transition-colors"
+            >
+              {children}
+            </a>
+          ),
+        }}
+      >
+        {normalizeMathDelimiters(sanitizeMarkdown(geoCulturalText.reply))}
+      </Streamdown>
     );
 
     return (
@@ -1389,7 +1336,7 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
 
             {/* Geocultural analysis content with enhanced styling */}
             <div className="geocultural-analysis">
-              {isStreaming ? geoMarkdown : <MathContent>{geoMarkdown}</MathContent>}
+              {geoMarkdown}
             </div>
 
             {/* Footer decoration */}
@@ -1437,64 +1384,36 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
   }
 
   const messageMarkdown = (
-<ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                rehypePlugins={[rehypeHighlight]}
-                components={{
-                  pre: ({ children }) => {
-                    const codeElement = children as React.ReactElement;
-                    const codeProps = codeElement?.props as { className?: string; children?: React.ReactNode };
-                    const className = codeProps?.className || '';
-                    const language = className.replace('language-', '') || 'text';
-                    const value = String(codeProps?.children || '');
-
-                    return <CodeBlock language={language} value={value} />;
-                  },
-                  code({ className, children, ...props }: MarkdownCodeProps) {
-                    const isBlock = className?.includes('language-');
-                    if (!isBlock) {
-                      return (
-                        <code
-                          {...props}
-                          className={isUser
-                            ? "rounded-md bg-white/15 px-1.5 py-0.5 text-[0.92em]"
-                            : undefined
-                          }
-                        >
-                          {children}
-                        </code>
-                      );
-                    }
-                    return <code {...props} className={className}>{children}</code>;
-                  },
-                  a: ({ children, ...props }) => (
-                    <a
-                      {...props}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={isUser ? "font-medium text-white underline underline-offset-4 break-all" : undefined}
-                    >
-                      {children}
-                    </a>
-                  ),
-                  ul: ({ children, ...props }) => (
-                    isUser ? <ul {...props} className="list-disc pl-6 overflow-hidden">{children}</ul> : <ul {...props}>{children}</ul>
-                  ),
-                  ol: ({ children, ...props }) => (
-                    isUser ? <ol {...props} className="list-decimal pl-6 overflow-hidden">{children}</ol> : <ol {...props}>{children}</ol>
-                  ),
-                  table: ({ children, ...props }) => (
-                    isUser ? <table {...props}>{children}</table> : (
-                      <div className="overflow-x-auto">
-                        <table {...props}>{children}</table>
-                      </div>
-                    )
-                  ),
-                  img: (props) => <ChatImage {...props} />,
-                }}
-              >
-                {normalizeMathDelimiters(sanitizeMarkdown(message.content || ' '))}
-              </ReactMarkdown>
+    <Streamdown
+      mode={isStreaming ? 'streaming' : 'static'}
+      isAnimating={isStreaming}
+      plugins={isUser ? undefined : { code: codePlugin, math: mathPlugin }}
+      controls={isUser ? false : { code: { copy: true } }}
+      parseIncompleteMarkdown={isStreaming}
+      lineNumbers={false}
+      components={isUser ? {
+        a: ({ children, href }) => (
+          <a href={href as string} target="_blank" rel="noopener noreferrer" className="font-medium text-white underline underline-offset-4 break-all">
+            {children}
+          </a>
+        ),
+        ul: ({ children }) => (
+          <ul className="list-disc pl-6 overflow-hidden">{children}</ul>
+        ),
+        ol: ({ children }) => (
+          <ol className="list-decimal pl-6 overflow-hidden">{children}</ol>
+        ),
+      } : {
+        table: ({ children }) => (
+          <div className="overflow-x-auto">
+            <table>{children}</table>
+          </div>
+        ),
+        img: ({ src, alt }) => <ChatImage src={src as string} alt={alt as string} />,
+      }}
+    >
+      {normalizeMathDelimiters(sanitizeMarkdown(message.content || ' '))}
+    </Streamdown>
   );
 
   return (
@@ -1521,7 +1440,7 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
                   isStreaming={isStreaming}
                 />
               ) : (
-                !isStreaming ? <MathContent>{messageMarkdown}</MathContent> : messageMarkdown
+                messageMarkdown
               )}
 
               {!isUser && !isStreaming && message.webSearchError && (

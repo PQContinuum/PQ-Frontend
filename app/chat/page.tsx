@@ -56,7 +56,6 @@ import { TTSSettingsModal } from './components/TTSSettingsModal';
 import { PendingJobsBanner } from './components/PendingJobsBanner';
 import { ScrollNavigation } from './components/ScrollNavigation';
 import { FeedbackWidget } from '@/components/feedback-widget';
-import { MathProvider } from '@/components/math-renderer';
 import { useMessages, useReplaceMessages, useSetConversationId } from './store';
 import { getSupabaseBrowserClient } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
@@ -527,7 +526,7 @@ export default function ChatPage() {
             </motion.div>
           </div>
         ) : (
-          <MathProvider>
+          <>
             <motion.div
               ref={scrollContainerRef}
               className="flex-1 min-h-0 overflow-y-auto"
@@ -558,7 +557,7 @@ export default function ChatPage() {
                 <MessageInput />
               </div>
             </motion.div>
-          </MathProvider>
+          </>
         )}
       </SidebarInset>
 

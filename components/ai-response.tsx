@@ -1,18 +1,15 @@
 'use client';
 
-import React, { useMemo, useState, type ComponentPropsWithoutRef } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import rehypeHighlight from 'rehype-highlight';
+import React, { useMemo } from 'react';
+import { Streamdown } from 'streamdown';
+import { code } from '@streamdown/code';
+import { createMathPlugin } from '@streamdown/math';
 
-import { MathContent } from '@/components/math-renderer';
 import { WebResults } from '@/components/web-results';
 import { sanitizeMarkdown } from '@/lib/sanitize-markdown';
 import type { WebSearchResult } from '@/types/websearch';
 
-type MarkdownCodeProps = ComponentPropsWithoutRef<'code'> & {
-  className?: string;
-};
+const math = createMathPlugin({ singleDollarTextMath: true });
 
 function normalizeMathDelimiters(markdown: string): string {
   const fenceParts = markdown.split(/```/);
@@ -137,35 +134,6 @@ function injectCitations(node: React.ReactNode, citations: WebSearchResult[]): R
   return node;
 }
 
-function copyToClipboard(text: string) {
-  return navigator.clipboard.writeText(text).catch(() => undefined);
-}
-
-function CodeBlock({ language, value }: { language: string; value: string }) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = async () => {
-    await copyToClipboard(value);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  };
-
-  return (
-    <div className="group relative max-w-full overflow-hidden">
-      <button
-        type="button"
-        onClick={handleCopy}
-        className="absolute right-3 top-3 rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-medium text-[#111111] opacity-0 shadow-sm transition group-hover:opacity-100 z-10"
-      >
-        {copied ? 'Copied' : 'Copy'}
-      </button>
-      <pre className="overflow-x-auto rounded-2xl border border-black/10 bg-[#f7f7f7] p-4 text-sm text-[#111111] max-w-full">
-        <code className={`language-${language} whitespace-pre-wrap break-all`}>{value}</code>
-      </pre>
-    </div>
-  );
-}
-
 export type AIResponseProps = {
   content: string;
   citations?: WebSearchResult[] | null;
@@ -182,91 +150,50 @@ export function AIResponse({
   const normalized = useMemo(() => normalizeMathDelimiters(sanitizeMarkdown(content || ' ')), [content]);
   const hasCitations = !!citations && citations.length > 0;
 
-  const markdown = (
-    <ReactMarkdown
-      remarkPlugins={[remarkGfm]}
-      rehypePlugins={[rehypeHighlight]}
-      components={{
-        pre: ({ children }) => {
-          const codeElement = children as React.ReactElement;
-          const codeProps = codeElement?.props as { className?: string; children?: React.ReactNode };
-          const className = codeProps?.className || '';
-          const language = className.replace('language-', '') || 'text';
-          const value = String(codeProps?.children || '');
-          return <CodeBlock language={language} value={value} />;
-        },
-        code({ className, children, ...props }: MarkdownCodeProps) {
-          // Block-level code is handled by the `pre` override above.
-          // If className contains a language tag it's a fenced code block;
-          // otherwise treat it as inline code.
-          const isBlock = className?.includes('language-');
-          if (!isBlock) {
-            return (
-              <code
-                {...props}
-                className="rounded-md bg-black/5 px-1.5 py-0.5 text-[0.92em] text-[#111111] font-medium"
-              >
-                {children}
-              </code>
-            );
-          }
-          return (
-            <code {...props} className={className}>
-              {children}
-            </code>
-          );
-        },
-        a: ({ children, ...props }) => (
-          <a
-            {...props}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-medium text-[#934f2c] underline underline-offset-2 hover:text-[#d9753e] transition-colors break-words"
-          >
-            {children}
-          </a>
-        ),
-        // Inject citations into common text containers (avoids code/pre via injectCitations guard).
-        p: ({ children, ...props }) => (
-          <p {...props}>{hasCitations ? injectCitations(children, citations!) : children}</p>
-        ),
-        li: ({ children, ...props }) => (
-          <li {...props}>{hasCitations ? injectCitations(children, citations!) : children}</li>
-        ),
-        blockquote: ({ children, ...props }) => (
-          <blockquote {...props} className="border-l-4 border-black/10 pl-4 italic text-[#111111]/80">
-            {hasCitations ? injectCitations(children, citations!) : children}
-          </blockquote>
-        ),
-        h1: ({ children, ...props }) => (
-          <h1 {...props}>{hasCitations ? injectCitations(children, citations!) : children}</h1>
-        ),
-        h2: ({ children, ...props }) => (
-          <h2 {...props}>{hasCitations ? injectCitations(children, citations!) : children}</h2>
-        ),
-        h3: ({ children, ...props }) => (
-          <h3 {...props}>{hasCitations ? injectCitations(children, citations!) : children}</h3>
-        ),
-        h4: ({ children, ...props }) => (
-          <h4 {...props}>{hasCitations ? injectCitations(children, citations!) : children}</h4>
-        ),
-        h5: ({ children, ...props }) => (
-          <h5 {...props}>{hasCitations ? injectCitations(children, citations!) : children}</h5>
-        ),
-        h6: ({ children, ...props }) => (
-          <h6 {...props}>{hasCitations ? injectCitations(children, citations!) : children}</h6>
-        ),
-      }}
-    >
-      {normalized}
-    </ReactMarkdown>
-  );
+  const citationComponents = hasCitations ? {
+    p: ({ children, ...props }: React.ComponentPropsWithoutRef<'p'>) => (
+      <p {...props}>{injectCitations(children, citations!)}</p>
+    ),
+    li: ({ children, ...props }: React.ComponentPropsWithoutRef<'li'>) => (
+      <li {...props}>{injectCitations(children, citations!)}</li>
+    ),
+    blockquote: ({ children, ...props }: React.ComponentPropsWithoutRef<'blockquote'>) => (
+      <blockquote {...props}>{injectCitations(children, citations!)}</blockquote>
+    ),
+    h1: ({ children, ...props }: React.ComponentPropsWithoutRef<'h1'>) => (
+      <h1 {...props}>{injectCitations(children, citations!)}</h1>
+    ),
+    h2: ({ children, ...props }: React.ComponentPropsWithoutRef<'h2'>) => (
+      <h2 {...props}>{injectCitations(children, citations!)}</h2>
+    ),
+    h3: ({ children, ...props }: React.ComponentPropsWithoutRef<'h3'>) => (
+      <h3 {...props}>{injectCitations(children, citations!)}</h3>
+    ),
+    h4: ({ children, ...props }: React.ComponentPropsWithoutRef<'h4'>) => (
+      <h4 {...props}>{injectCitations(children, citations!)}</h4>
+    ),
+    h5: ({ children, ...props }: React.ComponentPropsWithoutRef<'h5'>) => (
+      <h5 {...props}>{injectCitations(children, citations!)}</h5>
+    ),
+    h6: ({ children, ...props }: React.ComponentPropsWithoutRef<'h6'>) => (
+      <h6 {...props}>{injectCitations(children, citations!)}</h6>
+    ),
+  } : undefined;
 
   return (
     <div className={className}>
-      {isStreaming ? markdown : <MathContent>{markdown}</MathContent>}
+      <Streamdown
+        mode={isStreaming ? 'streaming' : 'static'}
+        isAnimating={isStreaming}
+        plugins={{ code, math }}
+        controls={{ code: { copy: true } }}
+        parseIncompleteMarkdown={isStreaming}
+        lineNumbers={false}
+        components={citationComponents}
+      >
+        {normalized}
+      </Streamdown>
       {hasCitations && <WebResults results={citations!} />}
     </div>
   );
 }
-
