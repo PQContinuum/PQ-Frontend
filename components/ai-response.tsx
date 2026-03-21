@@ -7,6 +7,7 @@ import rehypeHighlight from 'rehype-highlight';
 
 import { MathContent } from '@/components/math-renderer';
 import { WebResults } from '@/components/web-results';
+import { sanitizeMarkdown } from '@/lib/sanitize-markdown';
 import type { WebSearchResult } from '@/types/websearch';
 
 type MarkdownCodeProps = ComponentPropsWithoutRef<'code'> & {
@@ -179,7 +180,7 @@ export function AIResponse({
   isStreaming = false,
   className,
 }: AIResponseProps) {
-  const normalized = useMemo(() => normalizeMathDelimiters(content || ' '), [content]);
+  const normalized = useMemo(() => normalizeMathDelimiters(sanitizeMarkdown(content || ' ')), [content]);
   const hasCitations = !!citations && citations.length > 0;
 
   const markdown = (

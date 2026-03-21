@@ -22,6 +22,7 @@ import { HlsVideo } from '@/components/media/HlsVideo';
 import { ShareResponseModal } from './ShareResponseModal';
 import { encodeSharePayload } from '@/lib/share';
 import { downloadVideoMp4 } from '@/lib/media-download';
+import { sanitizeMarkdown } from '@/lib/sanitize-markdown';
 
 import 'highlight.js/styles/github.css';
 
@@ -1356,7 +1357,7 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
                   ),
                 }}
               >
-                {normalizeMathDelimiters(geoCulturalText.reply)}
+                {normalizeMathDelimiters(sanitizeMarkdown(geoCulturalText.reply))}
               </ReactMarkdown>
     );
 
@@ -1401,7 +1402,7 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
                   <span className="font-medium">Análisis territorial completo</span>
                 </div>
                 {!isStreaming && geoCulturalText.reply && (
-                  <SpeechButton text={normalizeMathDelimiters(geoCulturalText.reply)} />
+                  <SpeechButton text={normalizeMathDelimiters(sanitizeMarkdown(geoCulturalText.reply))} />
                 )}
               </div>
             </div>
@@ -1491,7 +1492,7 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
                   img: (props) => <ChatImage {...props} />,
                 }}
               >
-                {normalizeMathDelimiters(message.content || ' ')}
+                {normalizeMathDelimiters(sanitizeMarkdown(message.content || ' '))}
               </ReactMarkdown>
   );
 
