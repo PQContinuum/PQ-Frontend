@@ -9,6 +9,7 @@
  * - Orphaned ** splitting a word:       al**bacea    → albacea
  * - Space before punctuation:            word ,next   → word, next
  * - Missing space after punctuation:     word,next    → word, next
+ * - Paren list delimiter without space:  2)text       → 2. text
  *
  * Uses pair-matching instead of lookbehinds for reliable cross-engine
  * support.  The content pattern `(?:[^*]|\*(?!\*))` allows a single `*`
@@ -88,6 +89,13 @@ export function sanitizeMarkdown(text: string): string {
       '$1$2',
     );
   });
+
+  // ── Normalize list delimiters ──
+
+  // 4c. Lines starting with "N)" (paren delimiter) → "N." (dot delimiter)
+  //     Also ensures a space after the delimiter so the parser sees a valid list item.
+  //     e.g. "2)texto" → "2. texto", "3) texto" → "3. texto"
+  result = result.replace(/^(\d+)\)\s*/gm, '$1. ');
 
   // ── Fix punctuation spacing ──
 
