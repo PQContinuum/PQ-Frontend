@@ -4,6 +4,7 @@ import { use } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { decodeSharePayload } from '@/lib/share';
+import { sanitizeMarkdown } from '@/lib/sanitize-markdown';
 
 interface SharePageProps {
   params: Promise<{ payload: string }>;
@@ -27,7 +28,7 @@ export default function SharePage({ params }: SharePageProps) {
   }
 
   const title = data.title?.trim() || 'Respuesta compartida';
-  const content = data.content?.trim() || '';
+  const content = sanitizeMarkdown(data.content?.trim() || '');
 
   return (
     <div className="min-h-screen bg-[#f5f5f5] px-6 py-12">

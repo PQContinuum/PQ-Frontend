@@ -6,6 +6,7 @@ import remarkGfm from 'remark-gfm';
 import { Link as LinkIcon, X, Linkedin, Check } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { sanitizeMarkdown } from '@/lib/sanitize-markdown';
 
 interface ShareResponseModalProps {
   open: boolean;
@@ -41,7 +42,7 @@ const RedditIcon = ({ className = '' }: { className?: string }) => (
 export function ShareResponseModal({ open, onOpenChange, title, content, shareUrl }: ShareResponseModalProps) {
   const [linkCopied, setLinkCopied] = useState(false);
 
-  const previewContent = useMemo(() => content.trim(), [content]);
+  const previewContent = useMemo(() => sanitizeMarkdown(content.trim()), [content]);
 
   const shareUrls = useMemo(
     () => ({

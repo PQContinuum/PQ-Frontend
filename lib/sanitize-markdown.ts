@@ -8,6 +8,10 @@
  * - Missing space after closing bold:    **text**word → **text** word
  * - Space before punctuation:            word ,next   → word, next
  * - Missing space after punctuation:     word,next    → word, next
+ *
+ * Uses pair-matching instead of lookbehinds for reliable cross-engine
+ * support.  The content pattern `(?:[^*]|\*(?!\*))` allows a single `*`
+ * inside bold content but prevents matching across separate bold pairs.
  */
 export function sanitizeMarkdown(text: string): string {
   if (!text) return text;
@@ -24,24 +28,21 @@ export function sanitizeMarkdown(text: string): string {
       return `\x00${preserved.length - 1}\x00`;
     });
 
-  // ── Fix spaces inside bold markers (must run first) ──
+  // ── Fix spaces inside bold markers (pair-matching approach) ──
 
-  // 0a. Remove leading spaces after opening **: "** text**" → "**text**"
-  //     Model often generates "** word**" which Markdown does NOT render as bold.
-  //     Lookbehind ensures ** is an opening marker (preceded by start, whitespace, or punctuation)
-  //     so we never match a closing ** followed by normal text across bold pairs.
-  //     Content must not contain * ([^*\n]) to avoid spanning across bold pairs.
+  // 0a. Remove leading spaces after opening **:  "** text**" → "**text**"
+  //     Anchor: start-of-line or whitespace/punctuation before the opening **.
+  //     Content: one or more chars that are NOT "**" (single * is fine).
+  //     Captures the anchor so it is re-emitted without being consumed.
   result = result.replace(
-    /(?<=^|[\s({\[,;:!?])\*\* +([^*\n]+?)\*\*/gm,
-    '**$1**',
+    /(^|[\s,;:.!?({\[>])\*\* +((?:[^*]|\*(?!\*))+?)\*\*/gm,
+    '$1**$2**',
   );
 
-  // 0b. Remove trailing spaces before closing **: "**text **" → "**text**"
-  //     Same lookbehind as 0a to ensure ** is an opening marker.
-  //     Content must not contain * ([^*\n]) to avoid spanning across bold pairs.
+  // 0b. Remove trailing spaces before closing **:  "**text **" → "**text**"
   result = result.replace(
-    /(?<=^|[\s({\[,;:!?])\*\*([^*\n]+?) +\*\*/gm,
-    '**$1**',
+    /(^|[\s,;:.!?({\[>])\*\*((?:[^*]|\*(?!\*))+?) +\*\*/gm,
+    '$1**$2**',
   );
 
   // ── Fix duplicate text around bold markers ──
