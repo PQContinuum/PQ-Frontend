@@ -6,6 +6,7 @@
  * - Duplicate text after bold markers:   **text**text → **text**
  * - Unclosed bold with duplicated text:  **texttext   → **text**
  * - Missing space after closing bold:    **text**word → **text** word
+ * - Orphaned ** splitting a word:       al**bacea    → albacea
  * - Space before punctuation:            word ,next   → word, next
  * - Missing space after punctuation:     word,next    → word, next
  *
@@ -71,6 +72,22 @@ export function sanitizeMarkdown(text: string): string {
     /\*\*([^\s*][^*\n]*?)\*\*(?=[a-záéíóúñüA-ZÁÉÍÓÚÑÜ\w])/g,
     '**$1** ',
   );
+
+  // ── Remove orphaned ** that split words ──
+
+  // 4b. When a line has an odd number of ** markers, one is orphaned (unpaired).
+  //     If that orphan sits between word characters (splitting a word), remove it.
+  //     e.g. "**autoriza expresamente** al**bacea" → "**autoriza expresamente** albacea"
+  //     Only the first mid-word ** is removed (making the count even).
+  result = result.replace(/^.*$/gm, (line) => {
+    const markerCount = line.split('**').length - 1;
+    if (markerCount === 0 || markerCount % 2 === 0) return line;
+    // Odd count: remove first ** between word characters
+    return line.replace(
+      /([a-záéíóúñüA-ZÁÉÍÓÚÑÜ\w])\*\*([a-záéíóúñüA-ZÁÉÍÓÚÑÜ\w])/,
+      '$1$2',
+    );
+  });
 
   // ── Fix punctuation spacing ──
 
