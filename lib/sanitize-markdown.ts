@@ -5,6 +5,7 @@
  * - Spaces inside bold markers:          ** text**    → **text**
  * - Duplicate text after bold markers:   **text**text → **text**
  * - Unclosed bold with duplicated text:  **texttext   → **text**
+ * - Missing space before opening bold:   word**text** → word **text**
  * - Missing space after closing bold:    **text**word → **text** word
  * - Orphaned ** splitting a word:       al**bacea    → albacea
  * - Space before punctuation:            word ,next   → word, next
@@ -64,6 +65,25 @@ export function sanitizeMarkdown(text: string): string {
 
   // ── Fix spacing around bold markers ──
 
+  // 3b. Space before opening bold when preceded by a word character or punctuation
+  //     Uses pair-matching to only target complete **text** pairs, avoiding
+  //     false positives on orphaned ** markers.
+  //     e.g. "vendemos**cumplimiento**"  → "vendemos **cumplimiento**"
+  //     e.g. "patrón:**B2B**"            → "patrón: **B2B**"
+  //     e.g. "tu**margen.**"             → "tu **margen.**"
+  //     e.g. "con**5**"                  → "con **5**"
+  result = result.replace(
+    /([a-záéíóúñüA-ZÁÉÍÓÚÑÜ\w:;,.])\*\*((?:[^*]|\*(?!\*))+?)\*\*/g,
+    '$1 **$2**',
+  );
+
+  // 3c. Same fix for italic: word*italic* → word *italic*
+  //     Only matches single * (not **) using negative lookahead/behind.
+  result = result.replace(
+    /([a-záéíóúñüA-ZÁÉÍÓÚÑÜ\w:;,.])\*(?!\*)((?:[^*\n])+?)\*(?!\*)/g,
+    '$1 *$2*',
+  );
+
   // 4. Space after closing bold when immediately followed by a word character
   //    e.g. "**texto**palabra" → "**texto** palabra"
   //    Require content to start with a non-space to avoid matching across bold pairs.
@@ -96,6 +116,13 @@ export function sanitizeMarkdown(text: string): string {
   //     Also ensures a space after the delimiter so the parser sees a valid list item.
   //     e.g. "2)texto" → "2. texto", "3) texto" → "3. texto"
   result = result.replace(/^(\d+)\)\s*/gm, '$1. ');
+
+  // 4d. Inline "N)" that the model merged into the previous line.
+  //     Split onto its own line so the parser sees a new list item.
+  //     e.g. "...SLA. 12)Pregunta guía:" → "...SLA.\n12. Pregunta guía:"
+  //     e.g. "...después. 5)Narrativo:"  → "...después.\n5. Narrativo:"
+  //     Only matches when preceded by sentence-ending punctuation + space.
+  result = result.replace(/([.!?:;])\s+(\d+)\)\s*/g, '$1\n$2. ');
 
   // ── Fix punctuation spacing ──
 
