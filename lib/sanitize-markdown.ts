@@ -1,5 +1,5 @@
 /**
- * Sanitize malformed markdown from AI model output.
+ * Sanitize malformed markdown from AI model output (OpenAI GPT).
  *
  * Fixes common issues:
  * - Spaces inside bold markers:          ** text**    → **text**
@@ -11,10 +11,10 @@
  * - Space before punctuation:            word ,next   → word, next
  * - Missing space after punctuation:     word,next    → word, next
  * - Paren list delimiter without space:  2)text       → 2. text
+ * - Inline merged list items:            text. 5)Next → text.\n5. Next
  *
- * Uses pair-matching instead of lookbehinds for reliable cross-engine
- * support.  The content pattern `(?:[^*]|\*(?!\*))` allows a single `*`
- * inside bold content but prevents matching across separate bold pairs.
+ * Uses pair-matching and parity-based detection instead of lookbehinds
+ * for reliable cross-engine support.
  */
 export function sanitizeMarkdown(text: string): string {
   if (!text) return text;
@@ -65,34 +65,45 @@ export function sanitizeMarkdown(text: string): string {
 
   // ── Fix spacing around bold markers ──
 
-  // 3b. Space before opening bold when preceded by a word character or punctuation
-  //     Uses pair-matching to only target complete **text** pairs, avoiding
-  //     false positives on orphaned ** markers.
-  //     e.g. "vendemos**cumplimiento**"  → "vendemos **cumplimiento**"
-  //     e.g. "patrón:**B2B**"            → "patrón: **B2B**"
-  //     e.g. "tu**margen.**"             → "tu **margen.**"
-  //     e.g. "con**5**"                  → "con **5**"
-  result = result.replace(
-    /([a-záéíóúñüA-ZÁÉÍÓÚÑÜ\w:;,.])\*\*((?:[^*]|\*(?!\*))+?)\*\*/g,
-    '$1 **$2**',
-  );
-
-  // 3c. Same fix for italic: word*italic* → word *italic*
-  //     Only matches single * (not **) using negative lookahead/behind.
-  result = result.replace(
-    /([a-záéíóúñüA-ZÁÉÍÓÚÑÜ\w:;,.])\*(?!\*)((?:[^*\n])+?)\*(?!\*)/g,
-    '$1 *$2*',
-  );
-
   // 4. Space after closing bold when immediately followed by a word character
   //    e.g. "**texto**palabra" → "**texto** palabra"
-  //    Require content to start with a non-space to avoid matching across bold pairs.
-  //    [^*\n] prevents matching across lines (which would pair the closing **
-  //    of one bold section with the opening ** of another on a different line).
   result = result.replace(
     /\*\*([^\s*][^*\n]*?)\*\*(?=[a-záéíóúñüA-ZÁÉÍÓÚÑÜ\w])/g,
     '**$1** ',
   );
+
+  // 4a. Space before opening ** when preceded by a word character.
+  //     Uses ** parity (even index = opening, odd = closing) to correctly
+  //     distinguish opening from closing markers — avoids the false-positive
+  //     problem of pair-matching regexes that confuse closing ** with opening **.
+  //     e.g. "vendemos**cumplimiento**" → "vendemos **cumplimiento**"
+  //     e.g. "patrón:**B2B**"          → "patrón: **B2B**"
+  //     e.g. "con**5**"               → "con **5**"
+  const WORD_BEFORE_BOLD = /[a-záéíóúñüA-ZÁÉÍÓÚÑÜ\w:;,.]/;
+  result = result.replace(/^.*$/gm, (line) => {
+    const markers: number[] = [];
+    let si = 0;
+    while (true) {
+      const idx = line.indexOf('**', si);
+      if (idx === -1) break;
+      markers.push(idx);
+      si = idx + 2;
+    }
+    if (markers.length < 2) return line;
+
+    let out = '';
+    let last = 0;
+    for (let i = 0; i < markers.length; i++) {
+      const pos = markers[i];
+      const isOpening = i % 2 === 0;
+      if (isOpening && pos > 0 && WORD_BEFORE_BOLD.test(line[pos - 1])) {
+        out += line.slice(last, pos) + ' ';
+        last = pos;
+      }
+    }
+    out += line.slice(last);
+    return out;
+  });
 
   // ── Remove orphaned ** that split words ──
 
