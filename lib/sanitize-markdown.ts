@@ -2,11 +2,12 @@
  * Sanitize malformed markdown from AI model output.
  *
  * Fixes common issues:
- * - Duplicate text after bold markers: **text**text → **text**
- * - Unclosed bold with duplicated text:  **texttext  → **text**
+ * - Spaces inside bold markers:          ** text**    → **text**
+ * - Duplicate text after bold markers:   **text**text → **text**
+ * - Unclosed bold with duplicated text:  **texttext   → **text**
  * - Missing space after closing bold:    **text**word → **text** word
- * - Space before punctuation:            word ,next  → word, next
- * - Missing space after punctuation:     word,next   → word, next
+ * - Space before punctuation:            word ,next   → word, next
+ * - Missing space after punctuation:     word,next    → word, next
  */
 export function sanitizeMarkdown(text: string): string {
   if (!text) return text;
@@ -23,6 +24,28 @@ export function sanitizeMarkdown(text: string): string {
       return `\x00${preserved.length - 1}\x00`;
     });
 
+  // ── Fix spaces inside bold markers (must run first) ──
+
+  // 0a. Remove leading spaces after opening **: "** text**" → "**text**"
+  //     Model often generates "** word**" which Markdown does NOT render as bold.
+  //     Lookbehind ensures ** is an opening marker (preceded by start, whitespace, or punctuation)
+  //     so we never match a closing ** followed by normal text across bold pairs.
+  //     Content must not contain * ([^*\n]) to avoid spanning across bold pairs.
+  result = result.replace(
+    /(?<=^|[\s({\[,;:!?])\*\* +([^*\n]+?)\*\*/gm,
+    '**$1**',
+  );
+
+  // 0b. Remove trailing spaces before closing **: "**text **" → "**text**"
+  //     Same lookbehind as 0a to ensure ** is an opening marker.
+  //     Content must not contain * ([^*\n]) to avoid spanning across bold pairs.
+  result = result.replace(
+    /(?<=^|[\s({\[,;:!?])\*\*([^*\n]+?) +\*\*/gm,
+    '**$1**',
+  );
+
+  // ── Fix duplicate text around bold markers ──
+
   // 1. Bold text followed immediately by the same text (closed bold + duplicate)
   //    e.g. "**no cumplió**no cumplió" → "**no cumplió**"
   result = result.replace(/\*\*(.+?)\*\*\1/g, '**$1**');
@@ -35,14 +58,17 @@ export function sanitizeMarkdown(text: string): string {
   //    e.g. "*texto*texto" → "*texto*"
   result = result.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)\1/g, '*$1*');
 
+  // ── Fix spacing around bold markers ──
+
   // 4. Space after closing bold when immediately followed by a word character
   //    e.g. "**texto**palabra" → "**texto** palabra"
   //    Require content to start with a non-space to avoid matching across bold pairs
-  //    (e.g. "**a** o **b**" should NOT match "** o **" as bold content)
   result = result.replace(
     /\*\*([^\s*][^*]*?)\*\*(?=[a-záéíóúñüA-ZÁÉÍÓÚÑÜ\w])/g,
     '**$1** ',
   );
+
+  // ── Fix punctuation spacing ──
 
   // 5. Remove extra spaces before punctuation
   //    e.g. "word ,next" → "word,next"  (step 6 will add the space after)
