@@ -844,7 +844,6 @@ type MessageBubbleProps = {
 };
 
 type MarkdownCodeProps = ComponentPropsWithoutRef<'code'> & {
-  inline?: boolean;
   className?: string;
 };
 
@@ -1334,8 +1333,9 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
 
                     return <CodeBlock language={language} value={value} />;
                   },
-                  code({ inline, className, children, ...props }: MarkdownCodeProps) {
-                    if (inline) {
+                  code({ className, children, ...props }: MarkdownCodeProps) {
+                    const isBlock = className?.includes('language-');
+                    if (!isBlock) {
                       return (
                         <code
                           {...props}
@@ -1450,8 +1450,9 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
 
                     return <CodeBlock language={language} value={value} />;
                   },
-                  code({ inline, className, children, ...props }: MarkdownCodeProps) {
-                    if (inline) {
+                  code({ className, children, ...props }: MarkdownCodeProps) {
+                    const isBlock = className?.includes('language-');
+                    if (!isBlock) {
                       return (
                         <code
                           {...props}

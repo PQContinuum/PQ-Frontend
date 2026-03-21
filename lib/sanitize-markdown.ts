@@ -30,18 +30,19 @@ export function sanitizeMarkdown(text: string): string {
 
   // ── Fix spaces inside bold markers (pair-matching approach) ──
 
-  // 0a. Remove leading spaces after opening **:  "** text**" → "**text**"
+  // 0a. Remove leading whitespace after opening **:  "** text**" → "**text**"
   //     Anchor: start-of-line or whitespace/punctuation before the opening **.
   //     Content: one or more chars that are NOT "**" (single * is fine).
   //     Captures the anchor so it is re-emitted without being consumed.
+  //     Uses [ \t]+ to catch spaces and tabs but NOT newlines (avoids cross-line matching).
   result = result.replace(
-    /(^|[\s,;:.!?({\[>])\*\* +((?:[^*]|\*(?!\*))+?)\*\*/gm,
+    /(^|[\s,;:.!?({\[>])\*\*[ \t]+((?:[^*]|\*(?!\*))+?)\*\*/gm,
     '$1**$2**',
   );
 
-  // 0b. Remove trailing spaces before closing **:  "**text **" → "**text**"
+  // 0b. Remove trailing whitespace before closing **:  "**text **" → "**text**"
   result = result.replace(
-    /(^|[\s,;:.!?({\[>])\*\*((?:[^*]|\*(?!\*))+?) +\*\*/gm,
+    /(^|[\s,;:.!?({\[>])\*\*((?:[^*]|\*(?!\*))+?)[ \t]+\*\*/gm,
     '$1**$2**',
   );
 
@@ -63,9 +64,11 @@ export function sanitizeMarkdown(text: string): string {
 
   // 4. Space after closing bold when immediately followed by a word character
   //    e.g. "**texto**palabra" → "**texto** palabra"
-  //    Require content to start with a non-space to avoid matching across bold pairs
+  //    Require content to start with a non-space to avoid matching across bold pairs.
+  //    [^*\n] prevents matching across lines (which would pair the closing **
+  //    of one bold section with the opening ** of another on a different line).
   result = result.replace(
-    /\*\*([^\s*][^*]*?)\*\*(?=[a-záéíóúñüA-ZÁÉÍÓÚÑÜ\w])/g,
+    /\*\*([^\s*][^*\n]*?)\*\*(?=[a-záéíóúñüA-ZÁÉÍÓÚÑÜ\w])/g,
     '**$1** ',
   );
 

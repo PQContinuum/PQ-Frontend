@@ -11,7 +11,6 @@ import { sanitizeMarkdown } from '@/lib/sanitize-markdown';
 import type { WebSearchResult } from '@/types/websearch';
 
 type MarkdownCodeProps = ComponentPropsWithoutRef<'code'> & {
-  inline?: boolean;
   className?: string;
 };
 
@@ -196,8 +195,12 @@ export function AIResponse({
           const value = String(codeProps?.children || '');
           return <CodeBlock language={language} value={value} />;
         },
-        code({ inline, className, children, ...props }: MarkdownCodeProps) {
-          if (inline) {
+        code({ className, children, ...props }: MarkdownCodeProps) {
+          // Block-level code is handled by the `pre` override above.
+          // If className contains a language tag it's a fenced code block;
+          // otherwise treat it as inline code.
+          const isBlock = className?.includes('language-');
+          if (!isBlock) {
             return (
               <code
                 {...props}
