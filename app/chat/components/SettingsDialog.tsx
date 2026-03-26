@@ -1,13 +1,32 @@
 'use client';
 
 import * as React from 'react';
-import { motion } from 'framer-motion';
-import { User, CreditCard, Rocket, Clock, Database, Upload, MessageSquare, ExternalLink, Loader2, Crown, Check, Sparkles, Users, Trash2, Eye } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  User,
+  CreditCard,
+  Database,
+  Upload,
+  MessageSquare,
+  ExternalLink,
+  Loader2,
+  Crown,
+  Check,
+  Sparkles,
+  Users,
+  Trash2,
+  Eye,
+  Clock,
+  Mail,
+  Shield,
+  FileText,
+  HelpCircle,
+  Trash,
+  ChevronRight,
+} from 'lucide-react';
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ChatGPTImportDialog } from './ChatGPTImportDialog';
@@ -16,7 +35,6 @@ import { billingApi } from '@/lib/api-client';
 import { useCharacters } from '@/hooks/use-characters';
 import type { Character } from '@/lib/lisa/types';
 
-// ChatGPT brand color
 const CHATGPT_GREEN = '#10a37f';
 
 interface SettingsDialogProps {
@@ -26,49 +44,77 @@ interface SettingsDialogProps {
   userPlan: string;
 }
 
-// Helper para obtener colores según el plan
+type TabKey = 'account' | 'plans' | 'data' | 'lisa';
+
+const tabs: { key: TabKey; label: string; icon: React.ElementType }[] = [
+  { key: 'account', label: 'Cuenta', icon: User },
+  { key: 'plans', label: 'Planes', icon: CreditCard },
+  { key: 'data', label: 'Datos', icon: Database },
+  { key: 'lisa', label: 'LISA', icon: Sparkles },
+];
+
 const getPlanColors = (plan: string) => {
-  const planLower = plan.toLowerCase();
-
-  if (planLower.includes('free') || planLower === 'gratis') {
-    return {
-      bg: 'from-[#7EEFB2] to-[#6AD9A0]',
-      text: 'text-[#7EEFB2]',
-      badge: 'bg-[#7EEFB2]/20',
-    };
-  }
-
-  if (planLower.includes('basic') || planLower.includes('básico')) {
-    return {
-      bg: 'from-[#3CCB75] to-[#2AB861]',
-      text: 'text-[#3CCB75]',
-      badge: 'bg-[#3CCB75]/20',
-    };
-  }
-
-  if (planLower.includes('professional') || planLower.includes('pro')) {
-    return {
-      bg: 'from-[#DAA520] to-[#C89514]',
-      text: 'text-[#DAA520]',
-      badge: 'bg-[#DAA520]/20',
-    };
-  }
-
-  if (planLower.includes('enterprise') || planLower.includes('empresarial')) {
-    return {
-      bg: 'from-[#0A4D68] to-[#083D54]',
-      text: 'text-[#0A4D68]',
-      badge: 'bg-[#0A4D68]/20',
-    };
-  }
-
-  // Default (Free)
-  return {
-    bg: 'from-[#7EEFB2] to-[#6AD9A0]',
-    text: 'text-[#7EEFB2]',
-    badge: 'bg-[#7EEFB2]/20',
-  };
+  const p = plan.toLowerCase();
+  if (p.includes('basic') || p.includes('básico'))
+    return { bg: 'from-[#FF8B3D] to-[#e67a2e]', label: 'Básico' };
+  if (p.includes('professional') || p.includes('pro'))
+    return { bg: 'from-[#c9851a] to-[#a06d12]', label: 'Profesional' };
+  if (p.includes('enterprise') || p.includes('empresarial'))
+    return { bg: 'from-[#1a1a2e] to-[#16213e]', label: 'Enterprise' };
+  return { bg: 'from-[#888] to-[#666]', label: 'Gratis' };
 };
+
+const planFeatures: Record<string, string[]> = {
+  free: [
+    'Conversaciones básicas',
+    'Historial de 7 días',
+    'Modelos estándar',
+    'Soporte por comunidad',
+  ],
+  paid: [
+    'Conversaciones ilimitadas',
+    'Historial completo',
+    'Modelos avanzados',
+    'Soporte prioritario 24/7',
+    'Integraciones y API',
+  ],
+};
+
+// --- Shared sub-components ---
+
+function SectionHeader({ title, subtitle }: { title: string; subtitle: string }) {
+  return (
+    <div className="mb-6">
+      <h3 className="text-base font-semibold text-[#111]">{title}</h3>
+      <p className="text-[13px] text-[#888] mt-0.5">{subtitle}</p>
+    </div>
+  );
+}
+
+function InfoNote({ items }: { items: string[] }) {
+  return (
+    <div className="rounded-xl bg-neutral-50 border border-black/[0.06] p-4">
+      <ul className="space-y-2">
+        {items.map((item, i) => (
+          <li key={i} className="flex items-start gap-2.5 text-[13px] text-[#888]">
+            <span className="mt-1 block size-1 rounded-full bg-[#bbb] shrink-0" />
+            {item}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function SettingsCard({ children, className }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`bg-white rounded-xl border border-black/[0.06] p-5 ${className || ''}`}>
+      {children}
+    </div>
+  );
+}
+
+// --- Main component ---
 
 export function SettingsDialog({
   open,
@@ -76,27 +122,25 @@ export function SettingsDialog({
   userEmail,
   userPlan,
 }: SettingsDialogProps) {
-  const [activeTab, setActiveTab] = React.useState<'account' | 'plans' | 'data' | 'lisa'>('account');
+  const [activeTab, setActiveTab] = React.useState<TabKey>('account');
   const [importDialogOpen, setImportDialogOpen] = React.useState(false);
   const [isLoadingPortal, setIsLoadingPortal] = React.useState(false);
   const [characterToDelete, setCharacterToDelete] = React.useState<Character | null>(null);
-  const planColors = getPlanColors(userPlan);
 
-  // Characters for LISA tab
+  const planColors = getPlanColors(userPlan);
+  const isFree = userPlan.toLowerCase() === 'gratis' || userPlan.toLowerCase() === 'free';
+
   const { data: characters, isLoading: isLoadingCharacters } = useCharacters();
 
-  // Handle opening Stripe Customer Portal
   const handleManageSubscription = React.useCallback(async () => {
     setIsLoadingPortal(true);
     try {
       const response = await billingApi.createPortalSession({
         returnUrl: window.location.href,
       });
-      // Redirect to Stripe Customer Portal
       window.location.href = response.url;
     } catch (error) {
       console.error('Error opening subscription portal:', error);
-      // Could show a toast/alert here
     } finally {
       setIsLoadingPortal(false);
     }
@@ -104,504 +148,429 @@ export function SettingsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="!max-w-6xl w-full h-[85vh] max-h-[750px] md:h-[85vh] p-0 gap-0 overflow-hidden">
+      <DialogContent
+        className="!max-w-[860px] w-full h-[80vh] max-h-[680px] p-0 gap-0 overflow-hidden border-black/[0.08]"
+        showCloseButton={false}
+      >
         <div className="flex flex-col md:flex-row h-full overflow-hidden">
-          <div className="w-full md:w-64 bg-[#f6f6f6] border-b md:border-b-0 md:border-r border-black/5 p-4 md:p-6 flex-shrink-0 overflow-y-auto md:overflow-y-visible">
-            <DialogHeader className="mb-6">
-              <DialogTitle className="text-xl font-bold text-[#111111]">
-                Configuración
-              </DialogTitle>
-            </DialogHeader>
+          {/* ---- Sidebar ---- */}
+          <div className="w-full md:w-56 bg-neutral-50/80 border-b md:border-b-0 md:border-r border-black/[0.06] flex-shrink-0 flex flex-col">
+            <div className="px-5 pt-6 pb-2">
+              <h2 className="text-[15px] font-semibold text-[#111]">Configuración</h2>
+            </div>
 
-            <nav className="space-y-2">
-              <button
-                onClick={() => setActiveTab('account')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                  activeTab === 'account'
-                    ? 'bg-white text-[#FF8B3D] shadow-sm'
-                    : 'text-[#4c4c4c] hover:bg-white/50'
-                }`}
-              >
-                <User className="size-4" />
-                <span>Cuenta</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('plans')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                  activeTab === 'plans'
-                    ? 'bg-white text-[#FF8B3D] shadow-sm'
-                    : 'text-[#4c4c4c] hover:bg-white/50'
-                }`}
-              >
-                <CreditCard className="size-4" />
-                <span>Planes</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('data')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                  activeTab === 'data'
-                    ? 'bg-white text-[#FF8B3D] shadow-sm'
-                    : 'text-[#4c4c4c] hover:bg-white/50'
-                }`}
-              >
-                <Database className="size-4" />
-                <span>Datos</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('lisa')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                  activeTab === 'lisa'
-                    ? 'bg-white text-[#FF8B3D] shadow-sm'
-                    : 'text-[#4c4c4c] hover:bg-white/50'
-                }`}
-              >
-                <Sparkles className="size-4" />
-                <span>LISA</span>
-              </button>
+            <nav className="px-3 py-2 flex-1">
+              {tabs.map(({ key, label, icon: Icon }) => (
+                <button
+                  key={key}
+                  onClick={() => setActiveTab(key)}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors mb-0.5 ${
+                    activeTab === key
+                      ? 'bg-white text-[#111] shadow-[0_1px_2px_rgba(0,0,0,0.06)] border border-black/[0.06]'
+                      : 'text-[#888] hover:text-[#555] hover:bg-white/60'
+                  }`}
+                >
+                  <Icon className="size-[15px]" />
+                  {label}
+                </button>
+              ))}
             </nav>
+
+            {/* Sidebar footer */}
+            <div className="px-5 pb-5 mt-auto hidden md:block">
+              <div className="border-t border-black/[0.06] pt-4">
+                <p className="text-[11px] text-[#bbb]">Continuum AI v0.1.0</p>
+              </div>
+            </div>
           </div>
 
+          {/* ---- Content ---- */}
           <div className="flex-1 overflow-y-auto overscroll-contain">
-            <div className="p-4 md:p-6 lg:p-8">
-              {activeTab === 'account' && (
-                <motion.div
-                  key="account"
-                  initial={{ opacity: 0, x: 10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="space-y-6"
-                >
-                  <div>
-                    <h3 className="text-lg font-bold text-[#111111] mb-1">
-                      Información de la Cuenta
-                    </h3>
-                    <p className="text-sm text-[#4c4c4c]">
-                      Gestiona tu información personal
-                    </p>
-                  </div>
+            <div className="p-5 md:p-7">
+              <AnimatePresence mode="wait">
+                {/* ======== CUENTA ======== */}
+                {activeTab === 'account' && (
+                  <motion.div
+                    key="account"
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.15 }}
+                    className="space-y-5"
+                  >
+                    <SectionHeader
+                      title="Cuenta"
+                      subtitle="Tu información personal y estado de cuenta"
+                    />
 
-                  {/* Email Section */}
-                  <div className="bg-white rounded-xl p-5 border border-black/10 shadow-sm">
-                    <label className="text-xs font-semibold text-[#4c4c4c] uppercase tracking-wide mb-3 block">
-                      Correo Electrónico
-                    </label>
-                    <div className="flex items-center gap-3">
-                      <div className="bg-gradient-to-br from-[#FF8B3D]/10 to-[#d9753e]/10 rounded-lg p-2.5">
-                        <User className="size-5 text-[#FF8B3D]" />
+                    {/* Email */}
+                    <SettingsCard>
+                      <div className="flex items-center gap-3">
+                        <div className="size-10 rounded-lg bg-[#FF8B3D]/8 flex items-center justify-center">
+                          <Mail className="size-[18px] text-[#FF8B3D]" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[13px] font-medium text-[#111] truncate">
+                            {userEmail || 'No disponible'}
+                          </p>
+                          <p className="text-[12px] text-[#10b981] font-medium flex items-center gap-1">
+                            <Check className="size-3" />
+                            Verificado
+                          </p>
+                        </div>
+                        <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${
+                          isFree
+                            ? 'bg-neutral-100 text-[#888]'
+                            : 'bg-[#FF8B3D]/10 text-[#FF8B3D]'
+                        }`}>
+                          {planColors.label}
+                        </span>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-[#111111] truncate">
-                          {userEmail || 'No disponible'}
-                        </p>
-                        <p className="text-xs text-[#FF8B3D] font-medium">
-                          ✓ Verificado
-                        </p>
+                    </SettingsCard>
+
+                    {/* Upgrade banner - only for free users */}
+                    {isFree && (
+                      <SettingsCard className="!bg-[#FF8B3D]/[0.04] !border-[#FF8B3D]/15">
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <h4 className="text-[13px] font-semibold text-[#111] mb-0.5">
+                              Mejora tu experiencia
+                            </h4>
+                            <p className="text-[12px] text-[#888]">
+                              Desbloquea conversaciones ilimitadas y modelos avanzados
+                            </p>
+                          </div>
+                          <Button
+                            onClick={() => {
+                              onOpenChange(false);
+                              window.location.href = '/payment';
+                            }}
+                            className="bg-[#FF8B3D] hover:bg-[#e67a2e] text-white text-[12px] px-4 h-8 font-medium shrink-0"
+                          >
+                            Ver planes
+                            <ChevronRight className="size-3.5 ml-0.5" />
+                          </Button>
+                        </div>
+                      </SettingsCard>
+                    )}
+
+                    {/* Quick links */}
+                    <div className="space-y-1">
+                      <p className="text-[12px] font-medium text-[#999] mb-2 px-1">
+                        Enlaces
+                      </p>
+                      {[
+                        { icon: FileText, label: 'Términos y condiciones', href: '/legal/terminos' },
+                        { icon: Shield, label: 'Política de privacidad', href: '/legal/privacidad' },
+                        { icon: HelpCircle, label: 'Soporte', href: 'mailto:soporte@continuumai.llc' },
+                      ].map(({ icon: Icon, label, href }) => (
+                        <a
+                          key={label}
+                          href={href}
+                          target={href.startsWith('mailto') ? undefined : '_blank'}
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] text-[#666] hover:bg-neutral-50 hover:text-[#111] transition-colors"
+                        >
+                          <Icon className="size-[15px] text-[#bbb]" />
+                          {label}
+                          <ExternalLink className="size-3 text-[#ccc] ml-auto" />
+                        </a>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* ======== PLANES ======== */}
+                {activeTab === 'plans' && (
+                  <motion.div
+                    key="plans"
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.15 }}
+                    className="space-y-5"
+                  >
+                    <SectionHeader
+                      title="Tu plan"
+                      subtitle="Gestiona tu suscripción actual"
+                    />
+
+                    {/* Current plan card */}
+                    <div className={`bg-gradient-to-br ${planColors.bg} rounded-xl p-5 text-white`}>
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <p className="text-[12px] opacity-80 font-medium mb-0.5">Plan actual</p>
+                          <h4 className="text-2xl font-bold">{userPlan}</h4>
+                        </div>
+                        <div className="bg-white/15 backdrop-blur-sm rounded-lg p-2">
+                          <Crown className="size-5" />
+                        </div>
                       </div>
-                    </div>
-                  </div>
-
-                  {/* Account Stats */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-4 border border-blue-200/50">
-                      <p className="text-xs font-bold text-blue-700 uppercase tracking-wide mb-1">
-                        Conversaciones
+                      <p className="text-[13px] opacity-90">
+                        {isFree
+                          ? 'Acceso básico a Continuum AI'
+                          : `Funciones premium de ${planColors.label} activas`}
                       </p>
-                      <p className="text-3xl font-bold text-[#111111]">12</p>
                     </div>
-                    <div className="bg-gradient-to-br from-orange-50 to-[#f0b896]/50 rounded-xl p-4 border border-[#e8956a]/50">
-                      <p className="text-xs font-bold text-[#FF8B3D] uppercase tracking-wide mb-1">
-                        Mensajes
-                      </p>
-                      <p className="text-3xl font-bold text-[#111111]">148</p>
-                    </div>
-                  </div>
 
-                  {/* Upgrade Banner */}
-                  <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl p-5">
-                    <div className="flex gap-3">
-                      <Rocket className="size-5 text-yellow-600 shrink-0 mt-0.5" />
-                      <div>
-                        <h4 className="text-sm font-bold text-[#111111] mb-1">
-                          Mejora tu experiencia
-                        </h4>
-                        <p className="text-xs text-[#4c4c4c] mb-3 leading-relaxed">
-                          Desbloquea todas las funciones premium de Continuum AI
+                    {/* Features */}
+                    <SettingsCard>
+                      <p className="text-[13px] font-semibold text-[#111] mb-3">
+                        Incluido en tu plan
+                      </p>
+                      <ul className="space-y-2.5">
+                        {(isFree ? planFeatures.free : planFeatures.paid).map((feature) => (
+                          <li key={feature} className="flex items-center gap-2.5 text-[13px] text-[#666]">
+                            <div className="size-5 rounded-full bg-[#FF8B3D]/10 flex items-center justify-center shrink-0">
+                              <Check className="size-3 text-[#FF8B3D]" />
+                            </div>
+                            {feature}
+                          </li>
+                        ))}
+                      </ul>
+                    </SettingsCard>
+
+                    {/* CTA */}
+                    {isFree ? (
+                      <SettingsCard className="!border-dashed text-center">
+                        <p className="text-[13px] font-semibold text-[#111] mb-1">
+                          Desbloquea más con un plan premium
+                        </p>
+                        <p className="text-[12px] text-[#888] mb-4">
+                          Mensajes ilimitados, modelos avanzados y más
                         </p>
                         <Button
                           onClick={() => {
                             onOpenChange(false);
                             window.location.href = '/payment';
                           }}
-                          className="bg-[#FF8B3D] hover:bg-[#00442a] text-white text-xs px-4 py-2 h-auto font-semibold gap-1.5"
+                          className="bg-[#FF8B3D] hover:bg-[#e67a2e] text-white text-[13px] px-5 h-9 font-medium"
                         >
-                          <Rocket className="size-3.5" />
-                          Ver planes premium
+                          Ver planes disponibles
                         </Button>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-
-              {activeTab === 'plans' && (
-                <motion.div
-                  key="plans"
-                  initial={{ opacity: 0, x: 10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="space-y-6"
-                >
-                  <div>
-                    <h3 className="text-lg font-bold text-[#111111] mb-1">
-                      Tu Plan Actual
-                    </h3>
-                    <p className="text-sm text-[#4c4c4c]">
-                      Gestiona tu suscripción
-                    </p>
-                  </div>
-
-                  {/* Current Plan Card */}
-                  <div className={`bg-gradient-to-br ${planColors.bg} rounded-xl p-6 text-white shadow-lg`}>
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <p className="text-sm opacity-90 mb-1 font-medium">Plan Actual</p>
-                        <h4 className="text-3xl font-bold">{userPlan}</h4>
-                      </div>
-                      <div className="bg-white/20 backdrop-blur-sm rounded-lg p-2.5">
-                        <Crown className="size-6" />
-                      </div>
-                    </div>
-                    <p className="text-sm opacity-95 font-medium">
-                      {userPlan === 'Gratis' || userPlan === 'Free'
-                        ? 'Acceso básico a Continuum AI'
-                        : `Plan ${userPlan} - Funciones premium incluidas`}
-                    </p>
-                  </div>
-
-                  {/* Plan Features */}
-                  <div className="bg-white rounded-xl p-5 border border-black/10 shadow-sm">
-                    <h5 className="text-sm font-bold text-[#111111] mb-4">
-                      Características incluidas
-                    </h5>
-                    <ul className="space-y-3">
-                      {userPlan === 'Gratis' ? (
-                        <>
-                          <li className="flex items-start gap-3 text-sm text-[#4c4c4c]">
-                            <div className="bg-[#f0b896] rounded-full p-1 mt-0.5">
-                              <Check className="size-3 text-[#FF8B3D]" />
-                            </div>
-                            <span>Conversaciones básicas</span>
-                          </li>
-                          <li className="flex items-start gap-3 text-sm text-[#4c4c4c]">
-                            <div className="bg-[#f0b896] rounded-full p-1 mt-0.5">
-                              <Check className="size-3 text-[#FF8B3D]" />
-                            </div>
-                            <span>Historial limitado de conversaciones</span>
-                          </li>
-                          <li className="flex items-start gap-3 text-sm text-[#4c4c4c]">
-                            <div className="bg-[#f0b896] rounded-full p-1 mt-0.5">
-                              <Check className="size-3 text-[#FF8B3D]" />
-                            </div>
-                            <span>Soporte por comunidad</span>
-                          </li>
-                        </>
-                      ) : (
-                        <>
-                          <li className="flex items-start gap-3 text-sm text-[#4c4c4c]">
-                            <div className="bg-[#f0b896] rounded-full p-1 mt-0.5">
-                              <Check className="size-3 text-[#FF8B3D]" />
-                            </div>
-                            <span>Conversaciones ilimitadas</span>
-                          </li>
-                          <li className="flex items-start gap-3 text-sm text-[#4c4c4c]">
-                            <div className="bg-[#f0b896] rounded-full p-1 mt-0.5">
-                              <Check className="size-3 text-[#FF8B3D]" />
-                            </div>
-                            <span>Soporte prioritario 24/7</span>
-                          </li>
-                          <li className="flex items-start gap-3 text-sm text-[#4c4c4c]">
-                            <div className="bg-[#f0b896] rounded-full p-1 mt-0.5">
-                              <Check className="size-3 text-[#FF8B3D]" />
-                            </div>
-                            <span>Integraciones avanzadas y API</span>
-                          </li>
-                        </>
-                      )}
-                    </ul>
-                  </div>
-
-                  {/* Upgrade CTA */}
-                  {(userPlan === 'Gratis' || userPlan === 'Free') && (
-                    <div className="border-2 border-dashed border-[#d9753e] rounded-xl p-6 text-center bg-orange-50/30">
-                      <div className="bg-gradient-to-br from-[#FF8B3D]/10 to-[#d9753e]/10 w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <Rocket className="size-7 text-[#d9753e]" />
-                      </div>
-                      <h4 className="text-base font-bold text-[#111111] mb-2">
-                        ¿Listo para crecer?
-                      </h4>
-                      <p className="text-sm text-[#4c4c4c] mb-4 max-w-sm mx-auto">
-                        Mejora tu plan y desbloquea el potencial completo de Continuum AI
-                      </p>
-                      <Button
-                        onClick={() => {
-                          onOpenChange(false);
-                          window.location.href = '/payment';
-                        }}
-                        className="bg-[#FF8B3D] hover:bg-[#00442a] text-white px-6 py-2.5 h-auto font-semibold text-sm gap-2"
-                      >
-                        <Rocket className="size-4" />
-                        Ver planes disponibles
-                      </Button>
-                    </div>
-                  )}
-
-                  {/* Manage Subscription - Prominent CTA */}
-                  {userPlan !== 'Gratis' && userPlan !== 'Free' && (
-                    <div className="bg-gradient-to-r from-[#FF8B3D]/5 to-[#d9753e]/5 rounded-xl p-5 border border-[#FF8B3D]/20">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <div>
-                          <h5 className="text-sm font-bold text-[#111111] mb-1">
-                            Gestiona tu suscripción
-                          </h5>
-                          <p className="text-xs text-[#4c4c4c]">
-                            Actualiza tu método de pago, cambia de plan o cancela
-                          </p>
-                        </div>
-                        <Button
-                          onClick={handleManageSubscription}
-                          disabled={isLoadingPortal}
-                          className="bg-[#FF8B3D] hover:bg-[#00442a] text-white gap-2 px-6 py-3 h-auto text-sm font-semibold shrink-0"
-                        >
-                          {isLoadingPortal ? (
-                            <>
-                              <Loader2 className="size-4 animate-spin" />
-                              Cargando...
-                            </>
-                          ) : (
-                            <>
-                              <ExternalLink className="size-4" />
+                      </SettingsCard>
+                    ) : (
+                      <SettingsCard>
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                          <div>
+                            <p className="text-[13px] font-semibold text-[#111]">
                               Gestionar suscripción
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </motion.div>
-              )}
+                            </p>
+                            <p className="text-[12px] text-[#888]">
+                              Cambia tu plan, método de pago o cancela
+                            </p>
+                          </div>
+                          <Button
+                            onClick={handleManageSubscription}
+                            disabled={isLoadingPortal}
+                            className="bg-[#FF8B3D] hover:bg-[#e67a2e] text-white text-[13px] px-5 h-9 font-medium shrink-0"
+                          >
+                            {isLoadingPortal ? (
+                              <Loader2 className="size-4 animate-spin" />
+                            ) : (
+                              <>
+                                <ExternalLink className="size-3.5 mr-1.5" />
+                                Gestionar
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </SettingsCard>
+                    )}
+                  </motion.div>
+                )}
 
-              {activeTab === 'data' && (
-                <motion.div
-                  key="data"
-                  initial={{ opacity: 0, x: 10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="space-y-6"
-                >
-                  <div>
-                    <h3 className="text-lg font-bold text-[#111111] mb-1">
-                      Gestión de Datos
-                    </h3>
-                    <p className="text-sm text-[#4c4c4c]">
-                      Importa y exporta tus conversaciones
-                    </p>
-                  </div>
+                {/* ======== DATOS ======== */}
+                {activeTab === 'data' && (
+                  <motion.div
+                    key="data"
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.15 }}
+                    className="space-y-5"
+                  >
+                    <SectionHeader
+                      title="Datos"
+                      subtitle="Importa, exporta y gestiona tus conversaciones"
+                    />
 
-                  {/* Import from ChatGPT */}
-                  <div className="bg-white rounded-xl p-5 border border-black/10 shadow-sm">
-                    <div className="flex items-start gap-4">
-                      <div
-                        className="p-3 rounded-xl shrink-0"
-                        style={{ backgroundColor: `${CHATGPT_GREEN}15` }}
-                      >
-                        <MessageSquare
-                          className="size-6"
-                          style={{ color: CHATGPT_GREEN }}
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-bold text-[#111111] mb-1">
-                          Importar desde ChatGPT
-                        </h4>
-                        <p className="text-xs text-[#4c4c4c] mb-4 leading-relaxed">
-                          Importa todas tus conversaciones de ChatGPT a Continuum AI.
-                          Soporta archivos ZIP (export completo) o JSON (conversations.json).
-                        </p>
-                        <Button
-                          onClick={() => setImportDialogOpen(true)}
-                          className="gap-2"
-                          style={{ backgroundColor: CHATGPT_GREEN }}
+                    {/* Import from ChatGPT */}
+                    <SettingsCard>
+                      <div className="flex items-start gap-3.5">
+                        <div
+                          className="size-10 rounded-lg flex items-center justify-center shrink-0"
+                          style={{ backgroundColor: `${CHATGPT_GREEN}10` }}
                         >
-                          <Upload className="size-4" />
-                          Importar conversaciones
-                        </Button>
+                          <MessageSquare className="size-[18px]" style={{ color: CHATGPT_GREEN }} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-[13px] font-semibold text-[#111] mb-0.5">
+                            Importar desde ChatGPT
+                          </h4>
+                          <p className="text-[12px] text-[#888] mb-3 leading-relaxed">
+                            Soporta archivos ZIP (export completo) o JSON (conversations.json)
+                          </p>
+                          <Button
+                            onClick={() => setImportDialogOpen(true)}
+                            className="h-8 text-[12px] font-medium text-white"
+                            style={{ backgroundColor: CHATGPT_GREEN }}
+                          >
+                            <Upload className="size-3.5 mr-1.5" />
+                            Importar
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  </div>
+                    </SettingsCard>
 
-                  {/* Export Data - Coming Soon */}
-                  <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
-                    <div className="flex items-start gap-4">
-                      <div className="bg-gray-200 p-3 rounded-xl shrink-0">
-                        <Database className="size-6 text-gray-500" />
+                    {/* Export */}
+                    <SettingsCard className="!bg-neutral-50/50">
+                      <div className="flex items-start gap-3.5">
+                        <div className="size-10 rounded-lg bg-neutral-100 flex items-center justify-center shrink-0">
+                          <Database className="size-[18px] text-[#bbb]" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-[13px] font-semibold text-[#111] mb-0.5">
+                            Exportar tus datos
+                          </h4>
+                          <p className="text-[12px] text-[#888] mb-3">
+                            Descarga todas tus conversaciones y datos
+                          </p>
+                          <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[#bbb] bg-neutral-100 px-2.5 py-1 rounded-full">
+                            <Clock className="size-3" />
+                            Próximamente
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-bold text-[#111111] mb-1">
-                          Exportar tus datos
-                        </h4>
-                        <p className="text-xs text-[#4c4c4c] mb-4 leading-relaxed">
-                          Descarga todas tus conversaciones y datos de Continuum AI.
+                    </SettingsCard>
+
+                    {/* Delete conversations */}
+                    <SettingsCard className="!border-red-100">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-start gap-3.5">
+                          <div className="size-10 rounded-lg bg-red-50 flex items-center justify-center shrink-0">
+                            <Trash className="size-[18px] text-red-400" />
+                          </div>
+                          <div>
+                            <h4 className="text-[13px] font-semibold text-[#111] mb-0.5">
+                              Eliminar conversaciones
+                            </h4>
+                            <p className="text-[12px] text-[#888]">
+                              Elimina conversaciones individualmente desde el sidebar
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </SettingsCard>
+
+                    <InfoNote
+                      items={[
+                        'Tus conversaciones se almacenan de forma segura y encriptada',
+                        'Al importar, los datos originales de ChatGPT no se modifican',
+                      ]}
+                    />
+                  </motion.div>
+                )}
+
+                {/* ======== LISA ======== */}
+                {activeTab === 'lisa' && (
+                  <motion.div
+                    key="lisa"
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.15 }}
+                    className="space-y-5"
+                  >
+                    <SectionHeader
+                      title="LISA — Personajes"
+                      subtitle="Personajes que has creado para generación de contenido"
+                    />
+
+                    {/* Characters list */}
+                    <div className="bg-white rounded-xl border border-black/[0.06] overflow-hidden">
+                      <div className="px-5 py-3 border-b border-black/[0.04] flex items-center justify-between">
+                        <p className="text-[13px] font-semibold text-[#111]">
+                          Mis personajes
                         </p>
-                        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-neutral-500">
-                          <Clock className="size-3" />
-                          Coming Soon
+                        <span className="text-[11px] text-[#999] bg-neutral-100 px-2 py-0.5 rounded-full font-medium">
+                          {characters?.length || 0}
                         </span>
                       </div>
-                    </div>
-                  </div>
 
-                  {/* Data Info */}
-                  <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
-                    <h5 className="text-xs font-bold text-blue-700 uppercase tracking-wide mb-2">
-                      Sobre tus datos
-                    </h5>
-                    <ul className="space-y-2 text-xs text-blue-800">
-                      <li className="flex items-start gap-2">
-                        <span className="text-blue-600 mt-0.5">•</span>
-                        <span>Tus conversaciones se almacenan de forma segura y encriptada</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-blue-600 mt-0.5">•</span>
-                        <span>Puedes eliminar cualquier conversación en cualquier momento</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-blue-600 mt-0.5">•</span>
-                        <span>Al importar, los datos originales de ChatGPT no se modifican</span>
-                      </li>
-                    </ul>
-                  </div>
-                </motion.div>
-              )}
-
-              {activeTab === 'lisa' && (
-                <motion.div
-                  key="lisa"
-                  initial={{ opacity: 0, x: 10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="space-y-6"
-                >
-                  <div>
-                    <h3 className="text-lg font-bold text-[#111111] mb-1">
-                      LISA - Personajes
-                    </h3>
-                    <p className="text-sm text-[#4c4c4c]">
-                      Gestiona los personajes que has creado para generacion de contenido
-                    </p>
-                  </div>
-
-                  {/* Characters List */}
-                  <div className="bg-white rounded-xl border border-black/10 shadow-sm overflow-hidden">
-                    <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-                      <h4 className="text-sm font-bold text-[#111111]">
-                        Mis Personajes
-                      </h4>
-                      <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                        {characters?.length || 0} personajes
-                      </span>
-                    </div>
-
-                    {isLoadingCharacters ? (
-                      <div className="p-8 flex items-center justify-center">
-                        <Loader2 className="size-6 text-[#FF8B3D] animate-spin" />
-                      </div>
-                    ) : !characters || characters.length === 0 ? (
-                      <div className="p-8 text-center">
-                        <Users className="size-12 text-gray-300 mx-auto mb-3" />
-                        <p className="text-sm text-gray-500">
-                          No tienes personajes creados
-                        </p>
-                        <p className="text-xs text-gray-400 mt-1">
-                          Crea personajes desde el wizard de LISA
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="divide-y divide-gray-100 max-h-[400px] overflow-y-auto">
-                        {characters.map((character) => (
-                          <div
-                            key={character.id}
-                            className="p-4 flex items-center gap-4 hover:bg-gray-50 transition"
-                          >
-                            {/* Avatar */}
-                            {character.referenceImageUrl ? (
-                              <img
-                                src={character.referenceImageUrl}
-                                alt={character.name}
-                                className="size-12 rounded-lg object-cover border border-gray-200"
-                              />
-                            ) : (
-                              <div className="size-12 rounded-lg bg-gray-100 flex items-center justify-center border border-gray-200">
-                                <Users className="size-6 text-gray-400" />
-                              </div>
-                            )}
-
-                            {/* Info */}
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-semibold text-[#111111] truncate">
-                                {character.name}
-                              </p>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-xs text-gray-500 capitalize">
-                                  {character.visualStyle || 'Sin estilo'}
-                                </span>
-                                {character.isPublic && (
-                                  <span className="text-xs text-[#FF8B3D] flex items-center gap-1">
-                                    <Eye className="size-3" />
-                                    Publico
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Delete button */}
-                            <button
-                              onClick={() => setCharacterToDelete(character)}
-                              className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
-                              title="Eliminar personaje"
+                      {isLoadingCharacters ? (
+                        <div className="p-10 flex items-center justify-center">
+                          <Loader2 className="size-5 text-[#ccc] animate-spin" />
+                        </div>
+                      ) : !characters || characters.length === 0 ? (
+                        <div className="p-10 text-center">
+                          <Users className="size-8 text-[#ddd] mx-auto mb-2" />
+                          <p className="text-[13px] text-[#999]">
+                            Sin personajes creados
+                          </p>
+                          <p className="text-[12px] text-[#bbb] mt-0.5">
+                            Crea personajes desde el wizard de LISA
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="divide-y divide-black/[0.04] max-h-[360px] overflow-y-auto">
+                          {characters.map((character) => (
+                            <div
+                              key={character.id}
+                              className="px-5 py-3 flex items-center gap-3 hover:bg-neutral-50/60 transition-colors"
                             >
-                              <Trash2 className="size-5" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                              {character.referenceImageUrl ? (
+                                <img
+                                  src={character.referenceImageUrl}
+                                  alt={character.name}
+                                  className="size-10 rounded-lg object-cover border border-black/[0.06]"
+                                />
+                              ) : (
+                                <div className="size-10 rounded-lg bg-neutral-100 flex items-center justify-center">
+                                  <Users className="size-4 text-[#bbb]" />
+                                </div>
+                              )}
 
-                  {/* Info box */}
-                  <div className="bg-purple-50 rounded-xl p-4 border border-purple-200">
-                    <h5 className="text-xs font-bold text-purple-700 uppercase tracking-wide mb-2">
-                      Sobre los personajes
-                    </h5>
-                    <ul className="space-y-2 text-xs text-purple-800">
-                      <li className="flex items-start gap-2">
-                        <span className="text-purple-600 mt-0.5">•</span>
-                        <span>Los personajes te permiten mantener consistencia visual en tus generaciones</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-purple-600 mt-0.5">•</span>
-                        <span>Puedes hacer publicos tus personajes para que otros los usen</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-purple-600 mt-0.5">•</span>
-                        <span>Eliminar un personaje es permanente y no se puede deshacer</span>
-                      </li>
-                    </ul>
-                  </div>
-                </motion.div>
-              )}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[13px] font-medium text-[#111] truncate">
+                                  {character.name}
+                                </p>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <span className="text-[11px] text-[#999] capitalize">
+                                    {character.visualStyle || 'Sin estilo'}
+                                  </span>
+                                  {character.isPublic && (
+                                    <span className="text-[11px] text-[#FF8B3D] flex items-center gap-0.5 font-medium">
+                                      <Eye className="size-2.5" />
+                                      Público
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              <button
+                                onClick={() => setCharacterToDelete(character)}
+                                className="p-1.5 text-[#ccc] hover:text-red-400 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Eliminar personaje"
+                              >
+                                <Trash2 className="size-4" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <InfoNote
+                      items={[
+                        'Los personajes mantienen consistencia visual en tus generaciones',
+                        'Puedes hacer públicos tus personajes para que otros los usen',
+                        'Eliminar un personaje es permanente',
+                      ]}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </div>
