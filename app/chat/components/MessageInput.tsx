@@ -388,10 +388,13 @@ export const MessageInput = memo(function MessageInput() {
     if (!pendingAction) return;
     setPendingAction(null);
 
-    // Reset all modes first
+    // Reset ALL modes first to ensure exclusivity
     setImageMode(false);
     setVideoMode(false);
     setEnableWebSearch(false);
+    setShowFileUpload(false);
+    setShowStylePicker(false);
+    setGeoCulturalMode(false);
 
     switch (pendingAction) {
       case 'image':
@@ -1313,16 +1316,20 @@ export const MessageInput = memo(function MessageInput() {
     setVideoMode(false);
     setShowFileUpload(false);
     setShowStylePicker(false);
+    setEnableWebSearch(false);
+    setGeoCulturalMode(false);
     setTimeout(() => textareaRef.current?.focus(), 100);
-  }, []);
+  }, [setEnableWebSearch, setGeoCulturalMode]);
 
   const toggleVideoMode = useCallback(() => {
     setVideoMode((prev) => !prev);
     setImageMode(false);
     setShowFileUpload(false);
     setShowStylePicker(false);
+    setEnableWebSearch(false);
+    setGeoCulturalMode(false);
     setTimeout(() => textareaRef.current?.focus(), 100);
-  }, []);
+  }, [setEnableWebSearch, setGeoCulturalMode]);
 
   const openLisaWizard = useCallback(() => {
     setShowLisaWizard(true);
@@ -1330,7 +1337,9 @@ export const MessageInput = memo(function MessageInput() {
     setVideoMode(false);
     setShowFileUpload(false);
     setShowStylePicker(false);
-  }, []);
+    setEnableWebSearch(false);
+    setGeoCulturalMode(false);
+  }, [setEnableWebSearch, setGeoCulturalMode]);
 
   // Handle LISA wizard generation
   const handleLisaGenerate = useCallback(async (data: {
