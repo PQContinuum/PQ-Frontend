@@ -460,27 +460,27 @@ export default function ChatPage() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6, duration: 0.4 }}
-                className="flex flex-wrap justify-center gap-2 mt-6 w-full max-w-2xl"
+                className="grid grid-cols-2 md:grid-cols-4 gap-2.5 mt-6 w-full max-w-2xl"
               >
                 {[
-                  { icon: MessageSquare, label: 'Chat', action: 'chat', prompt: '' },
-                  { icon: ImageIcon, label: 'Imagen', action: 'image', prompt: '' },
-                  { icon: Video, label: 'Video', action: 'video', prompt: '' },
-                  { icon: Sparkles, label: 'LISA', action: 'lisa', prompt: '' },
-                  { icon: Globe, label: 'Web Search', action: 'web-search', prompt: '' },
-                  { icon: MapPin, label: 'GeoCultural', action: 'geocultural', prompt: '' },
-                  { icon: Paperclip, label: 'Archivos', action: 'files', prompt: '' },
-                ].map(({ icon: Icon, label, action, prompt }) => (
+                  { icon: MessageSquare, label: 'Chat', action: 'chat' },
+                  { icon: ImageIcon, label: 'Generar imagen', action: 'image' },
+                  { icon: Video, label: 'Generar video', action: 'video' },
+                  { icon: Sparkles, label: 'LISA', action: 'lisa' },
+                  { icon: Globe, label: 'Web Search', action: 'web-search' },
+                  { icon: MapPin, label: 'GeoCultural', action: 'geocultural' },
+                  { icon: Paperclip, label: 'Archivos', action: 'files' },
+                ].map(({ icon: Icon, label, action }) => (
                   <button
                     key={action}
                     onClick={() => {
                       if (action === 'chat') {
-                        setPendingInput(prompt || '');
+                        setPendingInput('');
                       } else {
                         setPendingAction(action);
                       }
                     }}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-full border border-black/[0.06] bg-white hover:bg-neutral-50 hover:border-[#FF8B3D]/30 hover:shadow-sm transition-all group"
+                    className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-black/[0.06] bg-white hover:bg-neutral-50 hover:border-black/[0.1] transition-all text-left group"
                   >
                     <Icon className="size-4 text-[#bbb] group-hover:text-[#FF8B3D] transition-colors shrink-0" />
                     <span className="text-[13px] text-[#666] group-hover:text-[#111] transition-colors">{label}</span>
