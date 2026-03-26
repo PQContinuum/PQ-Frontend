@@ -37,6 +37,8 @@ import {
   useSetLinkFetch,
   usePendingInput,
   useSetPendingInput,
+  usePendingAction,
+  useSetPendingAction,
 } from '@/app/chat/store';
 import { useCreateConversation } from '@/hooks/use-conversations';
 import { useQueryClient } from '@tanstack/react-query';
@@ -377,6 +379,38 @@ export const MessageInput = memo(function MessageInput() {
   const setIsSearching = useWebSearchStore((s) => s.setIsSearching);
   const setLastResults = useWebSearchStore((s) => s.setLastResults);
   const setLastError = useWebSearchStore((s) => s.setLastError);
+
+  // Pending action from suggestion chips (activate tool modes)
+  const pendingAction = usePendingAction();
+  const setPendingAction = useSetPendingAction();
+  useEffect(() => {
+    if (!pendingAction) return;
+    setPendingAction(null);
+
+    switch (pendingAction) {
+      case 'image':
+        setImageMode(true);
+        setVideoMode(false);
+        break;
+      case 'video':
+        setVideoMode(true);
+        setImageMode(false);
+        break;
+      case 'lisa':
+        setShowLisaWizard(true);
+        break;
+      case 'web-search':
+        setEnableWebSearch(true);
+        break;
+      case 'geocultural':
+        setShowLocationDialog(true);
+        break;
+      case 'files':
+        setShowFileUpload(true);
+        break;
+    }
+    setTimeout(() => textareaRef.current?.focus(), 0);
+  }, [pendingAction, setPendingAction, setEnableWebSearch]);
 
   const {
     address,
