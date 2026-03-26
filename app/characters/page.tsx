@@ -64,17 +64,19 @@ function MediaCard({
   onSelect,
   isOwner = false,
   onDelete,
+  onShare,
+  onDownload,
 }: {
   item: GalleryItem;
   onSelect: (item: GalleryItem) => void;
   isOwner?: boolean;
   onDelete?: (item: GalleryItem) => void;
+  onShare?: (item: GalleryItem) => void;
+  onDownload?: (item: GalleryItem) => void;
 }) {
   const [showMenu, setShowMenu] = useState(false);
   const [isLiked, setIsLiked] = useState(item.hasLiked || false);
   const [likeCount, setLikeCount] = useState(item.likeCount || 0);
-  const [showShareDialog, setShowShareDialog] = useState(false);
-  const [showDownloadDialog, setShowDownloadDialog] = useState(false);
   const [isPublic, setIsPublic] = useState(item.isPublic ?? false);
 
   const likeVideoMutation = useLikeVideo();
@@ -110,12 +112,12 @@ function MediaCard({
 
   const handleShare = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setShowShareDialog(true);
+    onShare?.(item);
   };
 
   const handleDownload = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setShowDownloadDialog(true);
+    onDownload?.(item);
   };
 
   const thumbnailUrl = item.mediaType === 'video' ? item.thumbnailUrl : item.imageUrl;
@@ -321,25 +323,6 @@ function MediaCard({
         />
       )}
 
-      {/* Share Dialog */}
-      {showShareDialog && (
-        <ShareDialog
-          url={`${window.location.origin}/gallery/${item.mediaType}/${item.id}`}
-          title={item.title || (item.mediaType === 'video' ? 'Video' : 'Imagen') + ' - Continuum AI'}
-          onClose={() => setShowShareDialog(false)}
-        />
-      )}
-
-      {/* Download Dialog */}
-      {showDownloadDialog && (
-        <DownloadDialog
-          mediaType={item.mediaType}
-          url={(item.mediaType === 'video' ? item.videoUrl : item.imageUrl) || ''}
-          title={item.title || `${item.mediaType}-${item.id}`}
-          thumbnailUrl={item.thumbnailUrl || item.imageUrl}
-          onClose={() => setShowDownloadDialog(false)}
-        />
-      )}
     </div>
   );
 }
@@ -418,85 +401,72 @@ function DeleteMediaModal({
 // Video Player Modal (mobile-friendly with download/share)
 // ============================================================================
 
-function VideoPlayerModal({ item, onClose }: { item: GalleryItem; onClose: () => void }) {
-  const [showShareDialog, setShowShareDialog] = useState(false);
-  const [showDownloadDialog, setShowDownloadDialog] = useState(false);
-
+function VideoPlayerModal({
+  item,
+  onClose,
+  onShare,
+  onDownload,
+}: {
+  item: GalleryItem;
+  onClose: () => void;
+  onShare: () => void;
+  onDownload: () => void;
+}) {
   return (
-    <>
+    <div
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90"
+      onClick={onClose}
+    >
       <div
-        className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90"
-        onClick={onClose}
+        className="relative w-full max-w-4xl mx-auto flex flex-col max-h-full"
+        onClick={(e) => e.stopPropagation()}
       >
-        <div
-          className="relative w-full max-w-4xl mx-auto flex flex-col max-h-full"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Top bar */}
-          <div className="flex items-center justify-between px-4 py-3 shrink-0">
-            <p className="text-white/80 text-sm font-medium truncate mr-4">
-              {item.title || 'Video'}
-            </p>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 transition"
-            >
-              <X className="w-5 h-5 text-white" />
-            </button>
-          </div>
+        {/* Top bar */}
+        <div className="flex items-center justify-between px-4 py-3 shrink-0">
+          <p className="text-white/80 text-sm font-medium truncate mr-4">
+            {item.title || 'Video'}
+          </p>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 transition"
+          >
+            <X className="w-5 h-5 text-white" />
+          </button>
+        </div>
 
-          {/* Video */}
-          <div className="flex-1 min-h-0 px-4">
-            <div className="rounded-xl overflow-hidden bg-black h-full">
-              <HlsVideo
-                src={item.videoUrl}
-                controls
-                autoPlay
-                className="w-full max-h-[70vh]"
-                poster={item.thumbnailUrl || undefined}
-                playsInline
-              />
-            </div>
-          </div>
-
-          {/* Bottom action bar */}
-          <div className="flex items-center justify-center gap-3 px-4 py-4 shrink-0">
-            <button
-              onClick={() => setShowDownloadDialog(true)}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 transition text-white text-sm font-medium"
-            >
-              <Download className="w-5 h-5" />
-              Descargar
-            </button>
-            <button
-              onClick={() => setShowShareDialog(true)}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 transition text-white text-sm font-medium"
-            >
-              <Share2 className="w-5 h-5" />
-              Compartir
-            </button>
+        {/* Video */}
+        <div className="flex-1 min-h-0 px-4">
+          <div className="rounded-xl overflow-hidden bg-black h-full">
+            <HlsVideo
+              src={item.videoUrl}
+              controls
+              autoPlay
+              className="w-full max-h-[70vh]"
+              poster={item.thumbnailUrl || undefined}
+              playsInline
+            />
           </div>
         </div>
+
+        {/* Bottom action bar */}
+        <div className="flex items-center justify-center gap-3 px-4 py-4 shrink-0">
+          <button
+            onClick={onDownload}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 transition text-white text-sm font-medium"
+          >
+            <Download className="w-5 h-5" />
+            Descargar
+          </button>
+          <button
+            onClick={onShare}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 transition text-white text-sm font-medium"
+          >
+            <Share2 className="w-5 h-5" />
+            Compartir
+          </button>
+        </div>
       </div>
-
-      {showShareDialog && (
-        <ShareDialog
-          url={`${window.location.origin}/gallery/video/${item.id}`}
-          title={item.title || 'Video - Continuum AI'}
-          onClose={() => setShowShareDialog(false)}
-        />
-      )}
-
-      {showDownloadDialog && (
-        <DownloadDialog
-          mediaType="video"
-          url={item.videoUrl || ''}
-          title={item.title || `video-${item.id}`}
-          thumbnailUrl={item.thumbnailUrl}
-          onClose={() => setShowDownloadDialog(false)}
-        />
-      )}
-    </>
+    </div>
   );
 }
 
@@ -518,6 +488,8 @@ export default function MultimediaPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [gridSize, setGridSize] = useState<'normal' | 'compact'>('normal');
   const [videoPlayer, setVideoPlayer] = useState<GalleryItem | null>(null);
+  const [pageShareItem, setPageShareItem] = useState<GalleryItem | null>(null);
+  const [pageDownloadItem, setPageDownloadItem] = useState<GalleryItem | null>(null);
 
   // Filters
   const [selectedType, setSelectedType] = useState<CharacterType | 'all'>('all');
@@ -719,6 +691,8 @@ export default function MultimediaPage() {
             onSelect={handleSelectMedia}
             isOwner={mainTab === 'my-content'}
             onDelete={mainTab === 'my-content' ? handleDeleteMedia : undefined}
+            onShare={(i) => setPageShareItem(i)}
+            onDownload={(i) => setPageDownloadItem(i)}
           />
         ))}
         {characters.map((character) => (
@@ -1042,6 +1016,34 @@ export default function MultimediaPage() {
         <VideoPlayerModal
           item={videoPlayer}
           onClose={() => setVideoPlayer(null)}
+          onShare={() => {
+            setPageShareItem(videoPlayer);
+            setVideoPlayer(null);
+          }}
+          onDownload={() => {
+            setPageDownloadItem(videoPlayer);
+            setVideoPlayer(null);
+          }}
+        />
+      )}
+
+      {/* Page-level Share Dialog */}
+      {pageShareItem && (
+        <ShareDialog
+          url={`${window.location.origin}/gallery/${pageShareItem.mediaType}/${pageShareItem.id}`}
+          title={pageShareItem.title || 'Continuum AI'}
+          onClose={() => setPageShareItem(null)}
+        />
+      )}
+
+      {/* Page-level Download Dialog */}
+      {pageDownloadItem && (
+        <DownloadDialog
+          mediaType={pageDownloadItem.mediaType}
+          url={(pageDownloadItem.mediaType === 'video' ? pageDownloadItem.videoUrl : pageDownloadItem.imageUrl) || ''}
+          title={pageDownloadItem.title || `${pageDownloadItem.mediaType}-${pageDownloadItem.id}`}
+          thumbnailUrl={pageDownloadItem.thumbnailUrl || pageDownloadItem.imageUrl}
+          onClose={() => setPageDownloadItem(null)}
         />
       )}
     </div>
