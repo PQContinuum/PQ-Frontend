@@ -69,6 +69,7 @@ export function DownloadDialog({ mediaType, url, title, thumbnailUrl, onClose }:
         {/* Preview header */}
         <div className="relative h-40 bg-gradient-to-br from-gray-900 to-gray-700 flex items-center justify-center overflow-hidden">
           {thumbnailUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img src={thumbnailUrl} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40 blur-sm" />
           ) : null}
           <div className="relative z-10 flex flex-col items-center">

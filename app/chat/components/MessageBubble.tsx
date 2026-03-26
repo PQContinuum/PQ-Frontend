@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, type ReactNode, useMemo, useEffect, useCallback } from 'react';
+import { useState, useRef, type ReactNode, useMemo, useCallback } from 'react';
 import { Streamdown } from 'streamdown';
 import { code as codePlugin } from '@streamdown/code';
 import { createMathPlugin } from '@streamdown/math';
@@ -15,12 +15,10 @@ import { SpeechButton } from './SpeechButton';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { useGenerationJob, getJobStatusMessage, parseJobInputParams } from '@/hooks/useGenerationJobs';
 import { ShareToGalleryModal } from './ShareToGalleryModal';
-import { galleryApi } from '@/lib/api-client';
 import { AIResponse } from '@/components/ai-response';
 import { HlsVideo } from '@/components/media/HlsVideo';
 import { ShareResponseModal } from './ShareResponseModal';
 import { encodeSharePayload } from '@/lib/share';
-import { downloadVideoMp4 } from '@/lib/media-download';
 import { DownloadDialog } from '@/components/media/DownloadDialog';
 import { sanitizeMarkdown } from '@/lib/sanitize-markdown';
 
@@ -443,7 +441,7 @@ const ChatVideo = ({ src, jobId, isPublic, prompt, thumbnailUrl, previewUrl }: C
         <DownloadDialog
           mediaType="video"
           url={src}
-          title={prompt || `video-generado-${Date.now()}`}
+          title={prompt || 'video-generado'}
           thumbnailUrl={thumbnailUrl}
           onClose={() => setShowDownloadDialog(false)}
         />

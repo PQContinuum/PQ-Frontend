@@ -20,7 +20,6 @@ import {
   Share2,
   MoreHorizontal,
   Lock,
-  Check,
   MessageSquare,
   Trash2,
   X,
@@ -46,7 +45,6 @@ import { ShareCharacterModal } from '@/app/chat/components/lisa/ShareCharacterMo
 import { DeleteCharacterModal } from '@/app/chat/components/lisa/DeleteCharacterModal';
 import { VISUAL_STYLE_OPTIONS, CHARACTER_TYPE_OPTIONS } from '@/lib/lisa/constants';
 import type { Character, CharacterType, VisualStyle, PublicCharactersParams } from '@/lib/lisa/types';
-import { downloadVideoMp4 } from '@/lib/media-download';
 import { HlsVideo } from '@/components/media/HlsVideo';
 import { ShareDialog } from '@/components/media/ShareDialog';
 import { DownloadDialog } from '@/components/media/DownloadDialog';
@@ -73,8 +71,6 @@ function MediaCard({
   const [showMenu, setShowMenu] = useState(false);
   const [isLiked, setIsLiked] = useState(item.hasLiked || false);
   const [likeCount, setLikeCount] = useState(item.likeCount || 0);
-  const [copied, setCopied] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showDownloadDialog, setShowDownloadDialog] = useState(false);
 
@@ -267,25 +263,16 @@ function MediaCard({
           </span>
           <button
             onClick={handleDownload}
-            disabled={isDownloading}
-            className="flex items-center p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition active:scale-95 ml-auto disabled:opacity-50"
+            className="flex items-center p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition active:scale-95 ml-auto"
             title="Descargar"
           >
-            {isDownloading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Download className="w-4 h-4" />
-            )}
+            <Download className="w-4 h-4" />
           </button>
           <button
             onClick={handleShare}
             className="flex items-center p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition active:scale-95"
           >
-            {copied ? (
-              <Check className="w-4 h-4 text-[#934f2c]" />
-            ) : (
-              <Share2 className="w-4 h-4" />
-            )}
+            <Share2 className="w-4 h-4" />
           </button>
         </div>
       </div>

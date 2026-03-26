@@ -1,7 +1,7 @@
 'use client';
 
-import { use, useState, useEffect } from 'react';
-import { Heart, Eye, Download, Share2, ArrowLeft, Video, Image as ImageIcon, Calendar, User, Lock, Loader2 } from 'lucide-react';
+import { use, useState } from 'react';
+import { Heart, Eye, Download, Share2, ArrowLeft, Video, Image as ImageIcon, Calendar, User, Lock } from 'lucide-react';
 import { useGalleryVideo, useGalleryImage, useLikeVideo, useLikeImage } from '@/hooks/use-gallery';
 import { ApiError } from '@/lib/api-client';
 import { HlsVideo } from '@/components/media/HlsVideo';
@@ -26,18 +26,11 @@ export default function GalleryItemPage({ params }: GalleryPageProps) {
 
 function VideoView({ id }: { id: string }) {
   const { data: item, isLoading, error } = useGalleryVideo(id);
-  const [isLiked, setIsLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(0);
-  const [synced, setSynced] = useState(false);
+  const [likeOverride, setLikeOverride] = useState<{ isLiked: boolean; count: number } | null>(null);
   const likeMutation = useLikeVideo();
 
-  useEffect(() => {
-    if (item && !synced) {
-      setLikeCount(item.likeCount || 0);
-      setIsLiked(item.hasLiked || false);
-      setSynced(true);
-    }
-  }, [item, synced]);
+  const isLiked = likeOverride?.isLiked ?? item?.hasLiked ?? false;
+  const likeCount = likeOverride?.count ?? item?.likeCount ?? 0;
 
   if (isLoading) return <LoadingSkeleton />;
   if (error) return <ErrorView error={error} />;
@@ -50,8 +43,7 @@ function VideoView({ id }: { id: string }) {
       likeCount={likeCount}
       onLike={() => {
         const newLiked = !isLiked;
-        setIsLiked(newLiked);
-        setLikeCount(newLiked ? likeCount + 1 : Math.max(0, likeCount - 1));
+        setLikeOverride({ isLiked: newLiked, count: newLiked ? likeCount + 1 : Math.max(0, likeCount - 1) });
         likeMutation.mutate(id);
       }}
     >
@@ -71,18 +63,11 @@ function VideoView({ id }: { id: string }) {
 
 function ImageView({ id }: { id: string }) {
   const { data: item, isLoading, error } = useGalleryImage(id);
-  const [isLiked, setIsLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(0);
-  const [synced, setSynced] = useState(false);
+  const [likeOverride, setLikeOverride] = useState<{ isLiked: boolean; count: number } | null>(null);
   const likeMutation = useLikeImage();
 
-  useEffect(() => {
-    if (item && !synced) {
-      setLikeCount(item.likeCount || 0);
-      setIsLiked(item.hasLiked || false);
-      setSynced(true);
-    }
-  }, [item, synced]);
+  const isLiked = likeOverride?.isLiked ?? item?.hasLiked ?? false;
+  const likeCount = likeOverride?.count ?? item?.likeCount ?? 0;
 
   if (isLoading) return <LoadingSkeleton />;
   if (error) return <ErrorView error={error} />;
@@ -95,12 +80,12 @@ function ImageView({ id }: { id: string }) {
       likeCount={likeCount}
       onLike={() => {
         const newLiked = !isLiked;
-        setIsLiked(newLiked);
-        setLikeCount(newLiked ? likeCount + 1 : Math.max(0, likeCount - 1));
+        setLikeOverride({ isLiked: newLiked, count: newLiked ? likeCount + 1 : Math.max(0, likeCount - 1) });
         likeMutation.mutate(id);
       }}
     >
       <div className="rounded-2xl overflow-hidden bg-gray-50">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={item.imageUrl}
           alt={item.title || 'Imagen generada'}
