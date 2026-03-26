@@ -460,40 +460,49 @@ export default function ChatPage() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6, duration: 0.4 }}
-                className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-6 w-full max-w-2xl"
+                className="w-full max-w-2xl mt-6 space-y-2.5"
               >
-                {[
-                  { icon: MessageSquare, title: 'Conversación', desc: '"Explícame la teoría de cuerdas"', action: 'chat' },
-                  { icon: ImageIcon, title: 'Generar imagen', desc: '"Un atardecer en Marte estilo acuarela"', action: 'image' },
-                  { icon: Video, title: 'Generar video', desc: '"Un drone sobrevolando montañas"', action: 'video' },
-                  { icon: Sparkles, title: 'LISA', desc: '"Crea un personaje para mi marca"', action: 'lisa' },
-                  { icon: Globe, title: 'Web Search', desc: '"¿Qué pasó hoy en el mundo?"', action: 'web-search' },
-                  { icon: MapPin, title: 'GeoCultural', desc: '"Mejores restaurantes cerca de mí"', action: 'geocultural' },
-                  { icon: Paperclip, title: 'Archivos', desc: '"Resume este PDF de 50 páginas"', action: 'files' },
-                ].map(({ icon: Icon, title, desc, action }) => (
-                  <button
-                    key={action}
-                    onClick={() => {
-                      if (action === 'chat') {
-                        setPendingInput('');
-                      } else {
-                        setPendingAction(action);
-                      }
-                    }}
-                    className="flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-white border border-black/[0.05] hover:border-black/[0.1] hover:shadow-sm transition-all text-left group"
-                  >
-                    <div className="size-9 rounded-xl bg-neutral-50 group-hover:bg-[#FF8B3D]/10 flex items-center justify-center shrink-0 transition-colors">
-                      <Icon className="size-[18px] text-[#bbb] group-hover:text-[#FF8B3D] transition-colors" />
-                    </div>
-                    <div className="flex-1 min-w-0">
+                {/* Top row — 3 main tools */}
+                <div className="grid grid-cols-3 gap-2.5">
+                  {[
+                    { icon: MessageSquare, title: 'Chat', desc: '"Explícame la teoría de cuerdas"', action: 'chat' },
+                    { icon: ImageIcon, title: 'Imagen', desc: '"Un atardecer en Marte"', action: 'image' },
+                    { icon: Video, title: 'Video', desc: '"Un drone en montañas"', action: 'video' },
+                  ].map(({ icon: Icon, title, desc, action }) => (
+                    <button
+                      key={action}
+                      onClick={() => action === 'chat' ? setPendingInput('') : setPendingAction(action)}
+                      className="flex flex-col items-center gap-2 px-3 py-5 rounded-2xl bg-white border border-black/[0.05] hover:border-[#FF8B3D]/30 hover:shadow-md transition-all text-center group"
+                    >
+                      <div className="size-11 rounded-2xl bg-neutral-50 group-hover:bg-[#FF8B3D]/10 flex items-center justify-center transition-colors">
+                        <Icon className="size-5 text-[#bbb] group-hover:text-[#FF8B3D] transition-colors" />
+                      </div>
                       <p className="text-[13px] font-semibold text-[#111] group-hover:text-[#FF8B3D] transition-colors">{title}</p>
-                      <p className="text-[11px] text-[#999]">{desc}</p>
-                    </div>
-                    <svg className="size-4 text-[#ccc] group-hover:text-[#FF8B3D] transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                ))}
+                      <p className="text-[10px] text-[#bbb] leading-tight">{desc}</p>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Bottom row — 4 secondary tools, compact */}
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    { icon: Sparkles, title: 'LISA', action: 'lisa' },
+                    { icon: Globe, title: 'Web Search', action: 'web-search' },
+                    { icon: MapPin, title: 'GeoCultural', action: 'geocultural' },
+                    { icon: Paperclip, title: 'Archivos', action: 'files' },
+                  ].map(({ icon: Icon, title, action }) => (
+                    <button
+                      key={action}
+                      onClick={() => setPendingAction(action)}
+                      className="flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl bg-white border border-black/[0.05] hover:border-[#FF8B3D]/30 hover:shadow-sm transition-all group"
+                    >
+                      <div className="size-8 rounded-lg bg-neutral-50 group-hover:bg-[#FF8B3D]/10 flex items-center justify-center transition-colors">
+                        <Icon className="size-4 text-[#bbb] group-hover:text-[#FF8B3D] transition-colors" />
+                      </div>
+                      <p className="text-[11px] font-medium text-[#999] group-hover:text-[#FF8B3D] transition-colors">{title}</p>
+                    </button>
+                  ))}
+                </div>
               </motion.div>
             </motion.div>
           </div>
