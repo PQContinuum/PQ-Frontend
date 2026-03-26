@@ -106,19 +106,24 @@ function MediaCard({
     const url = item.mediaType === 'video' ? item.videoUrl : item.imageUrl;
     if (!url) return;
 
-    if (item.mediaType === 'video') {
-      try {
+    try {
+      if (item.mediaType === 'video') {
         await downloadVideoMp4(url, item.title || `video-${item.id}.mp4`);
-      } catch (error) {
-        console.error('Error downloading video:', error);
+      } else {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        const objectUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = objectUrl;
+        a.download = item.title || `imagen-${item.id}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(objectUrl);
       }
-      return;
+    } catch (error) {
+      console.error('Error downloading:', error);
     }
-
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = item.title || `${item.mediaType}-${item.id}`;
-    a.click();
   };
 
   const thumbnailUrl = item.mediaType === 'video' ? item.thumbnailUrl : item.imageUrl;
@@ -283,8 +288,15 @@ function MediaCard({
             {item.viewCount || 0}
           </span>
           <button
-            onClick={handleShare}
+            onClick={handleDownload}
             className="flex items-center text-xs text-gray-400 hover:text-gray-600 transition ml-auto"
+            title="Descargar"
+          >
+            <Download className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={handleShare}
+            className="flex items-center text-xs text-gray-400 hover:text-gray-600 transition"
           >
             {copied ? (
               <Check className="w-3.5 h-3.5 text-[#934f2c]" />

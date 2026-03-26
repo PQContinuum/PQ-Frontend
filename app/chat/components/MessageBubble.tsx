@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type ReactNode, useMemo, useEffect, useCallback } from 'react';
+import { useState, useRef, type ReactNode, useMemo, useEffect, useCallback } from 'react';
 import { Streamdown } from 'streamdown';
 import { code as codePlugin } from '@streamdown/code';
 import { createMathPlugin } from '@streamdown/math';
@@ -295,6 +295,17 @@ const ChatVideo = ({ src, jobId, isPublic, prompt, thumbnailUrl, previewUrl }: C
   const [galleryStatus, setGalleryStatus] = useState<{ isPublic: boolean; title?: string } | null>(
     isPublic !== undefined ? { isPublic } : null
   );
+  const containerRef = useRef<HTMLSpanElement>(null);
+
+  const handlePlay = () => {
+    const video = containerRef.current?.querySelector('video');
+    if (video) {
+      setIsLoading(false);
+      video.play().catch(() => {
+        // If autoplay is blocked, the video is now visible with native controls
+      });
+    }
+  };
 
   const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -340,13 +351,14 @@ const ChatVideo = ({ src, jobId, isPublic, prompt, thumbnailUrl, previewUrl }: C
         </span>
 
         <span
+          ref={containerRef}
           className="relative block group"
           onMouseEnter={() => setIsHovering(true)}
           onMouseLeave={() => setIsHovering(false)}
         >
           {/* Skeleton loader while video loads */}
           {isLoading && (
-            <span className="absolute inset-0 block rounded-2xl overflow-hidden aspect-video">
+            <span className="absolute inset-0 block rounded-2xl overflow-hidden aspect-video cursor-pointer z-10" onClick={handlePlay}>
               {/* Show thumbnail or animated preview while loading */}
               {thumbnailUrl ? (
                 <img
