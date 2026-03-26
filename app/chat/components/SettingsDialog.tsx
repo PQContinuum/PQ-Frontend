@@ -36,7 +36,7 @@ import { ChatGPTImportDialog } from './ChatGPTImportDialog';
 import { DeleteCharacterModal } from './lisa/DeleteCharacterModal';
 import { billingApi } from '@/lib/api-client';
 import { useCharacters } from '@/hooks/use-characters';
-import { useAccountStats } from '@/hooks/use-account-stats';
+import { useAccountStats, useMessageCount } from '@/hooks/use-account-stats';
 import type { Character } from '@/lib/lisa/types';
 
 const CHATGPT_GREEN = '#10a37f';
@@ -167,6 +167,10 @@ export function SettingsDialog({
 
   const { data: characters, isLoading: isLoadingCharacters } = useCharacters();
   const { data: stats, isLoading: isLoadingStats } = useAccountStats(open);
+  const { data: messageCount, isLoading: isLoadingMessages } = useMessageCount(
+    stats?.conversations ?? [],
+    open && !isLoadingStats
+  );
 
   const handleManageSubscription = React.useCallback(async () => {
     setIsLoadingPortal(true);
@@ -288,8 +292,8 @@ export function SettingsDialog({
                       <StatItem
                         icon={Hash}
                         label="Mensajes enviados"
-                        value={stats?.messageCount ?? 0}
-                        loading={isLoadingStats}
+                        value={messageCount ?? 0}
+                        loading={isLoadingMessages}
                       />
                       <div className="border-t border-black/[0.04] my-1" />
                       <StatItem
@@ -482,7 +486,7 @@ export function SettingsDialog({
                           <p className="text-[11px] text-[#999] mt-0.5">conversaciones</p>
                         </div>
                         <div className="flex-1 rounded-xl bg-neutral-50 border border-black/[0.06] p-4 text-center">
-                          <p className="text-xl font-bold text-[#111]">{stats.messageCount}</p>
+                          <p className="text-xl font-bold text-[#111]">{isLoadingMessages ? '...' : (messageCount ?? 0)}</p>
                           <p className="text-[11px] text-[#999] mt-0.5">mensajes</p>
                         </div>
                       </div>
