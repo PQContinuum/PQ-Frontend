@@ -31,9 +31,20 @@ export function useAccountStats(enabled = true) {
       const conversations = conversationsRes.conversations ?? [];
       const user = userRes.data?.user;
 
+      // Count user-sent messages across all conversations
+      const messagesPerConversation = await Promise.all(
+        conversations.map((c) =>
+          conversationsApi
+            .getMessages(c.id)
+            .then((res) => res.messages?.filter((m) => m.role === "user").length ?? 0)
+            .catch(() => 0)
+        )
+      );
+      const totalUserMessages = messagesPerConversation.reduce((sum, n) => sum + n, 0);
+
       return {
         conversationCount: conversations.length,
-        messageCount: backendStats?.messageCount ?? 0,
+        messageCount: totalUserMessages,
         createdAt: user?.created_at ?? backendStats?.createdAt ?? "",
         emailVerified:
           !!user?.email_confirmed_at ||
