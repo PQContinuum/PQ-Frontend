@@ -41,7 +41,8 @@ export function getSupabaseBrowserClient() {
             const cookies = document.cookie.split("; ")
             const cookie = cookies.find((c) => c.startsWith(`${key}=`))
             if (!cookie) return null
-            return decodeURIComponent(cookie.split("=")[1])
+            const idx = cookie.indexOf("=")
+            return decodeURIComponent(cookie.substring(idx + 1))
           },
           setItem: (key, value) => {
             if (typeof document === "undefined") return

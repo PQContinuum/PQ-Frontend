@@ -80,6 +80,9 @@ export default function AuthPage() {
 
         if (error) throw error;
 
+        // Refrescar sesión del servidor antes de navegar
+        router.refresh();
+
         // Verificar subscription del usuario
         try {
           const data = await billingApi.getSubscription();
@@ -92,7 +95,6 @@ export default function AuthPage() {
           // Si falla la verificación, ir a payment por seguridad
           router.push('/payment');
         }
-        router.refresh();
       }
     } catch (error: unknown) {
       setError(getErrorMessage(error, 'Ocurrió un error. Intenta nuevamente.'));

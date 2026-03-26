@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { userApi, ApiError } from "@/lib/api-client";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type UserPlan = {
   userId: string | null;
@@ -35,6 +36,11 @@ export function useUserPlan() {
         };
       } catch (error) {
         if (error instanceof ApiError && error.statusCode === 401) {
+          // Sesión inválida: cerrar sesión y redirigir a /auth
+          const supabase = getSupabaseBrowserClient();
+          await supabase.auth.signOut();
+          window.location.href = "/auth";
+          // Retornar valor por defecto mientras redirige
           return {
             userId: null,
             email: null,
