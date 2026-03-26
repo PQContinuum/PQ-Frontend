@@ -401,6 +401,104 @@ function DeleteMediaModal({
 }
 
 // ============================================================================
+// Video Player Modal (mobile-friendly with download/share)
+// ============================================================================
+
+function VideoPlayerModal({ item, onClose }: { item: GalleryItem; onClose: () => void }) {
+  const [copied, setCopied] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownload = async () => {
+    if (!item.videoUrl || isDownloading) return;
+    setIsDownloading(true);
+    try {
+      await downloadVideoMp4(item.videoUrl, item.title || `video-${item.id}.mp4`);
+    } catch (error) {
+      console.error('Error downloading video:', error);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const handleShare = () => {
+    const url = `${window.location.origin}/gallery/video/${item.id}`;
+    if (navigator.share) {
+      navigator.share({ title: item.title, url });
+    } else {
+      navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90"
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-4xl mx-auto flex flex-col max-h-full"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Top bar */}
+        <div className="flex items-center justify-between px-4 py-3 shrink-0">
+          <p className="text-white/80 text-sm font-medium truncate mr-4">
+            {item.title || 'Video'}
+          </p>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 transition"
+          >
+            <X className="w-5 h-5 text-white" />
+          </button>
+        </div>
+
+        {/* Video */}
+        <div className="flex-1 min-h-0 px-4">
+          <div className="rounded-xl overflow-hidden bg-black h-full">
+            <HlsVideo
+              src={item.videoUrl}
+              controls
+              autoPlay
+              className="w-full max-h-[70vh]"
+              poster={item.thumbnailUrl || undefined}
+              playsInline
+            />
+          </div>
+        </div>
+
+        {/* Bottom action bar */}
+        <div className="flex items-center justify-center gap-3 px-4 py-4 shrink-0">
+          <button
+            onClick={handleDownload}
+            disabled={isDownloading}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 transition text-white text-sm font-medium disabled:opacity-50"
+          >
+            {isDownloading ? (
+              <Loader2 className="w-4.5 h-4.5 animate-spin" />
+            ) : (
+              <Download className="w-4.5 h-4.5" />
+            )}
+            Descargar
+          </button>
+          <button
+            onClick={handleShare}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 transition text-white text-sm font-medium"
+          >
+            {copied ? (
+              <Check className="w-4.5 h-4.5 text-green-400" />
+            ) : (
+              <Share2 className="w-4.5 h-4.5" />
+            )}
+            {copied ? 'Copiado' : 'Compartir'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
 // Main Page
 // ============================================================================
 
@@ -939,36 +1037,10 @@ export default function MultimediaPage() {
 
       {/* Video Player Modal */}
       {videoPlayer && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
-          onClick={() => setVideoPlayer(null)}
-        >
-          <div
-            className="relative w-full max-w-4xl mx-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => setVideoPlayer(null)}
-              className="absolute -top-12 right-0 p-2 text-white/80 hover:text-white transition"
-            >
-              <X className="w-6 h-6" />
-            </button>
-            <div className="rounded-xl overflow-hidden bg-black">
-              <HlsVideo
-                src={videoPlayer.videoUrl}
-                controls
-                autoPlay
-                className="w-full max-h-[80vh]"
-                poster={videoPlayer.thumbnailUrl || undefined}
-              />
-            </div>
-            {videoPlayer.title && (
-              <p className="text-white/80 text-sm mt-3 text-center">
-                {videoPlayer.title}
-              </p>
-            )}
-          </div>
-        </div>
+        <VideoPlayerModal
+          item={videoPlayer}
+          onClose={() => setVideoPlayer(null)}
+        />
       )}
     </div>
   );
