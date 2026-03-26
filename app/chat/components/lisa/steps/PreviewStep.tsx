@@ -193,7 +193,7 @@ export function PreviewStep() {
       </div>
 
       {/* Generation hint */}
-      <div className="text-center p-4 bg-gradient-to-r from-[#FF8B3D]/5 to-emerald-500/5 rounded-xl border border-[#FF8B3D]/10">
+      <div className="text-center p-4 bg-neutral-50 rounded-xl border border-black/[0.06]">
         <p className="flex items-center justify-center gap-2 text-sm text-gray-600">
           <ArrowRight className="w-4 h-4 text-[#FF8B3D]" />
           Al presionar <strong>Generar</strong>, se creará {isVideo ? 'tu video' : 'tu imagen'} con estas especificaciones

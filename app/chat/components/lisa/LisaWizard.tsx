@@ -90,7 +90,7 @@ export function LisaWizard({ onGenerate, onClose, isGenerating }: LisaWizardProp
         <div className="flex items-center gap-2 mb-4">
           <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-[#FF8B3D] to-emerald-500 transition-all duration-300"
+              className="h-full bg-[#FF8B3D] transition-all duration-300"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -170,7 +170,7 @@ export function LisaWizard({ onGenerate, onClose, isGenerating }: LisaWizardProp
             <button
               onClick={onGenerate}
               disabled={!canProceed() || isGenerating}
-              className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-[#FF8B3D] to-emerald-600 text-white rounded-xl font-medium shadow-lg shadow-[#FF8B3D]/25 hover:shadow-xl hover:shadow-[#FF8B3D]/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-6 py-2.5 bg-[#FF8B3D] hover:bg-[#e67a2e] text-white rounded-xl font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isGenerating ? (
                 <>
