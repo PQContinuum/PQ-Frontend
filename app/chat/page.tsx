@@ -405,43 +405,67 @@ export default function ChatPage() {
               transition={{ duration: 0.5 }}
               className="w-full max-w-3xl flex flex-col items-center"
             >
-              {/* Logo + Greeting */}
+              {/* Futuristic hero */}
               <motion.div
-                className="text-center space-y-4 mb-8"
+                className="text-center space-y-6 mb-10 relative"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.1, duration: 0.4 }}
+                transition={{ delay: 0.1, duration: 0.5 }}
               >
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2, duration: 0.4 }}
-                  className="flex justify-center"
-                >
-                  <Image
-                    src="/icon-192x192.png"
-                    alt="Continuum AI"
-                    width={80}
-                    height={80}
-                    className="w-16 h-16 md:w-20 md:h-20 rounded-full"
-                  />
-                </motion.div>
+                {/* Orbital rings behind logo */}
+                <div className="relative flex justify-center">
+                  <motion.div
+                    className="absolute size-28 md:size-36 rounded-full border border-[#FF8B3D]/10"
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+                  >
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 size-1.5 rounded-full bg-[#FF8B3D]/40" />
+                  </motion.div>
+                  <motion.div
+                    className="absolute size-40 md:size-48 rounded-full border border-[#FF8B3D]/[0.05]"
+                    animate={{ rotate: -360 }}
+                    transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
+                  >
+                    <div className="absolute bottom-0 right-0 size-1 rounded-full bg-[#FF8B3D]/30" />
+                  </motion.div>
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.2, duration: 0.5 }}
+                  >
+                    <Image
+                      src="/icon-192x192.png"
+                      alt="Continuum AI"
+                      width={80}
+                      height={80}
+                      className="w-16 h-16 md:w-20 md:h-20 rounded-full relative z-10"
+                    />
+                  </motion.div>
+                </div>
 
                 <motion.div
-                  initial={{ opacity: 0, y: 5 }}
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3, duration: 0.4 }}
-                  className="space-y-3"
+                  className="space-y-3 pt-4"
                 >
                   <h2 className="text-2xl md:text-3xl font-semibold text-[#111111] tracking-tight">
                     ¿En qué puedo ayudarte?
                   </h2>
-                  <p className="text-[13px] md:text-sm text-[#999] max-w-md mx-auto leading-relaxed">
-                    Chat con contexto, imágenes, video, audio y lectura de documentos
-                    <br className="hidden sm:block" />
-                    <span className="sm:hidden"> </span>
-                    en un solo flujo inteligente.
+                  <p className="text-[13px] md:text-sm text-[#999] max-w-lg mx-auto leading-relaxed">
+                    Texto, imágenes, video, audio y documentos — todo conectado en un solo flujo de razonamiento continuo.
                   </p>
+                </motion.div>
+
+                {/* Glow line */}
+                <motion.div
+                  initial={{ opacity: 0, scaleX: 0 }}
+                  animate={{ opacity: 1, scaleX: 1 }}
+                  transition={{ delay: 0.5, duration: 0.6 }}
+                  className="relative w-full max-w-xs mx-auto h-px"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#FF8B3D]/30 to-transparent" />
+                  <div className="absolute inset-y-0 left-1/4 right-1/4 bg-gradient-to-r from-transparent via-[#FF8B3D]/50 to-transparent blur-[2px]" />
                 </motion.div>
               </motion.div>
 
@@ -449,60 +473,10 @@ export default function ChatPage() {
               <motion.div
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4, duration: 0.4 }}
+                transition={{ delay: 0.6, duration: 0.4 }}
                 className="w-full"
               >
                 <MessageInput />
-              </motion.div>
-
-              {/* Tool suggestion cards */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6, duration: 0.4 }}
-                className="w-full max-w-2xl mt-6 space-y-2.5"
-              >
-                {/* Top row — 3 main tools */}
-                <div className="grid grid-cols-3 gap-2.5">
-                  {[
-                    { icon: MessageSquare, title: 'Chat', desc: '"Explícame la teoría de cuerdas"', action: 'chat' },
-                    { icon: ImageIcon, title: 'Imagen', desc: '"Un atardecer en Marte"', action: 'image' },
-                    { icon: Video, title: 'Video', desc: '"Un drone en montañas"', action: 'video' },
-                  ].map(({ icon: Icon, title, desc, action }) => (
-                    <button
-                      key={action}
-                      onClick={() => action === 'chat' ? setPendingInput('') : setPendingAction(action)}
-                      className="flex flex-col items-center gap-2 px-3 py-5 rounded-2xl bg-white border border-black/[0.05] hover:border-[#FF8B3D]/30 hover:shadow-md transition-all text-center group"
-                    >
-                      <div className="size-11 rounded-2xl bg-neutral-50 group-hover:bg-[#FF8B3D]/10 flex items-center justify-center transition-colors">
-                        <Icon className="size-5 text-[#bbb] group-hover:text-[#FF8B3D] transition-colors" />
-                      </div>
-                      <p className="text-[13px] font-semibold text-[#111] group-hover:text-[#FF8B3D] transition-colors">{title}</p>
-                      <p className="text-[10px] text-[#bbb] leading-tight">{desc}</p>
-                    </button>
-                  ))}
-                </div>
-
-                {/* Bottom row — 4 secondary tools, compact */}
-                <div className="grid grid-cols-4 gap-2">
-                  {[
-                    { icon: Sparkles, title: 'LISA', action: 'lisa' },
-                    { icon: Globe, title: 'Web Search', action: 'web-search' },
-                    { icon: MapPin, title: 'GeoCultural', action: 'geocultural' },
-                    { icon: Paperclip, title: 'Archivos', action: 'files' },
-                  ].map(({ icon: Icon, title, action }) => (
-                    <button
-                      key={action}
-                      onClick={() => setPendingAction(action)}
-                      className="flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl bg-white border border-black/[0.05] hover:border-[#FF8B3D]/30 hover:shadow-sm transition-all group"
-                    >
-                      <div className="size-8 rounded-lg bg-neutral-50 group-hover:bg-[#FF8B3D]/10 flex items-center justify-center transition-colors">
-                        <Icon className="size-4 text-[#bbb] group-hover:text-[#FF8B3D] transition-colors" />
-                      </div>
-                      <p className="text-[11px] font-medium text-[#999] group-hover:text-[#FF8B3D] transition-colors">{title}</p>
-                    </button>
-                  ))}
-                </div>
               </motion.div>
             </motion.div>
           </div>
