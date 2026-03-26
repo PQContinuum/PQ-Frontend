@@ -48,6 +48,8 @@ import { VISUAL_STYLE_OPTIONS, CHARACTER_TYPE_OPTIONS } from '@/lib/lisa/constan
 import type { Character, CharacterType, VisualStyle, PublicCharactersParams } from '@/lib/lisa/types';
 import { downloadVideoMp4 } from '@/lib/media-download';
 import { HlsVideo } from '@/components/media/HlsVideo';
+import { ShareDialog } from '@/components/media/ShareDialog';
+import { DownloadDialog } from '@/components/media/DownloadDialog';
 
 type MainTabType = 'my-content' | 'public-gallery';
 type ContentType = 'all' | 'videos' | 'images' | 'characters';
@@ -73,6 +75,8 @@ function MediaCard({
   const [likeCount, setLikeCount] = useState(item.likeCount || 0);
   const [copied, setCopied] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [showDownloadDialog, setShowDownloadDialog] = useState(false);
 
   const likeVideoMutation = useLikeVideo();
   const likeImageMutation = useLikeImage();
@@ -92,42 +96,12 @@ function MediaCard({
 
   const handleShare = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const url = `${window.location.origin}/gallery/${item.mediaType}/${item.id}`;
-    if (navigator.share) {
-      navigator.share({ title: item.title, url });
-    } else {
-      navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
+    setShowShareDialog(true);
   };
 
-  const handleDownload = async (e: React.MouseEvent) => {
+  const handleDownload = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const url = item.mediaType === 'video' ? item.videoUrl : item.imageUrl;
-    if (!url || isDownloading) return;
-
-    setIsDownloading(true);
-    try {
-      if (item.mediaType === 'video') {
-        await downloadVideoMp4(url, item.title || `video-${item.id}.mp4`);
-      } else {
-        const response = await fetch(url);
-        const blob = await response.blob();
-        const objectUrl = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = objectUrl;
-        a.download = item.title || `imagen-${item.id}.png`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(objectUrl);
-      }
-    } catch (error) {
-      console.error('Error downloading:', error);
-    } finally {
-      setIsDownloading(false);
-    }
+    setShowDownloadDialog(true);
   };
 
   const thumbnailUrl = item.mediaType === 'video' ? item.thumbnailUrl : item.imageUrl;
@@ -326,6 +300,26 @@ function MediaCard({
           }}
         />
       )}
+
+      {/* Share Dialog */}
+      {showShareDialog && (
+        <ShareDialog
+          url={`${window.location.origin}/gallery/${item.mediaType}/${item.id}`}
+          title={item.title || (item.mediaType === 'video' ? 'Video' : 'Imagen') + ' - Continuum AI'}
+          onClose={() => setShowShareDialog(false)}
+        />
+      )}
+
+      {/* Download Dialog */}
+      {showDownloadDialog && (
+        <DownloadDialog
+          mediaType={item.mediaType}
+          url={(item.mediaType === 'video' ? item.videoUrl : item.imageUrl) || ''}
+          title={item.title || `${item.mediaType}-${item.id}`}
+          thumbnailUrl={item.thumbnailUrl || item.imageUrl}
+          onClose={() => setShowDownloadDialog(false)}
+        />
+      )}
     </div>
   );
 }
@@ -405,96 +399,84 @@ function DeleteMediaModal({
 // ============================================================================
 
 function VideoPlayerModal({ item, onClose }: { item: GalleryItem; onClose: () => void }) {
-  const [copied, setCopied] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
-
-  const handleDownload = async () => {
-    if (!item.videoUrl || isDownloading) return;
-    setIsDownloading(true);
-    try {
-      await downloadVideoMp4(item.videoUrl, item.title || `video-${item.id}.mp4`);
-    } catch (error) {
-      console.error('Error downloading video:', error);
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
-  const handleShare = () => {
-    const url = `${window.location.origin}/gallery/video/${item.id}`;
-    if (navigator.share) {
-      navigator.share({ title: item.title, url });
-    } else {
-      navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [showDownloadDialog, setShowDownloadDialog] = useState(false);
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90"
-      onClick={onClose}
-    >
+    <>
       <div
-        className="relative w-full max-w-4xl mx-auto flex flex-col max-h-full"
-        onClick={(e) => e.stopPropagation()}
+        className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90"
+        onClick={onClose}
       >
-        {/* Top bar */}
-        <div className="flex items-center justify-between px-4 py-3 shrink-0">
-          <p className="text-white/80 text-sm font-medium truncate mr-4">
-            {item.title || 'Video'}
-          </p>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 transition"
-          >
-            <X className="w-5 h-5 text-white" />
-          </button>
-        </div>
+        <div
+          className="relative w-full max-w-4xl mx-auto flex flex-col max-h-full"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Top bar */}
+          <div className="flex items-center justify-between px-4 py-3 shrink-0">
+            <p className="text-white/80 text-sm font-medium truncate mr-4">
+              {item.title || 'Video'}
+            </p>
+            <button
+              onClick={onClose}
+              className="p-2 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 transition"
+            >
+              <X className="w-5 h-5 text-white" />
+            </button>
+          </div>
 
-        {/* Video */}
-        <div className="flex-1 min-h-0 px-4">
-          <div className="rounded-xl overflow-hidden bg-black h-full">
-            <HlsVideo
-              src={item.videoUrl}
-              controls
-              autoPlay
-              className="w-full max-h-[70vh]"
-              poster={item.thumbnailUrl || undefined}
-              playsInline
-            />
+          {/* Video */}
+          <div className="flex-1 min-h-0 px-4">
+            <div className="rounded-xl overflow-hidden bg-black h-full">
+              <HlsVideo
+                src={item.videoUrl}
+                controls
+                autoPlay
+                className="w-full max-h-[70vh]"
+                poster={item.thumbnailUrl || undefined}
+                playsInline
+              />
+            </div>
+          </div>
+
+          {/* Bottom action bar */}
+          <div className="flex items-center justify-center gap-3 px-4 py-4 shrink-0">
+            <button
+              onClick={() => setShowDownloadDialog(true)}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 transition text-white text-sm font-medium"
+            >
+              <Download className="w-5 h-5" />
+              Descargar
+            </button>
+            <button
+              onClick={() => setShowShareDialog(true)}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 transition text-white text-sm font-medium"
+            >
+              <Share2 className="w-5 h-5" />
+              Compartir
+            </button>
           </div>
         </div>
-
-        {/* Bottom action bar */}
-        <div className="flex items-center justify-center gap-3 px-4 py-4 shrink-0">
-          <button
-            onClick={handleDownload}
-            disabled={isDownloading}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 transition text-white text-sm font-medium disabled:opacity-50"
-          >
-            {isDownloading ? (
-              <Loader2 className="w-4.5 h-4.5 animate-spin" />
-            ) : (
-              <Download className="w-4.5 h-4.5" />
-            )}
-            Descargar
-          </button>
-          <button
-            onClick={handleShare}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 transition text-white text-sm font-medium"
-          >
-            {copied ? (
-              <Check className="w-4.5 h-4.5 text-green-400" />
-            ) : (
-              <Share2 className="w-4.5 h-4.5" />
-            )}
-            {copied ? 'Copiado' : 'Compartir'}
-          </button>
-        </div>
       </div>
-    </div>
+
+      {showShareDialog && (
+        <ShareDialog
+          url={`${window.location.origin}/gallery/video/${item.id}`}
+          title={item.title || 'Video - Continuum AI'}
+          onClose={() => setShowShareDialog(false)}
+        />
+      )}
+
+      {showDownloadDialog && (
+        <DownloadDialog
+          mediaType="video"
+          url={item.videoUrl || ''}
+          title={item.title || `video-${item.id}`}
+          thumbnailUrl={item.thumbnailUrl}
+          onClose={() => setShowDownloadDialog(false)}
+        />
+      )}
+    </>
   );
 }
 

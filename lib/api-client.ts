@@ -1438,20 +1438,32 @@ export const galleryApi = {
   },
 
   /**
-   * Get video by ID
+   * Get video by ID (tries with auth if available, falls back to public)
    */
   getVideo: async (videoId: string) => {
     const url = `${API_BASE_URL}/gallery/video/${videoId}`;
-    const response = await fetch(url);
+    let headers: HeadersInit = { "Content-Type": "application/json" };
+    try {
+      headers = await getAuthHeaders();
+    } catch {
+      // No session — proceed without auth
+    }
+    const response = await fetch(url, { headers });
     return handleResponse<GalleryItem>(response);
   },
 
   /**
-   * Get image by ID
+   * Get image by ID (tries with auth if available, falls back to public)
    */
   getImage: async (imageId: string) => {
     const url = `${API_BASE_URL}/gallery/image/${imageId}`;
-    const response = await fetch(url);
+    let headers: HeadersInit = { "Content-Type": "application/json" };
+    try {
+      headers = await getAuthHeaders();
+    } catch {
+      // No session — proceed without auth
+    }
+    const response = await fetch(url, { headers });
     return handleResponse<GalleryItem>(response);
   },
 

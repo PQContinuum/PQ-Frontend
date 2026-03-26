@@ -21,6 +21,7 @@ import { HlsVideo } from '@/components/media/HlsVideo';
 import { ShareResponseModal } from './ShareResponseModal';
 import { encodeSharePayload } from '@/lib/share';
 import { downloadVideoMp4 } from '@/lib/media-download';
+import { DownloadDialog } from '@/components/media/DownloadDialog';
 import { sanitizeMarkdown } from '@/lib/sanitize-markdown';
 
 const mathPlugin = createMathPlugin({ singleDollarTextMath: true });
@@ -296,6 +297,7 @@ const ChatVideo = ({ src, jobId, isPublic, prompt, thumbnailUrl, previewUrl }: C
     isPublic !== undefined ? { isPublic } : null
   );
   const containerRef = useRef<HTMLSpanElement>(null);
+  const [showDownloadDialog, setShowDownloadDialog] = useState(false);
 
   const handlePlay = () => {
     const video = containerRef.current?.querySelector('video');
@@ -304,17 +306,6 @@ const ChatVideo = ({ src, jobId, isPublic, prompt, thumbnailUrl, previewUrl }: C
       video.play().catch(() => {
         // If autoplay is blocked, the video is now visible with native controls
       });
-    }
-  };
-
-  const handleDownload = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!src) return;
-
-    try {
-      await downloadVideoMp4(src, `video-generado-${Date.now()}.mp4`);
-    } catch (error) {
-      console.error('Error downloading video:', error);
     }
   };
 
@@ -415,7 +406,7 @@ const ChatVideo = ({ src, jobId, isPublic, prompt, thumbnailUrl, previewUrl }: C
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
-                    onClick={handleDownload}
+                    onClick={(e) => { e.stopPropagation(); setShowDownloadDialog(true); }}
                     className="p-2 bg-black/60 hover:bg-black/80 rounded-lg backdrop-blur-sm transition"
                   >
                     <svg className="size-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -446,6 +437,17 @@ const ChatVideo = ({ src, jobId, isPublic, prompt, thumbnailUrl, previewUrl }: C
           />
         )}
       </AnimatePresence>
+
+      {/* Download Dialog */}
+      {showDownloadDialog && (
+        <DownloadDialog
+          mediaType="video"
+          url={src}
+          title={prompt || `video-generado-${Date.now()}`}
+          thumbnailUrl={thumbnailUrl}
+          onClose={() => setShowDownloadDialog(false)}
+        />
+      )}
     </>
   );
 };

@@ -1,11 +1,14 @@
 'use client';
 
-import { use, useState } from 'react';
-import { Heart, Eye, Download, Share2, Check, ArrowLeft, Video, Image as ImageIcon, Calendar, User } from 'lucide-react';
+import { use, useState, useEffect } from 'react';
+import { Heart, Eye, Download, Share2, ArrowLeft, Video, Image as ImageIcon, Calendar, User, Lock, Loader2 } from 'lucide-react';
 import { useGalleryVideo, useGalleryImage, useLikeVideo, useLikeImage } from '@/hooks/use-gallery';
+import { ApiError } from '@/lib/api-client';
 import { HlsVideo } from '@/components/media/HlsVideo';
-import { downloadVideoMp4 } from '@/lib/media-download';
+import { ShareDialog } from '@/components/media/ShareDialog';
+import { DownloadDialog } from '@/components/media/DownloadDialog';
 import Link from 'next/link';
+import type { GalleryItem } from '@/hooks/use-gallery';
 
 interface GalleryPageProps {
   params: Promise<{ mediaType: string; id: string }>;
@@ -25,39 +28,31 @@ function VideoView({ id }: { id: string }) {
   const { data: item, isLoading, error } = useGalleryVideo(id);
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
-  const [copied, setCopied] = useState(false);
+  const [synced, setSynced] = useState(false);
   const likeMutation = useLikeVideo();
 
-  // Sync state when data arrives
-  if (item && likeCount === 0 && item.likeCount > 0) {
-    setLikeCount(item.likeCount);
-    setIsLiked(item.hasLiked || false);
-  }
+  useEffect(() => {
+    if (item && !synced) {
+      setLikeCount(item.likeCount || 0);
+      setIsLiked(item.hasLiked || false);
+      setSynced(true);
+    }
+  }, [item, synced]);
 
   if (isLoading) return <LoadingSkeleton />;
-  if (error || !item) return <NotFound />;
+  if (error) return <ErrorView error={error} />;
+  if (!item) return <NotFound />;
 
   return (
     <MediaLayout
       item={item}
       isLiked={isLiked}
       likeCount={likeCount}
-      copied={copied}
       onLike={() => {
         const newLiked = !isLiked;
         setIsLiked(newLiked);
         setLikeCount(newLiked ? likeCount + 1 : Math.max(0, likeCount - 1));
         likeMutation.mutate(id);
-      }}
-      onShare={() => {
-        navigator.clipboard.writeText(window.location.href);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      }}
-      onDownload={async () => {
-        if (item.videoUrl) {
-          await downloadVideoMp4(item.videoUrl, item.title || `video-${id}.mp4`);
-        }
       }}
     >
       <div className="rounded-2xl overflow-hidden bg-black">
@@ -78,51 +73,31 @@ function ImageView({ id }: { id: string }) {
   const { data: item, isLoading, error } = useGalleryImage(id);
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
-  const [copied, setCopied] = useState(false);
+  const [synced, setSynced] = useState(false);
   const likeMutation = useLikeImage();
 
-  if (item && likeCount === 0 && item.likeCount > 0) {
-    setLikeCount(item.likeCount);
-    setIsLiked(item.hasLiked || false);
-  }
+  useEffect(() => {
+    if (item && !synced) {
+      setLikeCount(item.likeCount || 0);
+      setIsLiked(item.hasLiked || false);
+      setSynced(true);
+    }
+  }, [item, synced]);
 
   if (isLoading) return <LoadingSkeleton />;
-  if (error || !item) return <NotFound />;
+  if (error) return <ErrorView error={error} />;
+  if (!item) return <NotFound />;
 
   return (
     <MediaLayout
       item={item}
       isLiked={isLiked}
       likeCount={likeCount}
-      copied={copied}
       onLike={() => {
         const newLiked = !isLiked;
         setIsLiked(newLiked);
         setLikeCount(newLiked ? likeCount + 1 : Math.max(0, likeCount - 1));
         likeMutation.mutate(id);
-      }}
-      onShare={() => {
-        navigator.clipboard.writeText(window.location.href);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      }}
-      onDownload={async () => {
-        if (item.imageUrl) {
-          try {
-            const response = await fetch(item.imageUrl);
-            const blob = await response.blob();
-            const objectUrl = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = objectUrl;
-            a.download = item.title || `imagen-${id}.png`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(objectUrl);
-          } catch (err) {
-            console.error('Error downloading image:', err);
-          }
-        }
       }}
     >
       <div className="rounded-2xl overflow-hidden bg-gray-50">
@@ -136,34 +111,34 @@ function ImageView({ id }: { id: string }) {
   );
 }
 
-// Shared layout for video and image views
-import type { GalleryItem } from '@/hooks/use-gallery';
+// ============================================================================
+// Shared Layout
+// ============================================================================
 
 function MediaLayout({
   item,
   isLiked,
   likeCount,
-  copied,
   onLike,
-  onShare,
-  onDownload,
   children,
 }: {
   item: GalleryItem;
   isLiked: boolean;
   likeCount: number;
-  copied: boolean;
   onLike: () => void;
-  onShare: () => void;
-  onDownload: () => void;
   children: React.ReactNode;
 }) {
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [showDownloadDialog, setShowDownloadDialog] = useState(false);
   const isVideo = item.mediaType === 'video';
   const formattedDate = new Date(item.createdAt).toLocaleDateString('es-ES', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
   });
+  const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
+  const shareTitle = item.title || (isVideo ? 'Video' : 'Imagen') + ' - Continuum AI';
+  const downloadUrl = (isVideo ? item.videoUrl : item.imageUrl) || '';
 
   return (
     <div className="min-h-screen bg-[#f5f5f5]">
@@ -242,10 +217,10 @@ function MediaLayout({
             </div>
 
             {/* Action buttons */}
-            <div className="flex items-center gap-2 mt-5">
+            <div className="flex flex-wrap items-center gap-2 mt-5">
               <button
                 onClick={onLike}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition ${
+                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium transition active:scale-95 ${
                   isLiked
                     ? 'bg-red-50 text-red-500 border border-red-200'
                     : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
@@ -256,19 +231,19 @@ function MediaLayout({
               </button>
 
               <button
-                onClick={onDownload}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100 transition"
+                onClick={() => setShowDownloadDialog(true)}
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100 transition active:scale-95"
               >
                 <Download className="w-4 h-4" />
                 Descargar
               </button>
 
               <button
-                onClick={onShare}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100 transition"
+                onClick={() => setShowShareDialog(true)}
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100 transition active:scale-95"
               >
-                {copied ? <Check className="w-4 h-4 text-green-500" /> : <Share2 className="w-4 h-4" />}
-                {copied ? 'Copiado' : 'Compartir'}
+                <Share2 className="w-4 h-4" />
+                Compartir
               </button>
             </div>
           </div>
@@ -279,8 +254,61 @@ function MediaLayout({
           Creado con <span className="font-semibold text-gray-500">Continuum AI</span>
         </div>
       </div>
+
+      {/* Share Dialog */}
+      {showShareDialog && (
+        <ShareDialog
+          url={shareUrl}
+          title={shareTitle}
+          onClose={() => setShowShareDialog(false)}
+        />
+      )}
+
+      {/* Download Dialog */}
+      {showDownloadDialog && (
+        <DownloadDialog
+          mediaType={item.mediaType}
+          url={downloadUrl}
+          title={item.title || `${item.mediaType}-${item.id}`}
+          thumbnailUrl={item.thumbnailUrl || item.imageUrl}
+          onClose={() => setShowDownloadDialog(false)}
+        />
+      )}
     </div>
   );
+}
+
+// ============================================================================
+// Error States
+// ============================================================================
+
+function ErrorView({ error }: { error: unknown }) {
+  const isPrivate = error instanceof ApiError && (error.statusCode === 403 || error.statusCode === 401);
+
+  if (isPrivate) {
+    return (
+      <div className="min-h-screen bg-[#f5f5f5] flex items-center justify-center px-4">
+        <div className="text-center max-w-sm">
+          <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+            <Lock className="w-7 h-7 text-gray-400" />
+          </div>
+          <h1 className="text-2xl font-semibold text-gray-900">Contenido privado</h1>
+          <p className="mt-2 text-sm text-gray-500">
+            Este contenido es privado y solo puede ser visto por su creador.
+          </p>
+          <Link
+            href="/characters"
+            className="inline-flex items-center gap-1.5 mt-6 px-5 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Ir a la galería
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return <NotFound />;
 }
 
 function LoadingSkeleton() {
