@@ -65,8 +65,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl)
   }
 
-  // Si el usuario está autenticado y está en / o /auth, verificar suscripción
-  if (user && (request.nextUrl.pathname === '/auth' || request.nextUrl.pathname === '/')) {
+  // Si el usuario está autenticado y está en /auth, verificar suscripción
+  // Nota: NO redirigir desde / para evitar loop con /payment back button
+  if (user && request.nextUrl.pathname === '/auth') {
     try {
       const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.continuumai.llc/api/v1'
       const { data: { session } } = await supabase.auth.getSession()

@@ -12,11 +12,13 @@ import {
 } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
-import { ArrowRight, Check, Zap, Building2, Rocket, Crown, Loader2 } from 'lucide-react';
+import { ArrowRight, Check, Zap, Building2, Rocket, Crown, Loader2, LogOut } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useUserPlan } from '@/hooks/use-user-plan';
 import { billingApi, userApi } from '@/lib/api-client';
+import { getSupabaseBrowserClient } from '@/lib/supabase';
 
 const plans = [
   {
@@ -124,7 +126,22 @@ export default function PaymentPage() {
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
   const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { data: userPlan } = useUserPlan();
+  const router = useRouter();
+
+  const handleLogout = useCallback(async () => {
+    setIsLoggingOut(true);
+    try {
+      const supabase = getSupabaseBrowserClient();
+      await supabase.auth.signOut();
+      router.push('/auth');
+      router.refresh();
+    } catch (error) {
+      console.error('Error logging out:', error);
+      setIsLoggingOut(false);
+    }
+  }, [router]);
 
   useEffect(() => {
     if (redirectUrl) {
@@ -176,13 +193,27 @@ export default function PaymentPage() {
       </div>
 
       <div className="relative flex flex-col gap-16 px-8 py-24 text-center">
-        {/* Back button */}
-        <Link
-          href="/"
-          className="absolute top-8 left-8 text-sm text-neutral-400 hover:text-white transition-colors"
-        >
-          ← Volver
-        </Link>
+        {/* Navigation */}
+        <div className="absolute top-8 left-8 right-8 flex items-center justify-between">
+          <Link
+            href="/"
+            className="text-sm text-neutral-400 hover:text-white transition-colors"
+          >
+            ← Volver
+          </Link>
+          <button
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className="flex items-center gap-2 text-sm text-neutral-400 hover:text-white transition-colors disabled:opacity-50"
+          >
+            {isLoggingOut ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <LogOut className="h-4 w-4" />
+            )}
+            Cerrar sesión
+          </button>
+        </div>
 
         <div className="flex flex-col items-center justify-center gap-8">
           {/* Header */}
