@@ -19,24 +19,32 @@ function isCloudflareUrl(url: string): boolean {
 }
 
 /**
- * Open a URL as a download via the browser (handles redirects natively).
- * Used for Cloudflare URLs that return 302 redirects which fail with fetch() due to CORS.
+ * Extract the base URL (origin) from a Cloudflare stream URL.
+ * e.g. "https://customer-xxx.cloudflarestream.com/uid/manifest/video.m3u8"
+ *    → "https://customer-xxx.cloudflarestream.com"
  */
-function openDownloadUrl(url: string): void {
-  const a = document.createElement('a');
-  a.href = url;
-  a.target = '_blank';
-  a.rel = 'noopener noreferrer';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+function extractCloudflareBase(url: string): string | null {
+  const match = url.match(/(https?:\/\/[^/]+cloudflarestream\.com)/i)
+    || url.match(/(https?:\/\/[^/]+videodelivery\.net)/i);
+  return match?.[1] || null;
+}
+
+/**
+ * Build the direct Cloudflare download URL from the playback URL.
+ * This avoids needing an API call (which requires auth).
+ */
+function buildDirectDownloadUrl(playbackUrl: string): string | null {
+  const uid = extractStreamUid(playbackUrl);
+  const base = extractCloudflareBase(playbackUrl);
+  if (!uid || !base) return null;
+  return `${base}/${uid}/downloads/default.mp4`;
 }
 
 async function downloadFile(url: string, filename: string): Promise<void> {
-  // Cloudflare URLs return 302 redirects that fail with fetch() due to CORS
-  // Open them directly and let the browser handle the redirect
+  // Cloudflare URLs return 302 redirects that fail with fetch() due to CORS.
+  // Use window.location.href which works on mobile and handles redirects natively.
   if (isCloudflareUrl(url)) {
-    openDownloadUrl(url);
+    window.location.href = url;
     return;
   }
 
@@ -58,11 +66,21 @@ async function downloadFile(url: string, filename: string): Promise<void> {
 export async function downloadVideoMp4(playbackUrl: string, filename: string): Promise<void> {
   if (!playbackUrl) return;
 
+  // Non-HLS: download directly
   if (!isHlsUrl(playbackUrl)) {
     await downloadFile(playbackUrl, filename);
     return;
   }
 
+  // Try to build the download URL directly from the playback URL
+  // This works without auth and avoids async API calls that break mobile downloads
+  const directUrl = buildDirectDownloadUrl(playbackUrl);
+  if (directUrl) {
+    window.location.href = directUrl;
+    return;
+  }
+
+  // Fallback: use the API to get the download URL (requires auth)
   const uid = extractStreamUid(playbackUrl);
   if (!uid) {
     throw new Error('Unable to extract video UID');
