@@ -1660,12 +1660,9 @@ export const MessageInput = memo(function MessageInput() {
                 onAttachmentsChange={setAttachments}
               />
             ) : (
-              <div className="text-center py-12">
-                <div className="relative inline-block">
-                  <div className="absolute inset-0 bg-[#FF8B3D]/20 rounded-full blur-xl animate-pulse"></div>
-                  <Loader2 className="relative w-8 h-8 text-[#FF8B3D] animate-spin" />
-                </div>
-                <p className="text-sm text-gray-600 mt-4 font-medium">Preparando espacio para tus archivos...</p>
+              <div className="flex items-center justify-center gap-3 py-6">
+                <Loader2 className="size-5 text-[#FF8B3D] animate-spin" />
+                <p className="text-sm text-[#999]">Preparando...</p>
               </div>
             )}
           </div>
