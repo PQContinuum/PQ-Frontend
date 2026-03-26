@@ -36,11 +36,18 @@ export function useUserPlan() {
         };
       } catch (error) {
         if (error instanceof ApiError && error.statusCode === 401) {
-          // Sesión inválida: cerrar sesión y redirigir a /auth
+          // Verificar si la sesión de Supabase sigue válida
           const supabase = getSupabaseBrowserClient();
-          await supabase.auth.signOut();
-          window.location.href = "/auth";
-          // Retornar valor por defecto mientras redirige
+          const { data: { user } } = await supabase.auth.getUser();
+
+          if (!user) {
+            // Sesión realmente expirada: cerrar sesión y redirigir
+            await supabase.auth.signOut();
+            window.location.href = "/auth";
+          }
+
+          // Si el usuario existe en Supabase pero el backend da 401,
+          // es un problema de sincronización — retornar plan Free
           return {
             userId: null,
             email: null,
