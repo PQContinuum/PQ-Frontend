@@ -128,25 +128,23 @@ export const ProjectItem = memo(function ProjectItem({
             >
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 {isExpanded ? (
-                  <ChevronDown className="size-3 text-[#4c4c4c] flex-shrink-0" />
+                  <ChevronDown className="size-3 text-[#999] flex-shrink-0" />
                 ) : (
-                  <ChevronRight className="size-3 text-[#4c4c4c] flex-shrink-0" />
+                  <ChevronRight className="size-3 text-[#999] flex-shrink-0" />
                 )}
-                {isExpanded ? (
-                  <FolderOpen
-                    className="size-4 flex-shrink-0"
+                <div
+                  className="size-6 rounded-md flex items-center justify-center flex-shrink-0"
+                  style={{ backgroundColor: `${project.color || '#4c4c4c'}15` }}
+                >
+                  <Icon
+                    className="size-3.5"
                     style={{ color: project.color || '#4c4c4c' }}
                   />
-                ) : (
-                  <FolderClosed
-                    className="size-4 flex-shrink-0"
-                    style={{ color: project.color || '#4c4c4c' }}
-                  />
-                )}
+                </div>
                 <span className="text-sm font-medium truncate">
                   {project.name}
                 </span>
-                <span className="text-xs text-[#4c4c4c] ml-auto flex-shrink-0">
+                <span className="text-[11px] text-[#bbb] bg-black/[0.03] px-1.5 py-0.5 rounded-full ml-auto flex-shrink-0 font-medium">
                   {conversations.length}
                 </span>
               </div>

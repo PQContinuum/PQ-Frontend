@@ -83,62 +83,62 @@ function SidebarFooterContent({
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
 
+  const userInitial = userEmail ? userEmail.charAt(0).toUpperCase() : 'U';
+
+  const getPlanStyle = (planName?: string) => {
+    const p = planName?.toLowerCase() || 'free';
+    if (p.includes('enterprise') || p.includes('empresarial'))
+      return { color: 'text-[#F59E0B]', bg: 'bg-[#F59E0B]/10' };
+    if (p.includes('professional') || p.includes('pro'))
+      return { color: 'text-[#8B5CF6]', bg: 'bg-[#8B5CF6]/10' };
+    if (p.includes('basic') || p.includes('básico'))
+      return { color: 'text-[#3B82F6]', bg: 'bg-[#3B82F6]/10' };
+    return { color: 'text-[#64748B]', bg: 'bg-[#64748B]/10' };
+  };
+
+  const planStyle = getPlanStyle(userPlan?.planName);
+
   return (
-    <SidebarFooter className="bg-[#f6f6f6] gap-2">
-      {/* Multimedia Button - Prominent CTA */}
+    <SidebarFooter className="bg-[#f6f6f6] gap-1.5 pb-3">
+      {/* Multimedia Button */}
       <SidebarMenu>
         <SidebarMenuItem>
           <Link href="/characters" className="block">
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className={`relative overflow-hidden rounded-lg bg-[#FF8B3D] shadow-md hover:shadow-lg transition-shadow ${
-                isCollapsed ? 'mx-auto w-fit' : ''
+            <div
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg bg-[#FF8B3D] text-white hover:bg-[#e67a2e] transition-colors ${
+                isCollapsed ? 'justify-center mx-auto w-fit px-2.5' : ''
               }`}
             >
-              <div className={`flex items-center gap-3 px-3 py-2.5 text-white ${
-                isCollapsed ? 'justify-center px-2.5' : ''
-              }`}>
-                <Images className="size-5" />
-                {!isCollapsed && (
-                  <div className="flex flex-col">
-                    <span className="text-sm font-bold leading-tight">Multimedia</span>
-                    <span className="text-[10px] font-medium opacity-80">Galería de contenido</span>
-                  </div>
-                )}
-              </div>
-            </motion.div>
+              <Images className="size-4" />
+              {!isCollapsed && (
+                <span className="text-sm font-semibold">Multimedia</span>
+              )}
+            </div>
           </Link>
         </SidebarMenuItem>
       </SidebarMenu>
 
       <FeedbackWidget isCollapsed={isCollapsed} />
+
+      {/* User account */}
       <SidebarMenu>
         <SidebarMenuItem>
           <Select value={selectValue} onValueChange={handleSelectAction}>
-            <SelectTrigger className="w-full border-0 bg-transparent hover:bg-white/50 transition-colors [&>svg]:group-data-[collapsible=icon]:hidden">
-              <div className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
-                <div className="text-2xl">👤</div>
+            <SelectTrigger className="w-full border-0 bg-transparent hover:bg-white/60 rounded-lg transition-colors [&>svg]:group-data-[collapsible=icon]:hidden h-auto py-2">
+              <div className="flex items-center gap-2.5 w-full group-data-[collapsible=icon]:justify-center">
+                <div className="size-8 rounded-full bg-[#FF8B3D] flex items-center justify-center flex-shrink-0">
+                  <span className="text-sm font-bold text-white">{userInitial}</span>
+                </div>
                 <div className="flex flex-col items-start flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
-                  <span className="text-sm font-medium truncate w-full text-left">
+                  <span className="text-[13px] font-medium truncate w-full text-left text-[#111]">
                     {userEmail
-                      ? userEmail.length > 20
-                        ? `${userEmail.slice(0, 20)}...`
+                      ? userEmail.length > 22
+                        ? `${userEmail.slice(0, 22)}...`
                         : userEmail
                       : 'Usuario'}
                   </span>
-                  <span className={`text-xs font-semibold ${
-                    userPlan?.planName === 'Free' || !userPlan?.planName
-                      ? 'text-[#64748B]'
-                      : userPlan?.planName === 'Básico' || userPlan?.planName === 'Basic'
-                      ? 'text-[#3B82F6]'
-                      : userPlan?.planName === 'Profesional' || userPlan?.planName === 'Professional'
-                      ? 'text-[#8B5CF6]'
-                      : userPlan?.planName === 'Enterprise' || userPlan?.planName === 'Empresarial'
-                      ? 'text-[#F59E0B]'
-                      : 'text-[#64748B]'
-                  }`}>
-                    Plan {userPlan?.planName || 'Free'}
+                  <span className={`text-[11px] font-semibold ${planStyle.color}`}>
+                    {userPlan?.planName || 'Free'}
                   </span>
                 </div>
               </div>
@@ -287,63 +287,23 @@ export default function ChatPage() {
 
           <SidebarMenu>
             <SidebarMenuItem>
-              <motion.div
-                className="relative"
-                whileHover={{ scale: 1.02, x: 4 }}
-                whileTap={{ scale: 0.98 }}
-                animate={isCreatingNew ? { scale: [1, 1.05, 1] } : {}}
-                transition={isCreatingNew ? { duration: 0.4, ease: "easeInOut" } : { type: "spring", stiffness: 400, damping: 17 }}
+              <SidebarMenuButton
+                size="lg"
+                onClick={handleNewConversation}
+                className="hover:bg-white/60 transition-colors group/new"
               >
-                <motion.div
-                  className="absolute -inset-[2px] rounded-lg opacity-0"
-                  style={{
-                    background: 'linear-gradient(90deg, #FF8B3D, #d9753e, #FF8B3D, #d9753e)',
-                    backgroundSize: '200% 100%'
-                  }}
-                  whileHover={{
-                    opacity: 1,
-                    backgroundPosition: ['0% 0%', '200% 0%']
-                  }}
-                  transition={{
-                    opacity: { duration: 0.2 },
-                    backgroundPosition: { duration: 1.5, ease: "linear", repeat: Infinity }
-                  }}
-                />
-                <SidebarMenuButton
-                  size="lg"
-                  onClick={handleNewConversation}
-                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground relative overflow-hidden bg-[#f6f6f6]"
-                >
-                  <motion.div
-                    className="absolute inset-0 bg-gradient-to-r from-[#FF8B3D]/0 via-[#FF8B3D]/10 to-[#FF8B3D]/0"
-                    initial={{ x: '-100%' }}
-                    whileHover={{ x: '100%' }}
-                    animate={isCreatingNew ? { x: '100%' } : {}}
-                    transition={{ duration: 0.8, ease: "easeInOut" }}
-                  />
-                  <motion.div
-                    className="flex aspect-square size-8 items-center justify-center rounded-lg bg-white text-[#111111] relative z-10"
-                    whileHover={{ rotate: 720 }}
-                    animate={isCreatingNew ? { rotate: 180, scale: [1, 1.2, 1] } : { rotate: 0 }}
-                    transition={isCreatingNew ? { duration: 0.4, ease: "easeInOut" } : { duration: 0.6, ease: "easeOut" }}
-                  >
-                    <Plus className="size-4" />
-                  </motion.div>
-                  <div className="grid flex-1 text-left text-sm leading-tight relative z-10">
-                    <motion.span
-                      className="truncate font-semibold"
-                      animate={isCreatingNew ? { opacity: [1, 0.5, 1] } : {}}
-                      transition={{ duration: 0.4, ease: "easeInOut" }}
-                      whileHover={{ color: "#FF8B3D" }}
-                    >
-                      Nuevo Chat
-                    </motion.span>
-                    <span className="truncate text-xs text-[#4c4c4c]">
-                      Empezar una conversación
-                    </span>
-                  </div>
-                </SidebarMenuButton>
-              </motion.div>
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-white shadow-sm text-[#FF8B3D] group-hover/new:shadow transition-shadow">
+                  <Plus className="size-4" />
+                </div>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-semibold text-[#111] group-hover/new:text-[#FF8B3D] transition-colors">
+                    Nuevo Chat
+                  </span>
+                  <span className="truncate text-xs text-[#999]">
+                    Empezar una conversación
+                  </span>
+                </div>
+              </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarHeader>
@@ -471,12 +431,16 @@ export default function ChatPage() {
                   initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3, duration: 0.4 }}
+                  className="space-y-3"
                 >
                   <h2 className="text-2xl md:text-3xl font-semibold text-[#111111] tracking-tight">
                     ¿En qué puedo ayudarte?
                   </h2>
-                  <p className="text-sm text-[#999] mt-1.5">
-                    Escribe un mensaje o elige una sugerencia
+                  <p className="text-[13px] md:text-sm text-[#999] max-w-md mx-auto leading-relaxed">
+                    Chat con contexto, imágenes, video, audio y lectura de documentos
+                    <br className="hidden sm:block" />
+                    <span className="sm:hidden"> </span>
+                    en un solo flujo inteligente.
                   </p>
                 </motion.div>
               </motion.div>

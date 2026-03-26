@@ -31,10 +31,26 @@ interface ConversationItemProps {
   onToggleSelect?: (id: string) => void;
 }
 
-const truncateTitle = (title: string, maxLength: number = 35): string => {
-  if (title.length <= maxLength) return title.trim() + '...';
-  return title.substring(0, maxLength).trim() + '...';
+const truncateTitle = (title: string, maxLength: number = 30): string => {
+  const trimmed = title.trim();
+  if (trimmed.length <= maxLength) return trimmed;
+  return trimmed.substring(0, maxLength).trim() + '...';
 };
+
+function getRelativeTime(dateStr: string): string {
+  const now = Date.now();
+  const then = new Date(dateStr).getTime();
+  const diff = now - then;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'ahora';
+  if (mins < 60) return `${mins}m`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d`;
+  if (days < 30) return `${Math.floor(days / 7)}sem`;
+  return `${Math.floor(days / 30)}mes`;
+}
 
 export const ConversationItem = memo(function ConversationItem({
   conversation,
@@ -127,13 +143,26 @@ export const ConversationItem = memo(function ConversationItem({
                   {isSelected && <Check className="size-3 text-white" />}
                 </div>
               ) : (
-                <MessageSquare className="size-4 flex-shrink-0" />
+                <div className={cn(
+                  "size-6 rounded-md flex items-center justify-center flex-shrink-0 transition-colors",
+                  isActive ? "bg-[#FF8B3D]/15" : "bg-black/[0.04]"
+                )}>
+                  <MessageSquare className={cn(
+                    "size-3.5",
+                    isActive ? "text-[#FF8B3D]" : "text-[#999]"
+                  )} />
+                </div>
               )}
               <div className="flex-1 overflow-hidden min-w-0">
-                <div className="text-sm font-medium whitespace-nowrap overflow-hidden">
+                <div className="text-sm font-medium whitespace-nowrap overflow-hidden text-ellipsis">
                   {truncateTitle(conversation.title)}
                 </div>
               </div>
+              {!isSelectionMode && (
+                <span className="text-[10px] text-[#bbb] flex-shrink-0 group-hover:hidden">
+                  {getRelativeTime(conversation.updatedAt)}
+                </span>
+              )}
             </SidebarMenuButton>
 
             {!isSelectionMode && (
