@@ -455,22 +455,22 @@ export default function ChatPage() {
                 <MessageInput />
               </motion.div>
 
-              {/* Tool suggestion chips */}
+              {/* Tool suggestion cards */}
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6, duration: 0.4 }}
-                className="grid grid-cols-2 md:grid-cols-4 gap-2.5 mt-6 w-full max-w-2xl"
+                className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-6 w-full max-w-2xl"
               >
                 {[
-                  { icon: MessageSquare, label: 'Chat', action: 'chat' },
-                  { icon: ImageIcon, label: 'Generar imagen', action: 'image' },
-                  { icon: Video, label: 'Generar video', action: 'video' },
-                  { icon: Sparkles, label: 'LISA', action: 'lisa' },
-                  { icon: Globe, label: 'Web Search', action: 'web-search' },
-                  { icon: MapPin, label: 'GeoCultural', action: 'geocultural' },
-                  { icon: Paperclip, label: 'Archivos', action: 'files' },
-                ].map(({ icon: Icon, label, action }) => (
+                  { icon: MessageSquare, title: 'Conversación', desc: 'Pregunta lo que necesites', action: 'chat' },
+                  { icon: ImageIcon, title: 'Generar imagen', desc: 'Crea imágenes desde texto', action: 'image' },
+                  { icon: Video, title: 'Generar video', desc: 'Produce videos con IA', action: 'video' },
+                  { icon: Sparkles, title: 'LISA', desc: 'Editor guiado de contenido', action: 'lisa' },
+                  { icon: Globe, title: 'Web Search', desc: 'Busca información en la web', action: 'web-search' },
+                  { icon: MapPin, title: 'GeoCultural', desc: 'Respuestas con contexto local', action: 'geocultural' },
+                  { icon: Paperclip, title: 'Archivos', desc: 'Analiza documentos e imágenes', action: 'files' },
+                ].map(({ icon: Icon, title, desc, action }) => (
                   <button
                     key={action}
                     onClick={() => {
@@ -480,10 +480,18 @@ export default function ChatPage() {
                         setPendingAction(action);
                       }
                     }}
-                    className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-black/[0.06] bg-white hover:bg-neutral-50 hover:border-black/[0.1] transition-all text-left group"
+                    className="flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-white border border-black/[0.05] hover:border-black/[0.1] hover:shadow-sm transition-all text-left group"
                   >
-                    <Icon className="size-4 text-[#bbb] group-hover:text-[#FF8B3D] transition-colors shrink-0" />
-                    <span className="text-[13px] text-[#666] group-hover:text-[#111] transition-colors">{label}</span>
+                    <div className="size-9 rounded-xl bg-neutral-50 group-hover:bg-[#FF8B3D]/10 flex items-center justify-center shrink-0 transition-colors">
+                      <Icon className="size-[18px] text-[#bbb] group-hover:text-[#FF8B3D] transition-colors" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-semibold text-[#111] group-hover:text-[#FF8B3D] transition-colors">{title}</p>
+                      <p className="text-[11px] text-[#999]">{desc}</p>
+                    </div>
+                    <svg className="size-4 text-[#ccc] group-hover:text-[#FF8B3D] transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
                   </button>
                 ))}
               </motion.div>
