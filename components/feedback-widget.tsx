@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MessageSquareHeart, Send, Loader2, Check, Code, Monitor, Server, Globe } from "lucide-react";
+import { MessageSquareHeart, Send, Loader2, Check, Code, Layout, Cpu, HelpCircle } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -42,10 +42,10 @@ const categories: { value: FeedbackCategory; label: string }[] = [
   { value: "other", label: "Other" },
 ];
 
-const areas: { value: FeedbackArea; label: string; icon: React.ElementType }[] = [
-  { value: "frontend", label: "Frontend", icon: Monitor },
-  { value: "backend", label: "Backend", icon: Server },
-  { value: "general", label: "General", icon: Globe },
+const areas: { value: FeedbackArea; label: string; description: string; icon: React.ElementType }[] = [
+  { value: "frontend", label: "Diseño y visual", description: "Botones, menús, colores, textos", icon: Layout },
+  { value: "backend", label: "Funcionalidad", description: "Respuestas del AI, velocidad, datos", icon: Cpu },
+  { value: "general", label: "Otro", description: "Sugerencias u opiniones generales", icon: HelpCircle },
 ];
 
 const sentiments: { value: FeedbackSentiment; emoji: string; label: string }[] = [
@@ -202,22 +202,31 @@ export function FeedbackWidget({ className, variant = "sidebar", isCollapsed: is
 
             {/* Area selector */}
             <div className="px-4 pt-3">
-              <p className="text-xs text-muted-foreground mb-2">Área</p>
-              <div className="flex gap-1.5">
-                {areas.map(({ value, label, icon: Icon }) => (
+              <p className="text-xs text-muted-foreground mb-2">¿Sobre qué es tu feedback?</p>
+              <div className="flex flex-col gap-1.5">
+                {areas.map(({ value, label, description, icon: Icon }) => (
                   <button
                     key={value}
                     type="button"
                     onClick={() => setArea(value)}
                     className={cn(
-                      "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border",
+                      "flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-all border",
                       area === value
-                        ? "bg-[#934f2c]/10 border-[#934f2c]/30 text-[#934f2c]"
-                        : "border-transparent bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+                        ? "bg-[#934f2c]/10 border-[#934f2c]/30"
+                        : "border-transparent bg-muted/30 hover:bg-muted/60"
                     )}
                   >
-                    <Icon className="size-3.5" />
-                    {label}
+                    <Icon className={cn(
+                      "size-4 shrink-0",
+                      area === value ? "text-[#934f2c]" : "text-muted-foreground"
+                    )} />
+                    <div className="min-w-0">
+                      <p className={cn(
+                        "text-xs font-medium",
+                        area === value ? "text-[#934f2c]" : "text-foreground"
+                      )}>{label}</p>
+                      <p className="text-[10px] text-muted-foreground">{description}</p>
+                    </div>
                   </button>
                 ))}
               </div>
