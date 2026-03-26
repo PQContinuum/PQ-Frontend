@@ -1272,6 +1272,7 @@ export interface GalleryItem {
   description: string | null;
   prompt: string;
   tags: string[];
+  isPublic?: boolean;
   viewCount: number;
   likeCount: number;
   shareCount: number;

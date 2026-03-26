@@ -37,6 +37,8 @@ import {
   useLikeImage,
   useDeleteVideo,
   useDeleteImage,
+  useUpdateVideoVisibility,
+  useUpdateImageVisibility,
   type GalleryItem,
 } from '@/hooks/use-gallery';
 import { CharacterCard } from '@/app/chat/components/lisa/CharacterCard';
@@ -73,9 +75,25 @@ function MediaCard({
   const [likeCount, setLikeCount] = useState(item.likeCount || 0);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showDownloadDialog, setShowDownloadDialog] = useState(false);
+  const [isPublic, setIsPublic] = useState(item.isPublic ?? false);
 
   const likeVideoMutation = useLikeVideo();
   const likeImageMutation = useLikeImage();
+  const updateVideoVisibility = useUpdateVideoVisibility();
+  const updateImageVisibility = useUpdateImageVisibility();
+
+  const handleToggleVisibility = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newPublic = !isPublic;
+    setIsPublic(newPublic);
+    setShowMenu(false);
+
+    if (item.mediaType === 'video') {
+      updateVideoVisibility.mutate({ videoId: item.id, data: { isPublic: newPublic } });
+    } else {
+      updateImageVisibility.mutate({ imageId: item.id, data: { isPublic: newPublic } });
+    }
+  };
 
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -170,8 +188,8 @@ function MediaCard({
           </div>
         )}
 
-        {/* Type badge */}
-        <div className="absolute top-2 left-2">
+        {/* Type + visibility badges */}
+        <div className="absolute top-2 left-2 flex flex-col gap-1">
           <span className={`flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-lg backdrop-blur-sm ${
             item.mediaType === 'video'
               ? 'bg-purple-500/80 text-white'
@@ -184,6 +202,14 @@ function MediaCard({
             )}
             {item.mediaType === 'video' ? 'Video' : 'Imagen'}
           </span>
+          {isOwner && (
+            <span className={`flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-lg backdrop-blur-sm ${
+              isPublic ? 'bg-green-500/80 text-white' : 'bg-gray-700/80 text-white'
+            }`}>
+              {isPublic ? <Globe className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+              {isPublic ? 'Público' : 'Privado'}
+            </span>
+          )}
         </div>
 
         {/* Menu button */}
@@ -214,6 +240,13 @@ function MediaCard({
                 >
                   <Share2 className="w-4 h-4" />
                   Compartir
+                </button>
+                <button
+                  onClick={handleToggleVisibility}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  {isPublic ? <Lock className="w-4 h-4" /> : <Globe className="w-4 h-4" />}
+                  {isPublic ? 'Hacer privado' : 'Hacer público'}
                 </button>
                 {onDelete && (
                   <button
