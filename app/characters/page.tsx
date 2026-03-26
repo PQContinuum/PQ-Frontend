@@ -72,6 +72,7 @@ function MediaCard({
   const [isLiked, setIsLiked] = useState(item.hasLiked || false);
   const [likeCount, setLikeCount] = useState(item.likeCount || 0);
   const [copied, setCopied] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const likeVideoMutation = useLikeVideo();
   const likeImageMutation = useLikeImage();
@@ -104,8 +105,9 @@ function MediaCard({
   const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const url = item.mediaType === 'video' ? item.videoUrl : item.imageUrl;
-    if (!url) return;
+    if (!url || isDownloading) return;
 
+    setIsDownloading(true);
     try {
       if (item.mediaType === 'video') {
         await downloadVideoMp4(url, item.title || `video-${item.id}.mp4`);
@@ -123,6 +125,8 @@ function MediaCard({
       }
     } catch (error) {
       console.error('Error downloading:', error);
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -273,35 +277,40 @@ function MediaCard({
         )}
 
         {/* Stats row */}
-        <div className="flex items-center gap-3 mt-2 pt-2 border-t border-gray-50">
+        <div className="flex items-center gap-1 mt-2 pt-2 border-t border-gray-50">
           <button
             onClick={handleLike}
-            className={`flex items-center gap-1 text-xs transition ${
-              isLiked ? 'text-red-500' : 'text-gray-400 hover:text-red-500'
+            className={`flex items-center gap-1 p-1.5 -ml-1.5 rounded-lg text-xs transition active:scale-95 ${
+              isLiked ? 'text-red-500' : 'text-gray-400 hover:text-red-500 hover:bg-red-50'
             }`}
           >
-            <Heart className={`w-3.5 h-3.5 ${isLiked ? 'fill-current' : ''}`} />
+            <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
             {likeCount > 0 && <span>{likeCount}</span>}
           </button>
-          <span className="flex items-center gap-1 text-xs text-gray-400">
-            <Eye className="w-3.5 h-3.5" />
+          <span className="flex items-center gap-1 p-1.5 text-xs text-gray-400">
+            <Eye className="w-4 h-4" />
             {item.viewCount || 0}
           </span>
           <button
             onClick={handleDownload}
-            className="flex items-center text-xs text-gray-400 hover:text-gray-600 transition ml-auto"
+            disabled={isDownloading}
+            className="flex items-center p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition active:scale-95 ml-auto disabled:opacity-50"
             title="Descargar"
           >
-            <Download className="w-3.5 h-3.5" />
+            {isDownloading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
           </button>
           <button
             onClick={handleShare}
-            className="flex items-center text-xs text-gray-400 hover:text-gray-600 transition"
+            className="flex items-center p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition active:scale-95"
           >
             {copied ? (
-              <Check className="w-3.5 h-3.5 text-[#934f2c]" />
+              <Check className="w-4 h-4 text-[#934f2c]" />
             ) : (
-              <Share2 className="w-3.5 h-3.5" />
+              <Share2 className="w-4 h-4" />
             )}
           </button>
         </div>
