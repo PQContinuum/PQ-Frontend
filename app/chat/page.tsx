@@ -463,13 +463,13 @@ export default function ChatPage() {
                 className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-6 w-full max-w-2xl"
               >
                 {[
-                  { icon: MessageSquare, title: 'Conversación', desc: 'Pregunta lo que necesites', action: 'chat' },
-                  { icon: ImageIcon, title: 'Generar imagen', desc: 'Crea imágenes desde texto', action: 'image' },
-                  { icon: Video, title: 'Generar video', desc: 'Produce videos con IA', action: 'video' },
-                  { icon: Sparkles, title: 'LISA', desc: 'Editor guiado de contenido', action: 'lisa' },
-                  { icon: Globe, title: 'Web Search', desc: 'Busca información en la web', action: 'web-search' },
-                  { icon: MapPin, title: 'GeoCultural', desc: 'Respuestas con contexto local', action: 'geocultural' },
-                  { icon: Paperclip, title: 'Archivos', desc: 'Analiza documentos e imágenes', action: 'files' },
+                  { icon: MessageSquare, title: 'Conversación', desc: '"Explícame la teoría de cuerdas"', action: 'chat' },
+                  { icon: ImageIcon, title: 'Generar imagen', desc: '"Un atardecer en Marte estilo acuarela"', action: 'image' },
+                  { icon: Video, title: 'Generar video', desc: '"Un drone sobrevolando montañas"', action: 'video' },
+                  { icon: Sparkles, title: 'LISA', desc: '"Crea un personaje para mi marca"', action: 'lisa' },
+                  { icon: Globe, title: 'Web Search', desc: '"¿Qué pasó hoy en el mundo?"', action: 'web-search' },
+                  { icon: MapPin, title: 'GeoCultural', desc: '"Mejores restaurantes cerca de mí"', action: 'geocultural' },
+                  { icon: Paperclip, title: 'Archivos', desc: '"Resume este PDF de 50 páginas"', action: 'files' },
                 ].map(({ icon: Icon, title, desc, action }) => (
                   <button
                     key={action}

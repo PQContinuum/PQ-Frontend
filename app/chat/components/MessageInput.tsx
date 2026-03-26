@@ -381,20 +381,24 @@ export const MessageInput = memo(function MessageInput() {
   const setLastError = useWebSearchStore((s) => s.setLastError);
 
   // Pending action from suggestion chips (activate tool modes)
+  // Deactivates all other modes before activating the selected one
   const pendingAction = usePendingAction();
   const setPendingAction = useSetPendingAction();
   useEffect(() => {
     if (!pendingAction) return;
     setPendingAction(null);
 
+    // Reset all modes first
+    setImageMode(false);
+    setVideoMode(false);
+    setEnableWebSearch(false);
+
     switch (pendingAction) {
       case 'image':
         setImageMode(true);
-        setVideoMode(false);
         break;
       case 'video':
         setVideoMode(true);
-        setImageMode(false);
         break;
       case 'lisa':
         setShowLisaWizard(true);
