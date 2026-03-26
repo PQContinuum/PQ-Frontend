@@ -35,6 +35,8 @@ import {
   usePendingProjectId,
   useSetPendingProjectId,
   useSetLinkFetch,
+  usePendingInput,
+  useSetPendingInput,
 } from '@/app/chat/store';
 import { useCreateConversation } from '@/hooks/use-conversations';
 import { useQueryClient } from '@tanstack/react-query';
@@ -352,6 +354,17 @@ export const MessageInput = memo(function MessageInput() {
       }, 0);
     },
   });
+
+  // Pending input from suggestion chips
+  const pendingInput = usePendingInput();
+  const setPendingInput = useSetPendingInput();
+  useEffect(() => {
+    if (pendingInput) {
+      setInput(pendingInput);
+      setPendingInput(null);
+      setTimeout(() => textareaRef.current?.focus(), 0);
+    }
+  }, [pendingInput, setPendingInput]);
 
   const messages = useMessages();
   const geoCulturalMode = useGeoCulturalMode();

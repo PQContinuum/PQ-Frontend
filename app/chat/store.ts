@@ -88,6 +88,7 @@ type ChatStore = {
   geoCulturalMode: boolean;
   userLocation: UserLocation | null;
   linkFetch: LinkFetchState | null;
+  pendingInput: string | null; // For suggestion chips to populate the input
 
   // Generation state - qué tipo de contenido se está generando
   generationMode: GenerationMode;
@@ -110,6 +111,7 @@ type ChatStore = {
   startGeneration: (mode: GenerationMode, messageId: string) => void;
   stopGeneration: () => void;
   setLinkFetch: (state: LinkFetchState | null) => void;
+  setPendingInput: (input: string | null) => void;
   reset: () => void;
 };
 
@@ -171,6 +173,7 @@ const createChatStore = create<ChatStore>()(
       geoCulturalMode: false,
       userLocation: null,
       linkFetch: null,
+      pendingInput: null,
 
       // Generation state
       generationMode: 'none',
@@ -340,6 +343,9 @@ const createChatStore = create<ChatStore>()(
       setLinkFetch: (state) =>
         set({ linkFetch: state }, false, 'setLinkFetch'),
 
+      setPendingInput: (input) =>
+        set({ pendingInput: input }, false, 'setPendingInput'),
+
       reset: () => {
         typingCycleController.stop(set);
         set(
@@ -352,6 +358,7 @@ const createChatStore = create<ChatStore>()(
             geoCulturalMode: false,
             userLocation: null,
             linkFetch: null,
+            pendingInput: null,
             generationMode: 'none',
             isGenerating: false,
             generatingMessageId: null,
@@ -388,6 +395,8 @@ export const useSetGeoCulturalMode = () => useChatStore((state) => state.setGeoC
 export const useSetUserLocation = () => useChatStore((state) => state.setUserLocation);
 export const useLinkFetch = () => useChatStore((state) => state.linkFetch);
 export const useSetLinkFetch = () => useChatStore((state) => state.setLinkFetch);
+export const usePendingInput = () => useChatStore((state) => state.pendingInput);
+export const useSetPendingInput = () => useChatStore((state) => state.setPendingInput);
 
 // Generation state selectors
 export const useGenerationMode = () => useChatStore((state) => state.generationMode);

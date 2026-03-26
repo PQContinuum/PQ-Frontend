@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MessageSquareHeart, Send, Loader2, Check, Code } from "lucide-react";
+import { MessageSquareHeart, Send, Loader2, Check, Code, Monitor, Server, Globe } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -25,6 +25,7 @@ import {
 
 type FeedbackCategory = "ai" | "ui" | "bug" | "feature" | "performance" | "other";
 type FeedbackSentiment = "very_negative" | "negative" | "neutral" | "positive" | "very_positive";
+type FeedbackArea = "frontend" | "backend" | "general";
 
 interface FeedbackWidgetProps {
   className?: string;
@@ -32,13 +33,19 @@ interface FeedbackWidgetProps {
   isCollapsed?: boolean;
 }
 
-const categories: { value: FeedbackCategory; label: string; icon: string }[] = [
-  { value: "ai", label: "AI", icon: "AI" },
-  { value: "ui", label: "Interface", icon: "UI" },
-  { value: "bug", label: "Bug", icon: "Bug" },
-  { value: "feature", label: "Feature", icon: "Feature" },
-  { value: "performance", label: "Performance", icon: "Perf" },
-  { value: "other", label: "Other", icon: "Other" },
+const categories: { value: FeedbackCategory; label: string }[] = [
+  { value: "ai", label: "AI" },
+  { value: "ui", label: "Interface" },
+  { value: "bug", label: "Bug" },
+  { value: "feature", label: "Feature" },
+  { value: "performance", label: "Performance" },
+  { value: "other", label: "Other" },
+];
+
+const areas: { value: FeedbackArea; label: string; icon: React.ElementType }[] = [
+  { value: "frontend", label: "Frontend", icon: Monitor },
+  { value: "backend", label: "Backend", icon: Server },
+  { value: "general", label: "General", icon: Globe },
 ];
 
 const sentiments: { value: FeedbackSentiment; emoji: string; label: string }[] = [
@@ -52,6 +59,7 @@ const sentiments: { value: FeedbackSentiment; emoji: string; label: string }[] =
 export function FeedbackWidget({ className, variant = "sidebar", isCollapsed: isCollapsedProp }: FeedbackWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [category, setCategory] = useState<FeedbackCategory>("ai");
+  const [area, setArea] = useState<FeedbackArea>("general");
   const [sentiment, setSentiment] = useState<FeedbackSentiment | null>(null);
   const [message, setMessage] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -62,6 +70,7 @@ export function FeedbackWidget({ className, variant = "sidebar", isCollapsed: is
 
   const resetForm = () => {
     setCategory("ai");
+    setArea("general");
     setSentiment(null);
     setMessage("");
     setIsSuccess(false);
@@ -77,7 +86,10 @@ export function FeedbackWidget({ className, variant = "sidebar", isCollapsed: is
           sentiment,
           message: message.trim(),
           pageUrl: window.location.href,
-          metadata: { userAgent: navigator.userAgent },
+          metadata: {
+            area,
+            userAgent: navigator.userAgent,
+          },
         });
 
         setIsSuccess(true);
@@ -185,6 +197,29 @@ export function FeedbackWidget({ className, variant = "sidebar", isCollapsed: is
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+
+            {/* Area selector */}
+            <div className="px-4 pt-3">
+              <p className="text-xs text-muted-foreground mb-2">Área</p>
+              <div className="flex gap-1.5">
+                {areas.map(({ value, label, icon: Icon }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setArea(value)}
+                    className={cn(
+                      "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border",
+                      area === value
+                        ? "bg-[#934f2c]/10 border-[#934f2c]/30 text-[#934f2c]"
+                        : "border-transparent bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                  >
+                    <Icon className="size-3.5" />
+                    {label}
+                  </button>
+                ))}
               </div>
             </div>
 
