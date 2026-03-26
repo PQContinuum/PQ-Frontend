@@ -14,7 +14,32 @@ function isHlsUrl(url: string): boolean {
   return url.includes('.m3u8');
 }
 
+function isCloudflareUrl(url: string): boolean {
+  return url.includes('cloudflarestream.com') || url.includes('videodelivery.net');
+}
+
+/**
+ * Open a URL as a download via the browser (handles redirects natively).
+ * Used for Cloudflare URLs that return 302 redirects which fail with fetch() due to CORS.
+ */
+function openDownloadUrl(url: string): void {
+  const a = document.createElement('a');
+  a.href = url;
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
 async function downloadFile(url: string, filename: string): Promise<void> {
+  // Cloudflare URLs return 302 redirects that fail with fetch() due to CORS
+  // Open them directly and let the browser handle the redirect
+  if (isCloudflareUrl(url)) {
+    openDownloadUrl(url);
+    return;
+  }
+
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Download failed: ${response.status}`);
