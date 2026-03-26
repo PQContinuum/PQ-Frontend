@@ -938,6 +938,23 @@ export const userApi = {
       status: data.hasActiveSubscription ? "active" : "inactive",
     } as UserPlan;
   },
+
+  /**
+   * Get account statistics for settings dialog
+   */
+  getStats: () =>
+    apiGet<{
+      conversationCount: number;
+      messageCount: number;
+      createdAt: string;
+      emailVerified: boolean;
+      subscription: {
+        planName: string;
+        status: string;
+        currentPeriodEnd: string | null;
+        cancelAtPeriodEnd: boolean;
+      } | null;
+    }>("/users/me/stats"),
 };
 
 export const billingApi = {

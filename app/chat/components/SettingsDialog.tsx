@@ -23,6 +23,9 @@ import {
   HelpCircle,
   Trash,
   ChevronRight,
+  MessageCircle,
+  Hash,
+  Calendar,
 } from 'lucide-react';
 import {
   Dialog,
@@ -33,6 +36,7 @@ import { ChatGPTImportDialog } from './ChatGPTImportDialog';
 import { DeleteCharacterModal } from './lisa/DeleteCharacterModal';
 import { billingApi } from '@/lib/api-client';
 import { useCharacters } from '@/hooks/use-characters';
+import { useAccountStats } from '@/hooks/use-account-stats';
 import type { Character } from '@/lib/lisa/types';
 
 const CHATGPT_GREEN = '#10a37f';
@@ -80,6 +84,14 @@ const planFeatures: Record<string, string[]> = {
   ],
 };
 
+function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString('es-MX', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
 // --- Shared sub-components ---
 
 function SectionHeader({ title, subtitle }: { title: string; subtitle: string }) {
@@ -114,6 +126,29 @@ function SettingsCard({ children, className }: { children: React.ReactNode; clas
   );
 }
 
+function StatItem({ icon: Icon, label, value, loading }: {
+  icon: React.ElementType;
+  label: string;
+  value: number | string;
+  loading?: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-3 py-2">
+      <div className="size-8 rounded-lg bg-neutral-50 flex items-center justify-center">
+        <Icon className="size-4 text-[#bbb]" />
+      </div>
+      <div className="flex-1">
+        <p className="text-[12px] text-[#999]">{label}</p>
+      </div>
+      {loading ? (
+        <Loader2 className="size-3.5 text-[#ccc] animate-spin" />
+      ) : (
+        <p className="text-[13px] font-semibold text-[#111]">{value}</p>
+      )}
+    </div>
+  );
+}
+
 // --- Main component ---
 
 export function SettingsDialog({
@@ -131,6 +166,7 @@ export function SettingsDialog({
   const isFree = userPlan.toLowerCase() === 'gratis' || userPlan.toLowerCase() === 'free';
 
   const { data: characters, isLoading: isLoadingCharacters } = useCharacters();
+  const { data: stats, isLoading: isLoadingStats } = useAccountStats(open);
 
   const handleManageSubscription = React.useCallback(async () => {
     setIsLoadingPortal(true);
@@ -213,10 +249,22 @@ export function SettingsDialog({
                           <p className="text-[13px] font-medium text-[#111] truncate">
                             {userEmail || 'No disponible'}
                           </p>
-                          <p className="text-[12px] text-[#10b981] font-medium flex items-center gap-1">
-                            <Check className="size-3" />
-                            Verificado
-                          </p>
+                          {isLoadingStats ? (
+                            <Loader2 className="size-3 text-[#ccc] animate-spin mt-1" />
+                          ) : (
+                            <p className={`text-[12px] font-medium flex items-center gap-1 ${
+                              stats?.emailVerified ? 'text-[#10b981]' : 'text-[#999]'
+                            }`}>
+                              {stats?.emailVerified ? (
+                                <>
+                                  <Check className="size-3" />
+                                  Verificado
+                                </>
+                              ) : (
+                                'Sin verificar'
+                              )}
+                            </p>
+                          )}
                         </div>
                         <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${
                           isFree
@@ -226,6 +274,30 @@ export function SettingsDialog({
                           {planColors.label}
                         </span>
                       </div>
+                    </SettingsCard>
+
+                    {/* Stats */}
+                    <SettingsCard>
+                      <StatItem
+                        icon={MessageCircle}
+                        label="Conversaciones"
+                        value={stats?.conversationCount ?? 0}
+                        loading={isLoadingStats}
+                      />
+                      <div className="border-t border-black/[0.04] my-1" />
+                      <StatItem
+                        icon={Hash}
+                        label="Mensajes enviados"
+                        value={stats?.messageCount ?? 0}
+                        loading={isLoadingStats}
+                      />
+                      <div className="border-t border-black/[0.04] my-1" />
+                      <StatItem
+                        icon={Calendar}
+                        label="Miembro desde"
+                        value={stats?.createdAt ? formatDate(stats.createdAt) : '—'}
+                        loading={isLoadingStats}
+                      />
                     </SettingsCard>
 
                     {/* Upgrade banner - only for free users */}
@@ -311,6 +383,13 @@ export function SettingsDialog({
                           ? 'Acceso básico a Continuum AI'
                           : `Funciones premium de ${planColors.label} activas`}
                       </p>
+                      {stats?.subscription?.currentPeriodEnd && !isFree && (
+                        <p className="text-[12px] opacity-70 mt-2">
+                          {stats.subscription.cancelAtPeriodEnd
+                            ? `Se cancela el ${formatDate(stats.subscription.currentPeriodEnd)}`
+                            : `Renueva el ${formatDate(stats.subscription.currentPeriodEnd)}`}
+                        </p>
+                      )}
                     </div>
 
                     {/* Features */}
@@ -394,6 +473,20 @@ export function SettingsDialog({
                       title="Datos"
                       subtitle="Importa, exporta y gestiona tus conversaciones"
                     />
+
+                    {/* Stats summary */}
+                    {stats && (
+                      <div className="flex gap-4">
+                        <div className="flex-1 rounded-xl bg-neutral-50 border border-black/[0.06] p-4 text-center">
+                          <p className="text-xl font-bold text-[#111]">{stats.conversationCount}</p>
+                          <p className="text-[11px] text-[#999] mt-0.5">conversaciones</p>
+                        </div>
+                        <div className="flex-1 rounded-xl bg-neutral-50 border border-black/[0.06] p-4 text-center">
+                          <p className="text-xl font-bold text-[#111]">{stats.messageCount}</p>
+                          <p className="text-[11px] text-[#999] mt-0.5">mensajes</p>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Import from ChatGPT */}
                     <SettingsCard>
