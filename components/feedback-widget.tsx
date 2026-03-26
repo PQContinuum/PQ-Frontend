@@ -212,18 +212,18 @@ export function FeedbackWidget({ className, variant = "sidebar", isCollapsed: is
                     className={cn(
                       "flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-all border",
                       area === value
-                        ? "bg-[#934f2c]/10 border-[#934f2c]/30"
+                        ? "bg-[#FF8B3D]/10 border-[#FF8B3D]/25"
                         : "border-transparent bg-muted/30 hover:bg-muted/60"
                     )}
                   >
                     <Icon className={cn(
                       "size-4 shrink-0",
-                      area === value ? "text-[#934f2c]" : "text-muted-foreground"
+                      area === value ? "text-[#FF8B3D]" : "text-muted-foreground"
                     )} />
                     <div className="min-w-0">
                       <p className={cn(
                         "text-xs font-medium",
-                        area === value ? "text-[#934f2c]" : "text-foreground"
+                        area === value ? "text-[#111]" : "text-foreground"
                       )}>{label}</p>
                       <p className="text-[10px] text-muted-foreground">{description}</p>
                     </div>
