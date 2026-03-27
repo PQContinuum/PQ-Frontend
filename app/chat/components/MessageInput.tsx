@@ -1887,7 +1887,7 @@ export const MessageInput = memo(function MessageInput() {
                 {/* Mode selector: Text or Image */}
                 <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
                   {VIDEO_MODES.map((mode) => {
-                    const isAllowed = videoUsage?.allowedModes?.includes(mode.value) || mode.value === 'text-to-video';
+                    const isAllowed = videoUsage?.allowedModes?.includes(mode.value) ?? true;
                     const isSelected = videoModeType === mode.value;
 
                     if (!isAllowed) {
@@ -1896,7 +1896,7 @@ export const MessageInput = memo(function MessageInput() {
                         <div
                           key={mode.value}
                           className="relative flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-gray-400 cursor-not-allowed"
-                          title="Actualiza a Professional para desbloquear"
+                          title="Actualiza tu plan para desbloquear"
                         >
                           <span className="grayscale opacity-50">{mode.icon}</span>
                           <span>{mode.label}</span>
@@ -1938,7 +1938,7 @@ export const MessageInput = memo(function MessageInput() {
                 {/* Aspect ratio selector */}
                 <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
                   {VIDEO_ASPECT_RATIOS.map((ratio) => {
-                    const isAllowed = videoUsage?.allowedAspectRatios?.includes(ratio.value) || ratio.value === '16:9';
+                    const isAllowed = videoUsage?.allowedAspectRatios?.includes(ratio.value) ?? true;
                     const isSelected = videoAspectRatio === ratio.value;
 
                     if (!isAllowed) {
@@ -1976,7 +1976,7 @@ export const MessageInput = memo(function MessageInput() {
                 {/* Duration selector */}
                 <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
                   {VIDEO_DURATIONS.map((dur) => {
-                    const isAllowed = videoUsage?.allowedDurations?.includes(dur.value) || dur.value === '5';
+                    const isAllowed = videoUsage?.allowedDurations?.includes(dur.value) ?? true;
                     const isSelected = videoDuration === dur.value;
 
                     if (!isAllowed) {
@@ -1984,7 +1984,7 @@ export const MessageInput = memo(function MessageInput() {
                         <div
                           key={dur.value}
                           className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-gray-400 cursor-not-allowed"
-                          title="Actualiza a Professional para desbloquear"
+                          title="Actualiza tu plan para desbloquear"
                         >
                           <span>{dur.label}</span>
                           <Lock className="size-2.5" />

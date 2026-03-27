@@ -1,7 +1,9 @@
 'use client';
 
+import { useEffect } from 'react';
 import { Lock, RectangleHorizontal, RectangleVertical, Square } from 'lucide-react';
 import { useLisaWizardStore } from '@/hooks/use-lisa-wizard';
+import { useVideoGeneration } from '@/hooks/useVideoGeneration';
 import { useUserPlan } from '@/hooks/use-user-plan';
 import {
   RESOLUTION_OPTIONS,
@@ -23,9 +25,15 @@ export function QualityStep() {
   const quality = useLisaWizardStore((s) => s.quality);
   const setQuality = useLisaWizardStore((s) => s.setQuality);
   const { data: userPlan } = useUserPlan();
+  const { usage: videoUsage, fetchUsage } = useVideoGeneration();
 
   const hasPremiumAccess = PREMIUM_PLANS.includes(userPlan?.planName ?? '');
   const isVideo = contentType === 'video';
+
+  // Fetch fresh usage data from backend when step mounts
+  useEffect(() => {
+    if (isVideo) fetchUsage();
+  }, [isVideo, fetchUsage]);
 
   return (
     <div className="space-y-6">
@@ -156,7 +164,7 @@ export function QualityStep() {
             </div>
           </div>
 
-          {/* Duration */}
+          {/* Duration — uses backend allowedDurations as source of truth */}
           <div>
             <h3 className="text-sm font-medium text-gray-700 mb-2">
               Duración
@@ -164,7 +172,10 @@ export function QualityStep() {
             <div className="flex gap-2">
               {DURATION_OPTIONS.map((option) => {
                 const isSelected = quality.duration === option.value;
-                const isLocked = option.premium && !hasPremiumAccess;
+                // Use backend data if available, fallback to premium flag
+                const isLocked = videoUsage
+                  ? !videoUsage.allowedDurations.includes(option.value)
+                  : (option.premium && !hasPremiumAccess);
                 return (
                   <button
                     key={option.value}

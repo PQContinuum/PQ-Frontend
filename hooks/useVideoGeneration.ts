@@ -151,18 +151,55 @@ export function useVideoGeneration(): UseVideoGenerationReturn {
         return { success: false, error: errorMsg };
       }
 
-      // Check if mode is allowed by plan
-      if (usage && options.mode && !usage.allowedModes.includes(options.mode)) {
-        const errorMsg = 'Tu plan no incluye este modo de generación';
-        setState((s) => ({ ...s, error: errorMsg }));
-        return { success: false, error: errorMsg };
+      // Re-fetch fresh usage from backend before validating plan limits
+      let freshUsage = usage;
+      try {
+        const data = await videoGenApi.getUsage();
+        if (data.usage) {
+          freshUsage = {
+            todayCount: data.usage.dailyCount,
+            monthCount: data.usage.monthlyCount,
+            dailyLimit: data.usage.dailyLimit,
+            monthlyLimit: data.usage.monthlyLimit,
+            remainingToday: data.usage.dailyLimit - data.usage.dailyCount,
+            remainingMonth: data.usage.monthlyLimit - data.usage.monthlyCount,
+            allowedDurations: data.usage.allowedDurations as VideoGenDuration[],
+            allowedAspectRatios: data.usage.allowedAspectRatios as VideoGenAspectRatio[],
+            allowedModes: data.usage.allowedModes as VideoGenMode[],
+            audioEnabled: data.usage.audioEnabled,
+            planName: data.usage.planName,
+          };
+          setUsage(freshUsage);
+        }
+      } catch {
+        // If re-fetch fails, proceed without frontend validation — backend will validate
       }
 
-      // Check if duration is allowed by plan
-      if (usage && options.duration && !usage.allowedDurations.includes(options.duration)) {
-        const errorMsg = 'Tu plan no permite esta duración';
-        setState((s) => ({ ...s, error: errorMsg }));
-        return { success: false, error: errorMsg };
+      // Validate against fresh backend data (skip if usage couldn't be loaded)
+      if (freshUsage) {
+        if (options.mode && !freshUsage.allowedModes.includes(options.mode)) {
+          const errorMsg = 'Tu plan no incluye este modo de generación';
+          setState((s) => ({ ...s, error: errorMsg }));
+          return { success: false, error: errorMsg };
+        }
+
+        if (options.duration && !freshUsage.allowedDurations.includes(options.duration)) {
+          const errorMsg = 'Tu plan no permite esta duración. Actualiza tu plan para desbloquearla.';
+          setState((s) => ({ ...s, error: errorMsg }));
+          return { success: false, error: errorMsg };
+        }
+
+        if (freshUsage.remainingToday <= 0) {
+          const errorMsg = 'Has alcanzado el límite diario de videos';
+          setState((s) => ({ ...s, error: errorMsg }));
+          return { success: false, error: errorMsg };
+        }
+
+        if (freshUsage.remainingMonth <= 0) {
+          const errorMsg = 'Has alcanzado el límite mensual de videos';
+          setState((s) => ({ ...s, error: errorMsg }));
+          return { success: false, error: errorMsg };
+        }
       }
 
       // Reset last completed job ref for new generation
