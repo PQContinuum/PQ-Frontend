@@ -5,7 +5,7 @@ import { persist, devtools, subscribeWithSelector } from 'zustand/middleware';
 import {
   type Language,
   type Gender,
-  type OpenAIVoice,
+  type ContinuumVoice,
   getVoice,
   DEFAULT_TTS_SETTINGS,
 } from '@/utils/voiceMapping';
@@ -46,7 +46,7 @@ interface TTSSettingsState {
   // Actions
   setLanguage: (language: Language) => void;
   setGender: (gender: Gender) => void;
-  getSelectedVoice: () => OpenAIVoice;
+  getSelectedVoice: () => ContinuumVoice;
   reset: () => void;
   setHasHydrated: (state: boolean) => void;
 }
@@ -78,7 +78,7 @@ export const useTTSSettings = create<TTSSettingsState>()(
             }
           },
 
-          getSelectedVoice: (): OpenAIVoice => {
+          getSelectedVoice: (): ContinuumVoice => {
             const { language, gender } = get();
             return getVoice(language, gender);
           },

@@ -3,7 +3,7 @@ import type { ChatCompletionMessageParam, ChatCompletionContentPart } from "open
 import { getPqChatInstructions } from "@/lib/pq-instructions";
 
 const apiKey = process.env.OPENAI_API_KEY;
-const model = process.env.OPENAI_MODEL ?? "gpt-5.2"; // GPT-5.2: Latest flagship model (Dec 2025) - 400K context, best for coding & planning
+const model = process.env.OPENAI_MODEL ?? "gpt-5.2"; // Continuum Ultra: Latest flagship model - 400K context, best for coding & planning
 
 if (!apiKey) {
     throw new Error("OPENAI_API_KEY is required");
@@ -283,7 +283,7 @@ async function buildMessages(
 }
 
 /**
- * Returns a streaming reply from the OpenAI Chat Completions API with vision support.
+ * Returns a streaming reply from the Continuum AI API with vision support.
  */
 export async function streamAssistantReply(
     message: string,
@@ -346,11 +346,11 @@ export async function getAssistantReply(
             return content;
         }
 
-        console.error("OpenAI response did not contain valid content:", JSON.stringify(response, null, 2));
-        throw new Error("No content received from OpenAI.");
+        console.error("AI response did not contain valid content:", JSON.stringify(response, null, 2));
+        throw new Error("No content received from AI.");
 
     } catch (error) {
         console.error("Error getting assistant reply from Chat Completions API:", error);
-        throw new Error("Failed to get response from OpenAI.");
+        throw new Error("Failed to get response from AI.");
     }
 }

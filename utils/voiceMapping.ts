@@ -1,8 +1,8 @@
 /**
- * OpenAI TTS Voice Mapping
- * Maps language + gender combinations to optimal OpenAI voices
+ * Continuum Voice Mapping
+ * Maps language + gender combinations to optimal Continuum voices
  *
- * Available voices for tts-1 (fast model):
+ * Available voices for Continuum Voice:
  * alloy, ash, coral, echo, fable, nova, onyx, sage, shimmer
  *
  * Voice characteristics:
@@ -18,10 +18,10 @@
 
 export type Language = 'es' | 'en';
 export type Gender = 'female' | 'male';
-export type OpenAIVoice = 'alloy' | 'ash' | 'coral' | 'echo' | 'fable' | 'nova' | 'onyx' | 'sage' | 'shimmer';
+export type ContinuumVoice = 'alloy' | 'ash' | 'coral' | 'echo' | 'fable' | 'nova' | 'onyx' | 'sage' | 'shimmer';
 
 export interface VoiceConfig {
-  voice: OpenAIVoice;
+  voice: ContinuumVoice;
   label: string;
   description: string;
 }
@@ -58,9 +58,9 @@ export const VOICE_MAP: Record<Language, Record<Gender, VoiceConfig>> = {
 };
 
 /**
- * Get the OpenAI voice name for a given language and gender
+ * Get the Continuum voice name for a given language and gender
  */
-export function getVoice(language: Language, gender: Gender): OpenAIVoice {
+export function getVoice(language: Language, gender: Gender): ContinuumVoice {
   return VOICE_MAP[language][gender].voice;
 }
 

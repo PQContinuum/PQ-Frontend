@@ -81,7 +81,7 @@ import { extractFirstUrl, getLinkTypeFromUrl } from '@/lib/link-resolver';
  * - No es clickeable
  */
 const FEATURE_FLAGS = {
-  imageGeneration: true,   // Generar imagen - OpenAI (gpt-image-1) via Backend /api/v1/image-gen
+  imageGeneration: true,   // Generar imagen - Continuum Canvas via Backend /api/v1/image-gen
   videoGeneration: true,   // Generar video - Minimax Video via Fal.ai
   geoCultural: true,       // GeoCultural mode
   fileUpload: true,        // Subir archivos

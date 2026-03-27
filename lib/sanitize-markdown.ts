@@ -1,5 +1,5 @@
 /**
- * Sanitize malformed markdown from AI model output (OpenAI GPT).
+ * Sanitize malformed markdown from AI model output.
  *
  * Fixes common issues with bold markers, list delimiters, and punctuation.
  * Uses parity-based ** detection (even index = opening, odd = closing)

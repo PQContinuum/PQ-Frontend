@@ -84,7 +84,7 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
           echoCancellation: true,      // Remove echo from speakers
           noiseSuppression: true,      // Reduce background noise
           autoGainControl: true,       // Normalize volume levels (5-10% WER improvement)
-          sampleRate: { ideal: 24000 }, // 24kHz optimal for gpt-4o-transcribe models
+          sampleRate: { ideal: 24000 }, // 24kHz optimal for Continuum Listen
           channelCount: { ideal: 1 },  // Mono is sufficient for speech
         },
       });

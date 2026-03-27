@@ -30,7 +30,7 @@ interface ImageGenUsage {
   allowedSizes: ImageGenSize[];
   maxResolution: string;
   planName: string;
-  // gpt-image-1 specific
+  // Continuum Canvas specific
   streamingEnabled: boolean;
   partialImages: number;
   premiumStyles: boolean;
@@ -184,14 +184,14 @@ export function useImageGeneration(): UseImageGenerationReturn {
     []
   );
 
-  // Generate with streaming (falls back to regular generation since gpt-image-1 doesn't support partial images)
+  // Generate with streaming (falls back to regular generation since Continuum Canvas doesn't support partial images)
   const generateWithStreaming = useCallback(
     async (
       prompt: string,
       options: GenerateOptions = {},
       _onPartialImage?: (image: string, index: number) => void
     ): Promise<GenerateResult> => {
-      // gpt-image-1 doesn't support partial image streaming, so we use regular generation
+      // Continuum Canvas doesn't support partial image streaming, so we use regular generation
       return generate(prompt, options);
     },
     [generate]

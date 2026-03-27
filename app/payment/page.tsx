@@ -20,6 +20,7 @@ import { useRouter } from 'next/navigation';
 import { useUserPlan } from '@/hooks/use-user-plan';
 import { billingApi, userApi, type PlanFeatureConfig } from '@/lib/api-client';
 import { getSupabaseBrowserClient } from '@/lib/supabase';
+import { mapModelName } from '@/lib/model-names';
 
 const PLAN_ICONS: Record<string, typeof Zap> = {
   Free: Zap,
@@ -252,7 +253,7 @@ export default function PaymentPage() {
                         key={index}
                       >
                         <Check className="h-5 w-5 text-[#FF8B3D] flex-shrink-0 mt-0.5" />
-                        <span>{feature}</span>
+                        <span>{mapModelName(feature)}</span>
                       </div>
                     ))}
                   </CardContent>

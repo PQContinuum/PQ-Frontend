@@ -2,7 +2,7 @@
  * IMAGE GENERATION STYLE PRESETS
  * ==============================
  *
- * Presets de estilos para OpenAI GPT Image (gpt-image-1)
+ * Presets de estilos para Continuum Canvas
  * Cada preset modifica el prompt para lograr un estilo específico
  * Compatible con text-to-image y image-to-image
  */

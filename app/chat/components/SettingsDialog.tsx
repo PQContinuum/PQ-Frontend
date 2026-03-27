@@ -27,6 +27,7 @@ import {
   Hash,
   Calendar,
 } from 'lucide-react';
+import { getModelDisplayName } from '@/lib/model-names';
 import {
   Dialog,
   DialogContent,
@@ -403,7 +404,7 @@ export function SettingsDialog({
                       </div>
                       {usageData?.chat?.model && (
                         <p className="text-[13px] opacity-90">
-                          Modelo de chat: {usageData.chat.model.label}
+                          Modelo de chat: {getModelDisplayName(usageData.chat.model.model) || usageData.chat.model.label}
                         </p>
                       )}
                       {stats?.subscription?.currentPeriodEnd && !isFree && (

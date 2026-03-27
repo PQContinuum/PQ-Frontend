@@ -36,7 +36,7 @@ export type TTSPlanLimits = {
  * LÍMITES DE TTS POR PLAN
  * =======================
  * Basado en análisis financiero:
- * - Costo OpenAI TTS: ~$0.01 USD por reproducción
+ * - Costo Continuum Voice: ~$0.01 USD por reproducción
  * - Objetivo: mantener costo TTS ≤ 25-30% del precio del plan
  */
 export const TTS_LIMITS: Record<PlanName, TTSPlanLimits> = {
@@ -77,13 +77,13 @@ export function getTTSLimits(planName: PlanName | null | undefined): TTSPlanLimi
 }
 
 // ============================================================================
-// IMAGE GENERATION (OpenAI GPT Image) LIMITS
+// IMAGE GENERATION (Continuum Canvas) LIMITS
 // ============================================================================
 
-// GPT Image quality levels: low, medium, high
+// Continuum Canvas quality levels: low, medium, high
 export type ImageGenQuality = 'low' | 'medium' | 'high';
 
-// GPT Image sizes: 1024x1024, 1024x1536 (portrait), 1536x1024 (landscape)
+// Continuum Canvas sizes: 1024x1024, 1024x1536 (portrait), 1536x1024 (landscape)
 export type ImageGenSize = '1024x1024' | '1024x1536' | '1536x1024' | 'auto';
 
 // Style presets are managed in lib/image-gen/style-presets.ts
@@ -100,8 +100,8 @@ export type ImageGenPlanLimits = {
   maxImagesPerMonth: number;
   // Si tiene acceso a generación de imágenes
   imageGenEnabled: boolean;
-  // Modelo usado (OpenAI GPT Image)
-  allowedModels: ('gpt-image-1')[];
+  // Modelo usado (Continuum Canvas)
+  allowedModels: ('continuum-canvas')[];
   // Calidades permitidas (low, medium, high)
   allowedQualities: ImageGenQuality[];
   // Resolución máxima permitida
@@ -113,9 +113,9 @@ export type ImageGenPlanLimits = {
 };
 
 /**
- * LÍMITES DE GENERACIÓN DE IMÁGENES POR PLAN (OpenAI GPT Image)
+ * LÍMITES DE GENERACIÓN DE IMÁGENES POR PLAN (Continuum Canvas)
  * ==============================================================
- * Precios GPT Image (2025):
+ * Precios Continuum Canvas (2025):
  * - 1024x1024: low ~$0.02, medium ~$0.04, high ~$0.08
  * - 1024x1536 / 1536x1024: low ~$0.04, medium ~$0.08, high ~$0.16
  * - Soporta image-to-image con referencia
@@ -126,7 +126,7 @@ export const IMAGE_GEN_LIMITS: Record<PlanName, ImageGenPlanLimits> = {
     maxImagesPerDay: 5,
     maxImagesPerMonth: 25,
     imageGenEnabled: true,
-    allowedModels: ['gpt-image-1'],
+    allowedModels: ['continuum-canvas'],
     allowedQualities: ['low'],              // Solo low quality
     maxResolution: '1024x1024',
     premiumStyles: false,
@@ -136,7 +136,7 @@ export const IMAGE_GEN_LIMITS: Record<PlanName, ImageGenPlanLimits> = {
     maxImagesPerDay: 15,
     maxImagesPerMonth: 150,
     imageGenEnabled: true,
-    allowedModels: ['gpt-image-1'],
+    allowedModels: ['continuum-canvas'],
     allowedQualities: ['low', 'medium'],    // Low + Medium
     maxResolution: '1024x1024',
     premiumStyles: false,
@@ -146,7 +146,7 @@ export const IMAGE_GEN_LIMITS: Record<PlanName, ImageGenPlanLimits> = {
     maxImagesPerDay: 35,
     maxImagesPerMonth: 400,
     imageGenEnabled: true,
-    allowedModels: ['gpt-image-1'],
+    allowedModels: ['continuum-canvas'],
     allowedQualities: ['low', 'medium', 'high'], // Todas las calidades
     maxResolution: '1536x1024',
     premiumStyles: true,
@@ -156,7 +156,7 @@ export const IMAGE_GEN_LIMITS: Record<PlanName, ImageGenPlanLimits> = {
     maxImagesPerDay: 100,
     maxImagesPerMonth: 1500,
     imageGenEnabled: true,
-    allowedModels: ['gpt-image-1'],
+    allowedModels: ['continuum-canvas'],
     allowedQualities: ['low', 'medium', 'high'],
     maxResolution: '1536x1024',
     premiumStyles: true,
@@ -175,14 +175,14 @@ export function getImageGenLimits(planName: PlanName | null | undefined): ImageG
 }
 
 /**
- * Calcula el costo de una imagen según sus parámetros (OpenAI GPT Image)
- * Precios estimados basados en la documentación de OpenAI 2025
+ * Calcula el costo de una imagen según sus parámetros (Continuum Canvas)
+ * Precios estimados (2025)
  */
 export function calculateImageCost(
   quality: ImageGenQuality,
   size: ImageGenSize
 ): number {
-  // GPT Image pricing (estimated USD per image)
+  // Continuum Canvas pricing (estimated USD per image)
   // 1024x1024: low ~$0.02, medium ~$0.04, high ~$0.08
   // 1024x1536 / 1536x1024: low ~$0.04, medium ~$0.08, high ~$0.16
 
