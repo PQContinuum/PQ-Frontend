@@ -34,9 +34,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { ChatGPTImportDialog } from './ChatGPTImportDialog';
 import { DeleteCharacterModal } from './lisa/DeleteCharacterModal';
-import { billingApi } from '@/lib/api-client';
+import { billingApi, userApi } from '@/lib/api-client';
+import type { ConsolidatedUsage } from '@/lib/api-client';
 import { useCharacters } from '@/hooks/use-characters';
 import { useAccountStats, useMessageCount } from '@/hooks/use-account-stats';
+import { useQuery } from '@tanstack/react-query';
 import type { Character } from '@/lib/lisa/types';
 
 const CHATGPT_GREEN = '#10a37f';
@@ -68,21 +70,31 @@ const getPlanColors = (plan: string) => {
   return { bg: 'from-[#888] to-[#666]', label: 'Gratis' };
 };
 
-const planFeatures: Record<string, string[]> = {
-  free: [
-    'Conversaciones básicas',
-    'Historial de 7 días',
-    'Modelos estándar',
-    'Soporte por comunidad',
-  ],
-  paid: [
-    'Conversaciones ilimitadas',
-    'Historial completo',
-    'Modelos avanzados',
-    'Soporte prioritario 24/7',
-    'Integraciones y API',
-  ],
-};
+function UsageBar({ label, used, limit, unit }: {
+  label: string;
+  used: number;
+  limit: number;
+  unit?: string;
+}) {
+  const pct = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
+  const color = pct >= 90 ? '#ef4444' : pct >= 70 ? '#f59e0b' : '#FF8B3D';
+  return (
+    <div className="py-2">
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-[12px] text-[#888]">{label}</span>
+        <span className="text-[12px] font-medium text-[#555]">
+          {used.toLocaleString()}/{limit.toLocaleString()} {unit ?? ''}
+        </span>
+      </div>
+      <div className="h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+        <div
+          className="h-full rounded-full transition-all"
+          style={{ width: `${pct}%`, backgroundColor: color }}
+        />
+      </div>
+    </div>
+  );
+}
 
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('es-MX', {
@@ -164,6 +176,13 @@ export function SettingsDialog({
 
   const planColors = getPlanColors(userPlan);
   const isFree = userPlan.toLowerCase() === 'gratis' || userPlan.toLowerCase() === 'free';
+
+  const { data: usageData, isLoading: isLoadingUsage } = useQuery<ConsolidatedUsage>({
+    queryKey: ['user-usage'],
+    queryFn: () => userApi.getUsage(),
+    enabled: open,
+    staleTime: 1000 * 60 * 2,
+  });
 
   const { data: characters, isLoading: isLoadingCharacters } = useCharacters();
   const { data: stats, isLoading: isLoadingStats } = useAccountStats(open);
@@ -368,7 +387,7 @@ export function SettingsDialog({
                   >
                     <SectionHeader
                       title="Tu plan"
-                      subtitle="Gestiona tu suscripción actual"
+                      subtitle="Gestiona tu suscripción y consulta tu uso"
                     />
 
                     {/* Current plan card */}
@@ -382,11 +401,11 @@ export function SettingsDialog({
                           <Crown className="size-5" />
                         </div>
                       </div>
-                      <p className="text-[13px] opacity-90">
-                        {isFree
-                          ? 'Acceso básico a Continuum AI'
-                          : `Funciones premium de ${planColors.label} activas`}
-                      </p>
+                      {usageData?.chat?.model && (
+                        <p className="text-[13px] opacity-90">
+                          Modelo de chat: {usageData.chat.model.label}
+                        </p>
+                      )}
                       {stats?.subscription?.currentPeriodEnd && !isFree && (
                         <p className="text-[12px] opacity-70 mt-2">
                           {stats.subscription.cancelAtPeriodEnd
@@ -396,22 +415,61 @@ export function SettingsDialog({
                       )}
                     </div>
 
-                    {/* Features */}
+                    {/* Usage this month */}
                     <SettingsCard>
                       <p className="text-[13px] font-semibold text-[#111] mb-3">
-                        Incluido en tu plan
+                        Uso este mes
                       </p>
-                      <ul className="space-y-2.5">
-                        {(isFree ? planFeatures.free : planFeatures.paid).map((feature) => (
-                          <li key={feature} className="flex items-center gap-2.5 text-[13px] text-[#666]">
-                            <div className="size-5 rounded-full bg-[#FF8B3D]/10 flex items-center justify-center shrink-0">
-                              <Check className="size-3 text-[#FF8B3D]" />
-                            </div>
-                            {feature}
-                          </li>
-                        ))}
-                      </ul>
+                      {isLoadingUsage ? (
+                        <div className="py-6 flex justify-center">
+                          <Loader2 className="size-5 text-[#ccc] animate-spin" />
+                        </div>
+                      ) : usageData ? (
+                        <div className="space-y-1">
+                          <UsageBar
+                            label="Imágenes"
+                            used={usageData.imageGen.monthCount}
+                            limit={usageData.imageGen.monthlyLimit}
+                          />
+                          <UsageBar
+                            label="Videos"
+                            used={usageData.videoGen.monthCount}
+                            limit={usageData.videoGen.monthlyLimit}
+                          />
+                          <UsageBar
+                            label="Text-to-Speech"
+                            used={usageData.tts.monthCharacters}
+                            limit={usageData.tts.monthlyLimit}
+                            unit="chars"
+                          />
+                          <div className="border-t border-black/[0.04] mt-3 pt-3 flex items-center justify-between">
+                            <span className="text-[12px] text-[#888]">Tokens de chat / día</span>
+                            <span className="text-[12px] font-medium text-[#555]">
+                              {(usageData.chat.tokensPerDay / 1000).toFixed(0)}K
+                            </span>
+                          </div>
+                        </div>
+                      ) : null}
                     </SettingsCard>
+
+                    {/* Features from backend */}
+                    {usageData?.planConfig?.display?.features && (
+                      <SettingsCard>
+                        <p className="text-[13px] font-semibold text-[#111] mb-3">
+                          Incluido en tu plan
+                        </p>
+                        <ul className="space-y-2.5">
+                          {usageData.planConfig.display.features.map((feature) => (
+                            <li key={feature} className="flex items-center gap-2.5 text-[13px] text-[#666]">
+                              <div className="size-5 rounded-full bg-[#FF8B3D]/10 flex items-center justify-center shrink-0">
+                                <Check className="size-3 text-[#FF8B3D]" />
+                              </div>
+                              {feature}
+                            </li>
+                          ))}
+                        </ul>
+                      </SettingsCard>
+                    )}
 
                     {/* CTA */}
                     {isFree ? (
@@ -420,7 +478,7 @@ export function SettingsDialog({
                           Desbloquea más con un plan premium
                         </p>
                         <p className="text-[12px] text-[#888] mb-4">
-                          Mensajes ilimitados, modelos avanzados y más
+                          Modelos avanzados, más generaciones y calidad superior
                         </p>
                         <Button
                           onClick={() => {

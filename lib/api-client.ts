@@ -955,11 +955,130 @@ export const userApi = {
         cancelAtPeriodEnd: boolean;
       } | null;
     }>("/users/me/stats"),
+
+  /**
+   * Get consolidated usage stats (images, video, TTS, chat)
+   */
+  getUsage: () =>
+    apiGet<ConsolidatedUsage>("/users/me/usage"),
 };
+
+// Plan feature config from GET /billing/plan-features
+export interface PlanFeatureConfig {
+  name: string;
+  display: {
+    name: string;
+    label: string;
+    description: string;
+    popular: boolean;
+    features: string[];
+  };
+  chat: {
+    requestsPerMinute: number;
+    tokensPerDay: number;
+    model: { model: string; label: string; maxTokens: number };
+  };
+  imageGen: {
+    daily: number;
+    monthly: number;
+    qualities: string[];
+    sizes: string[];
+    premiumStyles: boolean;
+  };
+  videoGen: {
+    daily: number;
+    monthly: number;
+    durations: string[];
+    aspectRatios: string[];
+    modes: string[];
+    audioEnabled: boolean;
+  };
+  tts: { dailyCharacters: number; monthlyCharacters: number };
+  context: { maxContextItems: number; autoExtraction: boolean; contextTokens: number };
+}
+
+// Consolidated usage type from backend
+export interface ConsolidatedUsage {
+  planName: string;
+  planConfig: {
+    display: {
+      name: string;
+      label: string;
+      description: string;
+      popular: boolean;
+      features: string[];
+    };
+    chat: {
+      requestsPerMinute: number;
+      tokensPerDay: number;
+      model: { model: string; label: string; maxTokens: number };
+    };
+    imageGen: {
+      daily: number;
+      monthly: number;
+      qualities: string[];
+      sizes: string[];
+      premiumStyles: boolean;
+    };
+    videoGen: {
+      daily: number;
+      monthly: number;
+      durations: string[];
+      aspectRatios: string[];
+      modes: string[];
+      audioEnabled: boolean;
+    };
+    tts: { dailyCharacters: number; monthlyCharacters: number };
+    context: { maxContextItems: number; autoExtraction: boolean; contextTokens: number };
+  };
+  imageGen: {
+    todayCount: number;
+    monthCount: number;
+    dailyLimit: number;
+    monthlyLimit: number;
+    remainingToday: number;
+    remainingMonth: number;
+    monthCostUsd: number;
+    percentUsed: number;
+  };
+  videoGen: {
+    todayCount: number;
+    monthCount: number;
+    dailyLimit: number;
+    monthlyLimit: number;
+    remainingToday: number;
+    remainingMonth: number;
+    monthCostUsd: number;
+    percentUsed: number;
+  };
+  tts: {
+    todayCharacters: number;
+    monthCharacters: number;
+    dailyLimit: number;
+    monthlyLimit: number;
+    remainingToday: number;
+    remainingMonth: number;
+    monthCostUsd: number;
+    percentUsed: number;
+  };
+  chat: {
+    tokensPerDay: number;
+    requestsPerMinute: number;
+    model: { model: string; label: string; maxTokens: number };
+  };
+  totalMonthCostUsd: number;
+}
 
 export const billingApi = {
   /**
-   * Get available subscription plans
+   * Get all plan configurations with limits, features, and pricing.
+   * Single source of truth from backend.
+   */
+  getPlanFeatures: () =>
+    apiGet<{ plans: PlanFeatureConfig[] }>("/billing/plan-features"),
+
+  /**
+   * Get available subscription plans (Stripe products + prices)
    */
   getPlans: () => apiGet<unknown[]>("/billing/plans"),
 

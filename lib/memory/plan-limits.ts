@@ -1,17 +1,18 @@
 /**
- * CONFIGURACIÓN DE LÍMITES POR PLAN
- * ==================================
+ * TIPOS Y CONSTANTES FRONTEND PARA PLANES
+ * =========================================
  *
- * Este archivo define los límites de todas las funcionalidades
- * según el plan de suscripción del usuario:
- * - TTS (Text-to-Speech)
- * - Generación de Imágenes (DALL-E)
- * - Memoria compartida
+ * IMPORTANTE: La fuente de verdad para límites de plan es el BACKEND.
+ * Ver: Continuum-Backend/src/common/constants/plan-limits.constants.ts
  *
- * INSTRUCCIONES PARA AJUSTAR:
- * - Modifica los valores numéricos según tu estrategia de negocio
- * - Reinicia el servidor después de cambiar estos valores
- * - Los valores están en orden: Free < Basic < Professional < Enterprise
+ * Este archivo contiene SOLO tipos TypeScript usados por los hooks del frontend.
+ * Los valores reales de límites se obtienen de los endpoints:
+ * - GET /api/v1/users/me/usage (uso consolidado)
+ * - GET /api/v1/billing/plan-features (features por plan)
+ * - GET /api/v1/image-gen (uso de imágenes)
+ * - GET /api/v1/video-gen (uso de videos)
+ *
+ * NO modifiques los valores numéricos aquí — cámbialos en el backend.
  */
 
 export type PlanName = 'Free' | 'Basic' | 'Professional' | 'Enterprise';

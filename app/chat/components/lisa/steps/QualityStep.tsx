@@ -2,6 +2,7 @@
 
 import { Lock, RectangleHorizontal, RectangleVertical, Square } from 'lucide-react';
 import { useLisaWizardStore } from '@/hooks/use-lisa-wizard';
+import { useUserPlan } from '@/hooks/use-user-plan';
 import {
   RESOLUTION_OPTIONS,
   FPS_OPTIONS,
@@ -15,11 +16,15 @@ const aspectIconMap = {
   Square,
 };
 
+const PREMIUM_PLANS = ['Professional', 'Profesional', 'Enterprise', 'Empresarial'];
+
 export function QualityStep() {
   const contentType = useLisaWizardStore((s) => s.contentType);
   const quality = useLisaWizardStore((s) => s.quality);
   const setQuality = useLisaWizardStore((s) => s.setQuality);
+  const { data: userPlan } = useUserPlan();
 
+  const hasPremiumAccess = PREMIUM_PLANS.includes(userPlan?.planName ?? '');
   const isVideo = contentType === 'video';
 
   return (
@@ -78,7 +83,7 @@ export function QualityStep() {
         <div className="flex gap-2">
           {RESOLUTION_OPTIONS.map((option) => {
             const isSelected = quality.resolution === option.value;
-            const isLocked = option.premium;
+            const isLocked = option.premium && !hasPremiumAccess;
             return (
               <button
                 key={option.value}
@@ -120,7 +125,7 @@ export function QualityStep() {
             <div className="flex gap-2">
               {FPS_OPTIONS.map((option) => {
                 const isSelected = quality.fps === option.value;
-                const isLocked = option.premium;
+                const isLocked = option.premium && !hasPremiumAccess;
                 return (
                   <button
                     key={option.value}
@@ -159,7 +164,7 @@ export function QualityStep() {
             <div className="flex gap-2">
               {DURATION_OPTIONS.map((option) => {
                 const isSelected = quality.duration === option.value;
-                const isLocked = option.premium;
+                const isLocked = option.premium && !hasPremiumAccess;
                 return (
                   <button
                     key={option.value}
@@ -192,11 +197,13 @@ export function QualityStep() {
         </>
       )}
 
-      {/* Premium hint */}
-      <p className="flex items-center justify-center gap-1.5 text-xs text-gray-400">
-        <Lock className="w-3 h-3" />
-        Opciones premium disponibles con plan Professional
-      </p>
+      {/* Premium hint — only show for users without premium access */}
+      {!hasPremiumAccess && (
+        <p className="flex items-center justify-center gap-1.5 text-xs text-gray-400">
+          <Lock className="w-3 h-3" />
+          Opciones premium disponibles con plan Professional o superior
+        </p>
+      )}
     </div>
   );
 }
