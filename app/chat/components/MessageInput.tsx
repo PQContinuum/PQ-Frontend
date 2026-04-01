@@ -587,7 +587,7 @@ export const MessageInput = memo(function MessageInput() {
       addMessage({
         id: createId(),
         role: 'user',
-        content: `🖼️ ${prompt}`,
+        content: prompt,
       });
       addMessage({
         id: createId(),
@@ -617,7 +617,7 @@ export const MessageInput = memo(function MessageInput() {
           addMessage({
             id: createId(),
             role: 'user',
-            content: `🖼️ ${prompt}`,
+            content: prompt,
           });
           addMessage({
             id: createId(),
@@ -634,7 +634,7 @@ export const MessageInput = memo(function MessageInput() {
       addMessage({
         id: createId(),
         role: 'user',
-        content: `🖼️ ${prompt}`,
+        content: prompt,
       });
       addMessage({
         id: createId(),
@@ -649,8 +649,8 @@ export const MessageInput = memo(function MessageInput() {
     const userMessageId = createId();
     const assistantMessageId = createId();
     const userContent = imageReferenceUrl
-      ? `🖼️ ${prompt}\n\n![Imagen de referencia](${imageReferenceUrl})`
-      : `🖼️ ${prompt}`;
+      ? `${prompt}\n\n![Imagen de referencia](${imageReferenceUrl})`
+      : prompt;
 
     addMessage({
       id: userMessageId,
@@ -674,7 +674,7 @@ export const MessageInput = memo(function MessageInput() {
     let currentConversationId = conversationId;
     if (!currentConversationId) {
       try {
-        const title = prompt.length > 50 ? `🖼️ ${prompt.substring(0, 47)}...` : `🖼️ ${prompt}`;
+        const title = prompt.length > 50 ? `${prompt.substring(0, 50)}...` : prompt;
         const conversation = await createConversationMutation.mutateAsync({
           title,
           projectId: pendingProjectId || undefined,
@@ -740,7 +740,7 @@ export const MessageInput = memo(function MessageInput() {
       updateMessageGenerationState(assistantMessageId, { type: 'image', status: 'error' });
     }
 
-    // Save assistant message to database with metadata
+    // Save final assistant message to database (replaces the generating placeholder)
     if (currentConversationId) {
       try {
         await conversationsApi.createMessage(currentConversationId, {
