@@ -172,26 +172,36 @@ export default function ComparisonPageEN() {
 
         {/* ── Key difference ── */}
         <section className="section-padding content-section">
-          <div className="container reveal">
-            <div className="split-layout">
-              <div className="text-content">
-                <h2 className="section-title">
-                  Key <span className="text-accent">Difference</span>
-                </h2>
-                <p className="hero-subtitle">
-                  Most platforms operate with a simple cycle:{" "}
-                  <strong>Question &rarr; Answer</strong>. ContinuumAI operates
-                  with a structured flow:
-                </p>
-              </div>
-              <div className="visual-content">
-                <p>
-                  <strong>
-                    Intent &rarr; Organization &rarr; Production &rarr;
-                    Reuse &rarr; Continuity
-                  </strong>
-                </p>
-              </div>
+          <div className="container reveal" style={{ textAlign: "center" }}>
+            <h2 className="section-title">
+              Key <span className="text-accent">Difference</span>
+            </h2>
+            <p className="hero-subtitle" style={{ marginBottom: "2.5rem" }}>
+              Most platforms operate with a simple cycle:{" "}
+              <strong style={{ color: "var(--text-primary)" }}>Question &rarr; Answer</strong>.<br />
+              ContinuumAI operates with a structured flow:
+            </p>
+            <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "12px" }}>
+              {["Intent", "Organization", "Production", "Reuse", "Continuity"].map((step, i) => (
+                <div key={step} style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <span
+                    style={{
+                      padding: "8px 20px",
+                      borderRadius: "999px",
+                      background: "rgba(255,139,61,0.08)",
+                      border: "1px solid rgba(255,139,61,0.2)",
+                      fontSize: "0.9rem",
+                      fontWeight: 600,
+                      color: "var(--accent-primary)",
+                    }}
+                  >
+                    {step}
+                  </span>
+                  {i < 4 && (
+                    <span style={{ color: "var(--text-tertiary)", fontSize: "1.1rem" }}>&rarr;</span>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         </section>
