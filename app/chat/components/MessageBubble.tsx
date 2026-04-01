@@ -1020,6 +1020,11 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
   // Check if we're generating media (either from local state or job polling)
   const isGeneratingMedia = effectiveStatus === 'generating';
 
+  // Debug: log generation state for assistant messages
+  if (!isUser && generationState) {
+    console.log('[MessageBubble]', message.id, 'generationState:', generationState, 'effectiveStatus:', effectiveStatus, 'isGeneratingMedia:', isGeneratingMedia, 'content:', message.content?.substring(0, 30));
+  }
+
   // Get the video URL from completed job or from message content
   // Fallback to resultUrl if publicUrl is not available
   const jobVideoUrl = job?.status === 'completed' && job.jobType === 'video'

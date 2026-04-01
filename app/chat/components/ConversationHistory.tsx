@@ -56,6 +56,7 @@ function mapApiMessagesToChatMessages(
           : msg.metadata;
         if (metadata?.generationState) {
           generationState = metadata.generationState as MessageGenerationState;
+          console.log('[ConversationHistory] Parsed generationState:', generationState, 'for message:', msg.id, 'content:', msg.content?.substring(0, 30));
         }
         if (Array.isArray(metadata?.citations)) {
           citations = metadata.citations as WebSearchResult[];
