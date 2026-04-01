@@ -688,6 +688,7 @@ export const MessageInput = memo(function MessageInput() {
     }
 
     // Save user message to database
+    let savedAssistantMessageId: string | null = null;
     if (currentConversationId) {
       try {
         await conversationsApi.createMessage(currentConversationId, {
@@ -696,6 +697,20 @@ export const MessageInput = memo(function MessageInput() {
         });
       } catch (error) {
         console.error('Error saving user message:', error);
+      }
+
+      // Save generating placeholder to DB so it persists on reload
+      try {
+        const res = await conversationsApi.createMessage(currentConversationId, {
+          role: 'assistant',
+          content: '',
+          metadata: JSON.stringify({
+            generationState: { type: 'image', status: 'generating' }
+          }),
+        });
+        savedAssistantMessageId = res.message?.id || null;
+      } catch (error) {
+        console.error('Error saving generating placeholder:', error);
       }
     }
 
@@ -731,17 +746,30 @@ export const MessageInput = memo(function MessageInput() {
     if (result.success) {
       assistantContent = `![Imagen generada](${result.url})`;
       updateMessage(assistantMessageId, () => assistantContent);
-      // Marcar generación como completada
       updateMessageGenerationState(assistantMessageId, { type: 'image', status: 'completed' });
     } else {
       assistantContent = `❌ ${result.error}`;
       updateMessage(assistantMessageId, () => assistantContent);
-      // Marcar generación como error
       updateMessageGenerationState(assistantMessageId, { type: 'image', status: 'error' });
     }
 
-    // Save final assistant message to database (replaces the generating placeholder)
-    if (currentConversationId) {
+    // Update the saved message in DB with final content (instead of creating a second one)
+    if (currentConversationId && savedAssistantMessageId) {
+      try {
+        await conversationsApi.updateMessage(currentConversationId, {
+          messageId: savedAssistantMessageId,
+          content: assistantContent,
+          metadata: JSON.stringify({
+            generationState: { type: 'image', status: result.success ? 'completed' : 'error' }
+          }),
+        });
+        queryClient.invalidateQueries({ queryKey: conversationKeys.detail(currentConversationId) });
+        queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
+      } catch (error) {
+        console.error('Error updating assistant message:', error);
+      }
+    } else if (currentConversationId) {
+      // Fallback: create if update wasn't possible
       try {
         await conversationsApi.createMessage(currentConversationId, {
           role: 'assistant',

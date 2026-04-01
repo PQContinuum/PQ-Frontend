@@ -487,6 +487,18 @@ export const conversationsApi = {
     ),
 
   /**
+   * Update a message in a conversation
+   */
+  updateMessage: (
+    conversationId: string,
+    data: { messageId: string; content: string; metadata?: string }
+  ) =>
+    apiPatch<{ message: Message }>(
+      `/conversations/${conversationId}/messages`,
+      data
+    ),
+
+  /**
    * Extract facts from a conversation (requires paid plan)
    */
   extractFacts: (conversationId: string) =>
