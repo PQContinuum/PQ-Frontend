@@ -82,13 +82,13 @@ export async function GET(request: Request) {
         }
 
         if (userData) {
-          // Si tiene subscription activa y NO es Free, ir a chat
-          if (userData.hasActiveSubscription && userData.planName !== 'Free') {
+          // Si tiene subscription activa, ir a chat
+          if (userData.hasActiveSubscription) {
             return NextResponse.redirect(`${origin}/chat`)
           }
         }
 
-        // Usuario nuevo, sin subscription, Free, o error del backend → payment
+        // Usuario nuevo, sin subscription, o error del backend → payment
         return NextResponse.redirect(`${origin}/payment`)
       } catch (error) {
         console.error('Error syncing user with backend:', error)

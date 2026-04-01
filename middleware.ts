@@ -82,8 +82,8 @@ export async function middleware(request: NextRequest) {
 
         if (response.ok) {
           const userData = await response.json()
-          // Solo ir a /chat si tiene suscripción activa y no es Free
-          if (userData.hasActiveSubscription && userData.planName !== 'Free') {
+          // Solo ir a /chat si tiene suscripción activa
+          if (userData.hasActiveSubscription) {
             return NextResponse.redirect(new URL('/chat', request.url))
           }
         }

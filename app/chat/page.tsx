@@ -86,13 +86,15 @@ function SidebarFooterContent({
   const userInitial = userEmail ? userEmail.charAt(0).toUpperCase() : 'U';
 
   const getPlanStyle = (planName?: string) => {
-    const p = planName?.toLowerCase() || 'free';
+    const p = planName?.toLowerCase() || 'basic';
     if (p.includes('enterprise') || p.includes('empresarial'))
       return { color: 'text-[#F59E0B]', bg: 'bg-[#F59E0B]/10' };
-    if (p.includes('professional') || p.includes('pro'))
+    if (p.includes('premium'))
       return { color: 'text-[#8B5CF6]', bg: 'bg-[#8B5CF6]/10' };
-    if (p.includes('basic') || p.includes('básico'))
+    if (p.includes('pro'))
       return { color: 'text-[#3B82F6]', bg: 'bg-[#3B82F6]/10' };
+    if (p.includes('basic') || p.includes('básico'))
+      return { color: 'text-[#FF8B3D]', bg: 'bg-[#FF8B3D]/10' };
     return { color: 'text-[#64748B]', bg: 'bg-[#64748B]/10' };
   };
 
@@ -138,7 +140,7 @@ function SidebarFooterContent({
                       : 'Usuario'}
                   </span>
                   <span className={`text-[11px] font-semibold ${planStyle.color}`}>
-                    {userPlan?.planName || 'Free'}
+                    {userPlan?.planName || 'Basic'}
                   </span>
                 </div>
               </div>
@@ -356,34 +358,34 @@ export default function ChatPage() {
                 <Volume2 className="size-4" />
               </button>
               {/*<div className={`group rounded-full border-2 px-4 py-1.5 text-sm cursor-pointer transition-all hover:shadow-lg hover:scale-105 ${
-                userPlan?.planName === 'Free' || !userPlan?.planName
-                  ? 'border-[#64748B] bg-[#64748B]/10'
-                  : userPlan?.planName === 'Básico' || userPlan?.planName === 'Basic'
+                userPlan?.planName === 'Basic' || !userPlan?.planName
+                  ? 'border-[#FF8B3D] bg-[#FF8B3D]/10'
+                  : userPlan?.planName === 'Pro'
                   ? 'border-[#3B82F6] bg-[#3B82F6]/10'
-                  : userPlan?.planName === 'Profesional' || userPlan?.planName === 'Professional'
+                  : userPlan?.planName === 'Premium'
                   ? 'border-[#8B5CF6] bg-[#8B5CF6]/10'
-                  : userPlan?.planName === 'Enterprise' || userPlan?.planName === 'Empresarial'
+                  : userPlan?.planName === 'Enterprise'
                   ? 'border-[#F59E0B] bg-[#F59E0B]/10'
                   : 'border-[#64748B] bg-[#64748B]/10'
               }`}>
                 <span className={`flex items-center gap-2 font-semibold ${
-                  userPlan?.planName === 'Free' || !userPlan?.planName
-                    ? 'text-[#64748B]'
-                    : userPlan?.planName === 'Básico' || userPlan?.planName === 'Basic'
+                  userPlan?.planName === 'Basic' || !userPlan?.planName
+                    ? 'text-[#FF8B3D]'
+                    : userPlan?.planName === 'Pro'
                     ? 'text-[#3B82F6]'
-                    : userPlan?.planName === 'Profesional' || userPlan?.planName === 'Professional'
+                    : userPlan?.planName === 'Premium'
                     ? 'text-[#8B5CF6]'
-                    : userPlan?.planName === 'Enterprise' || userPlan?.planName === 'Empresarial'
+                    : userPlan?.planName === 'Enterprise'
                     ? 'text-[#F59E0B]'
                     : 'text-[#64748B]'
                 }`}>
-                  {userPlan?.planName === 'Free' || !userPlan?.planName
-                    ? '180 tokens ahorrados'
-                    : userPlan?.planName === 'Básico' || userPlan?.planName === 'Basic'
+                  {userPlan?.planName === 'Basic' || !userPlan?.planName
                     ? '850 tokens ahorrados'
-                    : userPlan?.planName === 'Profesional' || userPlan?.planName === 'Professional'
+                    : userPlan?.planName === 'Pro'
                     ? '5k tokens ahorrados'
-                    : userPlan?.planName === 'Enterprise' || userPlan?.planName === 'Empresarial'
+                    : userPlan?.planName === 'Premium'
+                    ? '50k tokens ahorrados'
+                    : userPlan?.planName === 'Enterprise'
                     ? '180k tokens ahorrados'
                     : '180k tokens restantes'}
                 </span>
@@ -520,7 +522,7 @@ export default function ChatPage() {
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
         userEmail={userEmail}
-        userPlan={userPlan?.planName || 'Free'}
+        userPlan={userPlan?.planName || 'Basic'}
       />
 
       <TTSSettingsModal

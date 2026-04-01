@@ -9,24 +9,9 @@ export const metadata: Metadata = {
 /* ── plan data (synced with /payment and backend plan-limits) ── */
 const plans = [
   {
-    name: "FREE",
-    price: "$0",
-    priceSub: "",
-    label: "Explore and try the platform",
-    cta: { text: "Start free", href: "/chat", variant: "outline" as const },
-    features: [
-      "Chat with Continuum Lite",
-      "3 images/day (10/month)",
-      "1 short video/day (3/month)",
-      "Basic Text-to-Speech",
-      "Standard quality",
-    ],
-    featured: false,
-  },
-  {
     name: "BASIC",
-    price: "$349 MXN/mo",
-    priceSub: "",
+    price: "$10 USD/mo",
+    priceSub: "~$200 MXN/mo | 7-day free trial",
     label: "For emerging creators",
     cta: { text: "Get Started", href: "/payment", variant: "outline" as const },
     features: [
@@ -41,9 +26,9 @@ const plans = [
     featured: false,
   },
   {
-    name: "PROFESSIONAL",
-    price: "$1,499 MXN/mo",
-    priceSub: "",
+    name: "PRO",
+    price: "$20 USD/mo",
+    priceSub: "~$400 MXN/mo",
     label: "For creators and teams",
     cta: { text: "Upgrade", href: "/payment", variant: "default" as const },
     features: [
@@ -59,15 +44,11 @@ const plans = [
     featured: true,
   },
   {
-    name: "ENTERPRISE",
-    price: "$4,199 MXN/mo",
-    priceSub: "",
-    label: "For teams and businesses",
-    cta: {
-      text: "Get Started",
-      href: "/payment",
-      variant: "outline" as const,
-    },
+    name: "PREMIUM",
+    price: "$149 USD/mo",
+    priceSub: "~$2,980 MXN/mo",
+    label: "For professionals and agencies",
+    cta: { text: "Upgrade", href: "/payment", variant: "outline" as const },
     features: [
       "Chat with Continuum Pro",
       "80 images/day (1,000/month)",
@@ -76,6 +57,26 @@ const plans = [
       "High volume generation",
       "Extended memory (1,000 items)",
       "Priority support",
+    ],
+    featured: false,
+  },
+  {
+    name: "ENTERPRISE",
+    price: "Custom",
+    priceSub: "",
+    label: "For teams and businesses",
+    cta: {
+      text: "Contact Sales",
+      href: "/corporativo",
+      variant: "outline" as const,
+    },
+    features: [
+      "Everything in Premium",
+      "Custom limits",
+      "Dedicated support",
+      "Guaranteed SLA",
+      "Corporate billing",
+      "Custom integrations",
     ],
     featured: false,
   },

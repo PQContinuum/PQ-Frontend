@@ -18,7 +18,7 @@ const aspectIconMap = {
   Square,
 };
 
-const PREMIUM_PLANS = ['Professional', 'Profesional', 'Enterprise', 'Empresarial'];
+const PREMIUM_PLANS = ['Pro', 'Premium', 'Enterprise'];
 
 export function QualityStep() {
   const contentType = useLisaWizardStore((s) => s.contentType);
@@ -212,7 +212,7 @@ export function QualityStep() {
       {!hasPremiumAccess && (
         <p className="flex items-center justify-center gap-1.5 text-xs text-gray-400">
           <Lock className="w-3 h-3" />
-          Opciones premium disponibles con plan Professional o superior
+          Opciones premium disponibles con plan Pro o superior
         </p>
       )}
     </div>

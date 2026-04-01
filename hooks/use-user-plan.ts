@@ -6,9 +6,9 @@ type UserPlan = {
   userId: string | null;
   email: string | null;
   planName:
-    | "Free"
     | "Basic"
-    | "Professional"
+    | "Pro"
+    | "Premium"
     | "Enterprise"
     | "Básico"
     | "Profesional"
@@ -47,11 +47,11 @@ export function useUserPlan() {
           }
 
           // Si el usuario existe en Supabase pero el backend da 401,
-          // es un problema de sincronización — retornar plan Free
+          // es un problema de sincronización — retornar plan Basic
           return {
             userId: null,
             email: null,
-            planName: "Free",
+            planName: "Basic",
             status: "unauthenticated",
             currentPeriodEnd: undefined,
             subscription: undefined,

@@ -422,7 +422,7 @@ export interface GenerationJob {
 }
 
 export interface UserPlan {
-  planName: "Free" | "Basic" | "Professional" | "Enterprise";
+  planName: "Basic" | "Pro" | "Premium" | "Enterprise";
   status?: string;
   currentPeriodEnd?: string;
 }
@@ -930,11 +930,11 @@ export const userApi = {
       user: unknown;
       profile: unknown;
       hasActiveSubscription: boolean;
-      planName: "Free" | "Basic" | "Professional" | "Enterprise";
+      planName: "Basic" | "Pro" | "Premium" | "Enterprise";
     }>("/users/me");
 
     return {
-      planName: data.planName || "Free",
+      planName: data.planName || "Basic",
       status: data.hasActiveSubscription ? "active" : "inactive",
     } as UserPlan;
   },

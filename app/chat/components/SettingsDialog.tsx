@@ -62,13 +62,15 @@ const tabs: { key: TabKey; label: string; icon: React.ElementType }[] = [
 
 const getPlanColors = (plan: string) => {
   const p = plan.toLowerCase();
-  if (p.includes('basic') || p.includes('básico'))
-    return { bg: 'from-[#FF8B3D] to-[#e67a2e]', label: 'Básico' };
-  if (p.includes('professional') || p.includes('pro'))
-    return { bg: 'from-[#c9851a] to-[#a06d12]', label: 'Profesional' };
   if (p.includes('enterprise') || p.includes('empresarial'))
     return { bg: 'from-[#1a1a2e] to-[#16213e]', label: 'Enterprise' };
-  return { bg: 'from-[#888] to-[#666]', label: 'Gratis' };
+  if (p.includes('premium'))
+    return { bg: 'from-[#8B5CF6] to-[#7C3AED]', label: 'Premium' };
+  if (p.includes('pro'))
+    return { bg: 'from-[#c9851a] to-[#a06d12]', label: 'Pro' };
+  if (p.includes('basic') || p.includes('básico'))
+    return { bg: 'from-[#FF8B3D] to-[#e67a2e]', label: 'Básico' };
+  return { bg: 'from-[#FF8B3D] to-[#e67a2e]', label: 'Basic' };
 };
 
 function UsageBar({ label, used, limit, unit }: {
@@ -176,7 +178,7 @@ export function SettingsDialog({
   const [characterToDelete, setCharacterToDelete] = React.useState<Character | null>(null);
 
   const planColors = getPlanColors(userPlan);
-  const isFree = userPlan.toLowerCase() === 'gratis' || userPlan.toLowerCase() === 'free';
+  const isBasic = userPlan.toLowerCase() === 'basic' || userPlan.toLowerCase() === 'básico';
 
   const { data: usageData, isLoading: isLoadingUsage } = useQuery<ConsolidatedUsage>({
     queryKey: ['user-usage'],
@@ -290,11 +292,7 @@ export function SettingsDialog({
                             </p>
                           )}
                         </div>
-                        <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${
-                          isFree
-                            ? 'bg-neutral-100 text-[#888]'
-                            : 'bg-[#FF8B3D]/10 text-[#FF8B3D]'
-                        }`}>
+                        <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[#FF8B3D]/10 text-[#FF8B3D]">
                           {planColors.label}
                         </span>
                       </div>
@@ -324,8 +322,8 @@ export function SettingsDialog({
                       />
                     </SettingsCard>
 
-                    {/* Upgrade banner - only for free users */}
-                    {isFree && (
+                    {/* Upgrade banner for Basic users */}
+                    {isBasic && (
                       <SettingsCard className="!bg-[#FF8B3D]/[0.04] !border-[#FF8B3D]/15">
                         <div className="flex items-center justify-between gap-4">
                           <div>
@@ -333,7 +331,7 @@ export function SettingsDialog({
                               Mejora tu experiencia
                             </h4>
                             <p className="text-[12px] text-[#888]">
-                              Desbloquea conversaciones ilimitadas y modelos avanzados
+                              Desbloquea modelos avanzados y más generaciones
                             </p>
                           </div>
                           <Button
@@ -407,7 +405,7 @@ export function SettingsDialog({
                           Modelo de chat: {getModelDisplayName(usageData.chat.model.model) || usageData.chat.model.label}
                         </p>
                       )}
-                      {stats?.subscription && !isFree && (
+                      {stats?.subscription && (
                         <div className="mt-3 pt-3 border-t border-white/15 space-y-1">
                           {stats.subscription.currentPeriodStart && (
                             <div className="flex items-center justify-between">
@@ -487,53 +485,33 @@ export function SettingsDialog({
                       </SettingsCard>
                     )}
 
-                    {/* CTA */}
-                    {isFree ? (
-                      <SettingsCard className="!border-dashed text-center">
-                        <p className="text-[13px] font-semibold text-[#111] mb-1">
-                          Desbloquea más con un plan premium
-                        </p>
-                        <p className="text-[12px] text-[#888] mb-4">
-                          Modelos avanzados, más generaciones y calidad superior
-                        </p>
-                        <Button
-                          onClick={() => {
-                            onOpenChange(false);
-                            window.location.href = '/payment';
-                          }}
-                          className="bg-[#FF8B3D] hover:bg-[#e67a2e] text-white text-[13px] px-5 h-9 font-medium"
-                        >
-                          Ver planes disponibles
-                        </Button>
-                      </SettingsCard>
-                    ) : (
-                      <SettingsCard>
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                          <div>
-                            <p className="text-[13px] font-semibold text-[#111]">
-                              Gestionar suscripción
-                            </p>
-                            <p className="text-[12px] text-[#888]">
-                              Cambia tu plan, método de pago o cancela
-                            </p>
-                          </div>
-                          <Button
-                            onClick={handleManageSubscription}
-                            disabled={isLoadingPortal}
-                            className="bg-[#FF8B3D] hover:bg-[#e67a2e] text-white text-[13px] px-5 h-9 font-medium shrink-0"
-                          >
-                            {isLoadingPortal ? (
-                              <Loader2 className="size-4 animate-spin" />
-                            ) : (
-                              <>
-                                <ExternalLink className="size-3.5 mr-1.5" />
-                                Gestionar
-                              </>
-                            )}
-                          </Button>
+                    {/* CTA - Gestionar suscripción */}
+                    <SettingsCard>
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div>
+                          <p className="text-[13px] font-semibold text-[#111]">
+                            Gestionar suscripción
+                          </p>
+                          <p className="text-[12px] text-[#888]">
+                            Cambia tu plan, método de pago o cancela
+                          </p>
                         </div>
-                      </SettingsCard>
-                    )}
+                        <Button
+                          onClick={handleManageSubscription}
+                          disabled={isLoadingPortal}
+                          className="bg-[#FF8B3D] hover:bg-[#e67a2e] text-white text-[13px] px-5 h-9 font-medium shrink-0"
+                        >
+                          {isLoadingPortal ? (
+                            <Loader2 className="size-4 animate-spin" />
+                          ) : (
+                            <>
+                              <ExternalLink className="size-3.5 mr-1.5" />
+                              Gestionar
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </SettingsCard>
                   </motion.div>
                 )}
 

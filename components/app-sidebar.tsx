@@ -183,9 +183,9 @@ const TeamLogo = ({ className }: { className?: string }) => (
 );
 
 const teams = [
-  { id: "1", name: "Alpha Inc.", logo: TeamLogo, plan: "Free" },
-  { id: "2", name: "Beta Corp.", logo: TeamLogo, plan: "Free" },
-  { id: "3", name: "Gamma Tech", logo: TeamLogo, plan: "Free" },
+  { id: "1", name: "Alpha Inc.", logo: TeamLogo, plan: "Basic" },
+  { id: "2", name: "Beta Corp.", logo: TeamLogo, plan: "Basic" },
+  { id: "3", name: "Gamma Tech", logo: TeamLogo, plan: "Basic" },
 ];
 
 export function DashboardSidebar() {

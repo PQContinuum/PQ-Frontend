@@ -23,32 +23,39 @@ import { getSupabaseBrowserClient } from '@/lib/supabase';
 import { mapModelName } from '@/lib/model-names';
 
 const PLAN_ICONS: Record<string, typeof Zap> = {
-  Free: Zap,
   Basic: Rocket,
-  Professional: Crown,
-  Enterprise: Building2,
+  Pro: Crown,
+  Premium: Building2,
+  Enterprise: Zap,
 };
 
 const PLAN_CTA: Record<string, string> = {
-  Free: 'Comenzar gratis',
-  Basic: 'Comenzar con Básico',
-  Professional: 'Actualizar a Profesional',
-  Enterprise: 'Comenzar con Enterprise',
+  Basic: 'Comenzar con Basic',
+  Pro: 'Actualizar a Pro',
+  Premium: 'Actualizar a Premium',
+  Enterprise: 'Contactar ventas',
 };
 
 // Stripe Price IDs mapped to plan names
 const STRIPE_PRICE_IDS: Record<string, { monthly: string | null; yearly: string | null }> = {
-  Free: { monthly: null, yearly: null },
-  Basic: { monthly: 'price_1TCSHTJ8yISglBa6lhICu4iP', yearly: 'price_1TCSHuJ8yISglBa6Lvq91jjF' },
-  Professional: { monthly: 'price_1TCSILJ8yISglBa63VnjElDh', yearly: 'price_1TCSIhJ8yISglBa60FWMrB88' },
-  Enterprise: { monthly: 'price_1TCSJ6J8yISglBa6ZatmhQO8', yearly: 'price_1TCSJXJ8yISglBa6TgPoSRLd' },
+  Basic: { monthly: 'PENDING_BASIC_MONTHLY', yearly: 'PENDING_BASIC_YEARLY' },
+  Pro: { monthly: 'PENDING_PRO_MONTHLY', yearly: 'PENDING_PRO_YEARLY' },
+  Premium: { monthly: 'PENDING_PREMIUM_MONTHLY', yearly: 'PENDING_PREMIUM_YEARLY' },
+  Enterprise: { monthly: null, yearly: null },
+};
+
+const PLAN_PRICES_USD: Record<string, { monthly: number | null; yearly: number | null }> = {
+  Basic: { monthly: 10, yearly: 100 },
+  Pro: { monthly: 20, yearly: 200 },
+  Premium: { monthly: 149, yearly: 1490 },
+  Enterprise: { monthly: null, yearly: null },
 };
 
 const PLAN_PRICES_MXN: Record<string, { monthly: number | null; yearly: number | null }> = {
-  Free: { monthly: null, yearly: null },
-  Basic: { monthly: 349, yearly: 3840 },
-  Professional: { monthly: 1499, yearly: 16490 },
-  Enterprise: { monthly: 4199, yearly: 46190 },
+  Basic: { monthly: 200, yearly: 2000 },
+  Pro: { monthly: 400, yearly: 4000 },
+  Premium: { monthly: 2980, yearly: 29800 },
+  Enterprise: { monthly: null, yearly: null },
 };
 
 export default function PaymentPage() {
@@ -189,10 +196,13 @@ export default function PaymentPage() {
               const Icon = PLAN_ICONS[plan.name] ?? Zap;
               const isCurrentPlan = userPlan?.planName === plan.display.name
                 || userPlan?.planName === plan.display.label;
-              const prices = PLAN_PRICES_MXN[plan.name];
-              const price = prices?.[frequency as 'monthly' | 'yearly'];
+              const pricesUsd = PLAN_PRICES_USD[plan.name];
+              const priceUsd = pricesUsd?.[frequency as 'monthly' | 'yearly'];
+              const pricesMxn = PLAN_PRICES_MXN[plan.name];
+              const priceMxn = pricesMxn?.[frequency as 'monthly' | 'yearly'];
               const isPopular = plan.display.popular;
-              const isFree = plan.name === 'Free';
+              const isEnterprise = plan.name === 'Enterprise';
+              const isBasic = plan.name === 'Basic';
               const cta = PLAN_CTA[plan.name] ?? 'Comenzar';
 
               return (
@@ -221,27 +231,37 @@ export default function PaymentPage() {
 
                     <CardTitle className="font-bold text-2xl text-white">
                       {plan.display.label}
+                      {isBasic && (
+                        <Badge className="ml-2 bg-green-500/20 text-green-400 border-green-500/30 text-xs">
+                          7 días gratis
+                        </Badge>
+                      )}
                     </CardTitle>
                     <CardDescription className="text-neutral-400">
                       {plan.display.description}
                     </CardDescription>
 
                     <div className="mt-4 px-6">
-                      {price != null ? (
+                      {priceUsd != null ? (
                         <div>
                           <div className="font-semibold text-white text-3xl">
-                            ${price}
+                            ${priceUsd}
                             <span className="text-lg text-neutral-400 font-normal">
-                              {' '}MXN/mes
+                              {' '}USD/{frequency === 'monthly' ? 'mes' : 'año'}
                             </span>
                           </div>
+                          {priceMxn != null && (
+                            <p className="text-xs text-neutral-500 mt-1">
+                              (~${priceMxn.toLocaleString()} MXN/{frequency === 'monthly' ? 'mes' : 'año'})
+                            </p>
+                          )}
                           <p className="text-xs text-neutral-500 mt-2">
                             Facturado {frequency === 'monthly' ? 'mensualmente' : 'anualmente'}
                           </p>
                         </div>
                       ) : (
                         <div className="font-semibold text-white text-xl">
-                          Gratis para siempre
+                          Personalizado
                         </div>
                       )}
                     </div>
@@ -258,10 +278,10 @@ export default function PaymentPage() {
                     ))}
                   </CardContent>
                   <CardFooter>
-                    {isFree ? (
-                      <Link href="/chat" className="w-full">
+                    {isEnterprise ? (
+                      <Link href="/corporativo" className="w-full">
                         <Button
-                          className="w-full border-white/20 bg-white text-black hover:bg-[#FF8B3D] hover:text-white hover:border-[#FF8B3D] transition-all"
+                          className="w-full border-white/20 bg-white/5 text-white hover:bg-[#FF8B3D] hover:text-white hover:border-[#FF8B3D] transition-all"
                           variant="outline"
                         >
                           {cta}
