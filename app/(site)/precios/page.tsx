@@ -6,90 +6,81 @@ export const metadata: Metadata = {
   title: "Suscripcion y Corporativo - ContinuumAI",
 };
 
-/* ── plan data ── */
+/* ── plan data (synced with /payment and backend plan-limits) ── */
 const plans = [
   {
-    name: "BASIC",
-    price: "$10 USD/mes",
-    priceSub: "(~$200 MXN)",
-    label: "Usuario Individual",
-    target: "Estudiantes, freelancers, creadores iniciando",
-    cta: { text: "Comenzar", href: "/chat", variant: "outline" as const },
+    name: "GRATIS",
+    price: "$0",
+    priceSub: "",
+    label: "Para explorar y probar la plataforma",
+    target: "",
+    cta: { text: "Comenzar gratis", href: "/chat", variant: "outline" as const },
     features: [
-      "Chat IA memoria limitada",
-      "Generacion imagenes (limite mensual)",
-      "Video corto basico",
-      "1 personaje",
-      "1 espacio almacenamiento",
-      "Seguridad estandar",
+      "Chat con Continuum Lite",
+      "3 imagenes/dia (10/mes)",
+      "1 video corto/dia (3/mes)",
+      "Text-to-Speech basico",
+      "Calidad estandar",
     ],
-    limits: ["Tokens mensuales limitados", "Sin API"],
     featured: false,
   },
   {
-    name: "PRO",
-    price: "$20 USD/mes",
-    priceSub: "(~$400 MXN)",
-    label: "Profesional / Creador",
-    target: "Creadores de contenido, consultores, pequenas empresas",
-    cta: { text: "Prueba Gratis", href: "/chat", variant: "default" as const },
+    name: "BASICO",
+    price: "$349 MXN/mes",
+    priceSub: "",
+    label: "Para creadores que inician",
+    target: "",
+    cta: { text: "Comenzar", href: "/payment", variant: "outline" as const },
     features: [
-      "Chat IA avanzado (memoria extendida)",
-      "Video avanzada",
-      "5 personajes",
-      "Almacenamiento ampliado",
-      "Automatizaciones simples",
-      "Dashboard analitico basico",
-      "Acceso parcial API",
+      "Chat con Continuum Core",
+      "8 imagenes/dia (80/mes)",
+      "3 videos/dia (15/mes)",
+      "Calidad media de imagenes",
+      "Videos con audio",
+      "Image-to-Video",
+      "Todos los aspect ratios",
     ],
-    note: "Mejor rendimiento costo-beneficio frente a OpenAI + herramientas externas. Todo centralizado.",
+    featured: false,
+  },
+  {
+    name: "PROFESIONAL",
+    price: "$1,499 MXN/mes",
+    priceSub: "",
+    label: "Para creadores y equipos",
+    target: "",
+    cta: { text: "Actualizar", href: "/payment", variant: "default" as const },
+    features: [
+      "Chat con Continuum Pro",
+      "25 imagenes/dia (300/mes)",
+      "8 videos/dia (60/mes)",
+      "Maxima calidad (4K, 60fps)",
+      "Videos largos (12s)",
+      "Estilos premium",
+      "TTS avanzado",
+      "Memoria inteligente",
+    ],
     featured: true,
   },
   {
-    name: "PREMIUM",
-    price: "$149 USD/mes",
-    priceSub: "(~$2,980 MXN)",
-    label: "Negocio / Agencia",
-    target: "Agencias, equipos de marketing, startups",
-    cta: {
-      text: "Contactar Ventas",
-      href: "mailto:ventas@continuumai.app",
-      variant: "outline" as const,
-    },
-    features: [
-      "Multiusuario (10)",
-      "Video extendido",
-      "IA entrenable datos propios",
-      "Automatizaciones complejas",
-      "API completa",
-      "Integracion CRM",
-      "Dashboard avanzado",
-      "Seguridad predictiva basica",
-    ],
-    differentiator: "White-label parcial, Control administrativo por roles",
-    featured: false,
-  },
-  {
     name: "ENTERPRISE",
-    price: "Personalizado",
+    price: "$4,199 MXN/mes",
     priceSub: "",
-    label: "Corporativo",
-    target: "Instituciones, corporativos, grandes universidades",
+    label: "Para equipos y empresas",
+    target: "",
     cta: {
-      text: "Ver Enterprise",
-      href: "/corporativo",
+      text: "Comenzar",
+      href: "/payment",
       variant: "outline" as const,
     },
     features: [
-      "Multi-tenant",
-      "Servidor dedicado/hibrido",
-      "Seguridad predictiva avanzada",
-      "Monitoreo comportamiento",
-      "IA por departamento",
-      "Integracion ERP/LMS",
-      "SLA y soporte prioritario",
+      "Chat con Continuum Pro",
+      "80 imagenes/dia (1,000/mes)",
+      "25 videos/dia (200/mes)",
+      "Todas las funciones premium",
+      "Volumen alto de generacion",
+      "Memoria extendida (1,000 items)",
+      "Soporte prioritario",
     ],
-    note: "Aqui radica el verdadero margen y la escalabilidad institucional de la plataforma.",
     featured: false,
   },
 ];
@@ -280,15 +271,13 @@ export default function PreciosPage() {
 
                     <p
                       style={{
-                        fontWeight: 600,
-                        marginTop: "1rem",
-                        marginBottom: "0.25rem",
+                        fontSize: "0.9rem",
+                        opacity: 0.6,
+                        marginTop: "0.75rem",
+                        lineHeight: 1.5,
                       }}
                     >
                       {plan.label}
-                    </p>
-                    <p style={{ fontSize: "0.85rem", opacity: 0.6, lineHeight: 1.5 }}>
-                      {plan.target}
                     </p>
 
                     {/* CTA */}
@@ -338,45 +327,6 @@ export default function PreciosPage() {
                       ))}
                     </ul>
 
-                    {/* Limits (BASIC only) */}
-                    {"limits" in plan && plan.limits && (
-                      <div style={{ marginTop: "0.75rem", opacity: 0.5, fontSize: "0.8rem" }}>
-                        {plan.limits.map((l) => (
-                          <p key={l} style={{ margin: "0.15rem 0" }}>
-                            {l}
-                          </p>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Differentiator (PREMIUM) */}
-                    {"differentiator" in plan && plan.differentiator && (
-                      <p
-                        style={{
-                          marginTop: "0.75rem",
-                          fontSize: "0.8rem",
-                          fontWeight: 600,
-                          opacity: 0.7,
-                        }}
-                      >
-                        {plan.differentiator}
-                      </p>
-                    )}
-
-                    {/* Note */}
-                    {"note" in plan && plan.note && (
-                      <p
-                        style={{
-                          marginTop: "0.75rem",
-                          fontSize: "0.8rem",
-                          fontStyle: "italic",
-                          opacity: 0.55,
-                          lineHeight: 1.5,
-                        }}
-                      >
-                        {plan.note}
-                      </p>
-                    )}
                   </div>
                 );
               })}
