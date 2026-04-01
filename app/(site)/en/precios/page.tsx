@@ -222,7 +222,7 @@ export default function PricingPageEN() {
                     style={{
                       borderRadius: "1rem",
                       border: isFeatured
-                        ? "1px solid rgba(147,79,44,0.6)"
+                        ? "1px solid rgba(255,139,61,0.5)"
                         : "1px solid rgba(255,255,255,0.1)",
                       background: "rgba(255,255,255,0.05)",
                       padding: "1.5rem",
@@ -230,7 +230,7 @@ export default function PricingPageEN() {
                       WebkitBackdropFilter: "blur(12px)",
                       position: "relative",
                       boxShadow: isFeatured
-                        ? "0 0 40px rgba(147,79,44,0.15)"
+                        ? "0 0 40px rgba(255,139,61,0.12)"
                         : "none",
                     }}
                   >
