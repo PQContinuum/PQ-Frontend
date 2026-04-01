@@ -123,17 +123,18 @@ export function useImageGeneration(): UseImageGenerationReturn {
           });
 
           if (data.usage) {
-            setUsage((prev) =>
-              prev
-                ? {
-                    ...prev,
-                    remainingToday: prev.dailyLimit - data.usage.dailyCount,
-                    remainingMonth: prev.monthlyLimit - data.usage.monthlyCount,
-                    todayCount: data.usage.dailyCount,
-                    monthCount: data.usage.monthlyCount,
-                  }
-                : null
-            );
+            setUsage((prev) => {
+              if (!prev) return null;
+              const dc = Number(data.usage.dailyCount) || 0;
+              const mc = Number(data.usage.monthlyCount) || 0;
+              return {
+                ...prev,
+                remainingToday: Math.max(0, prev.dailyLimit - dc),
+                remainingMonth: Math.max(0, prev.monthlyLimit - mc),
+                todayCount: dc,
+                monthCount: mc,
+              };
+            });
           }
 
           return { success: true, url: imageResult.url, revisedPrompt: imageResult.revisedPrompt };
@@ -202,17 +203,21 @@ export function useImageGeneration(): UseImageGenerationReturn {
     try {
       const data = await imageGenApi.getUsage();
       if (data.usage) {
+        const dc = Number(data.usage.dailyCount) || 0;
+        const mc = Number(data.usage.monthlyCount) || 0;
+        const dl = Number(data.usage.dailyLimit) || 8;
+        const ml = Number(data.usage.monthlyLimit) || 80;
         setUsage({
-          todayCount: data.usage.dailyCount,
-          monthCount: data.usage.monthlyCount,
-          dailyLimit: data.usage.dailyLimit,
-          monthlyLimit: data.usage.monthlyLimit,
-          remainingToday: data.usage.dailyLimit - data.usage.dailyCount,
-          remainingMonth: data.usage.monthlyLimit - data.usage.monthlyCount,
-          allowedQualities: data.usage.allowedQualities as ImageGenQuality[],
-          allowedSizes: data.usage.allowedSizes as ImageGenSize[],
+          todayCount: dc,
+          monthCount: mc,
+          dailyLimit: dl,
+          monthlyLimit: ml,
+          remainingToday: Math.max(0, dl - dc),
+          remainingMonth: Math.max(0, ml - mc),
+          allowedQualities: data.usage.allowedQualities as ImageGenQuality[] || ['low', 'medium'],
+          allowedSizes: data.usage.allowedSizes as ImageGenSize[] || ['1024x1024'],
           maxResolution: '1536x1024',
-          planName: data.usage.planName,
+          planName: data.usage.planName || 'Basic',
           streamingEnabled: false,
           partialImages: 0,
           premiumStyles: data.usage.premiumStyles ?? false,

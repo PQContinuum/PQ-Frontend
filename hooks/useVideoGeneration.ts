@@ -156,18 +156,22 @@ export function useVideoGeneration(): UseVideoGenerationReturn {
       try {
         const data = await videoGenApi.getUsage();
         if (data.usage) {
+          const dc = Number(data.usage.dailyCount) || 0;
+          const mc = Number(data.usage.monthlyCount) || 0;
+          const dl = Number(data.usage.dailyLimit) || 3;
+          const ml = Number(data.usage.monthlyLimit) || 15;
           freshUsage = {
-            todayCount: data.usage.dailyCount,
-            monthCount: data.usage.monthlyCount,
-            dailyLimit: data.usage.dailyLimit,
-            monthlyLimit: data.usage.monthlyLimit,
-            remainingToday: data.usage.dailyLimit - data.usage.dailyCount,
-            remainingMonth: data.usage.monthlyLimit - data.usage.monthlyCount,
-            allowedDurations: data.usage.allowedDurations as VideoGenDuration[],
-            allowedAspectRatios: data.usage.allowedAspectRatios as VideoGenAspectRatio[],
-            allowedModes: data.usage.allowedModes as VideoGenMode[],
-            audioEnabled: data.usage.audioEnabled,
-            planName: data.usage.planName,
+            todayCount: dc,
+            monthCount: mc,
+            dailyLimit: dl,
+            monthlyLimit: ml,
+            remainingToday: Math.max(0, dl - dc),
+            remainingMonth: Math.max(0, ml - mc),
+            allowedDurations: data.usage.allowedDurations as VideoGenDuration[] || ['5'],
+            allowedAspectRatios: data.usage.allowedAspectRatios as VideoGenAspectRatio[] || ['16:9'],
+            allowedModes: data.usage.allowedModes as VideoGenMode[] || ['text-to-video'],
+            audioEnabled: data.usage.audioEnabled ?? true,
+            planName: data.usage.planName || 'Basic',
           };
           setUsage(freshUsage);
         }
@@ -287,18 +291,22 @@ export function useVideoGeneration(): UseVideoGenerationReturn {
     try {
       const data = await videoGenApi.getUsage();
       if (data.usage) {
+        const dailyCount = Number(data.usage.dailyCount) || 0;
+        const monthlyCount = Number(data.usage.monthlyCount) || 0;
+        const dailyLimit = Number(data.usage.dailyLimit) || 3;
+        const monthlyLimit = Number(data.usage.monthlyLimit) || 15;
         setUsage({
-          todayCount: data.usage.dailyCount,
-          monthCount: data.usage.monthlyCount,
-          dailyLimit: data.usage.dailyLimit,
-          monthlyLimit: data.usage.monthlyLimit,
-          remainingToday: data.usage.dailyLimit - data.usage.dailyCount,
-          remainingMonth: data.usage.monthlyLimit - data.usage.monthlyCount,
-          allowedDurations: data.usage.allowedDurations as VideoGenDuration[],
-          allowedAspectRatios: data.usage.allowedAspectRatios as VideoGenAspectRatio[],
-          allowedModes: data.usage.allowedModes as VideoGenMode[],
-          audioEnabled: data.usage.audioEnabled,
-          planName: data.usage.planName,
+          todayCount: dailyCount,
+          monthCount: monthlyCount,
+          dailyLimit,
+          monthlyLimit,
+          remainingToday: Math.max(0, dailyLimit - dailyCount),
+          remainingMonth: Math.max(0, monthlyLimit - monthlyCount),
+          allowedDurations: data.usage.allowedDurations as VideoGenDuration[] || ['5'],
+          allowedAspectRatios: data.usage.allowedAspectRatios as VideoGenAspectRatio[] || ['16:9'],
+          allowedModes: data.usage.allowedModes as VideoGenMode[] || ['text-to-video'],
+          audioEnabled: data.usage.audioEnabled ?? true,
+          planName: data.usage.planName || 'Basic',
         });
       }
     } catch (error) {
