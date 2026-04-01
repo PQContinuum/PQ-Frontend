@@ -951,6 +951,7 @@ export const userApi = {
       subscription: {
         planName: string;
         status: string;
+        currentPeriodStart: string | null;
         currentPeriodEnd: string | null;
         cancelAtPeriodEnd: boolean;
       } | null;

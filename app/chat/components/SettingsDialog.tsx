@@ -407,12 +407,27 @@ export function SettingsDialog({
                           Modelo de chat: {getModelDisplayName(usageData.chat.model.model) || usageData.chat.model.label}
                         </p>
                       )}
-                      {stats?.subscription?.currentPeriodEnd && !isFree && (
-                        <p className="text-[12px] opacity-70 mt-2">
-                          {stats.subscription.cancelAtPeriodEnd
-                            ? `Se cancela el ${formatDate(stats.subscription.currentPeriodEnd)}`
-                            : `Renueva el ${formatDate(stats.subscription.currentPeriodEnd)}`}
-                        </p>
+                      {stats?.subscription && !isFree && (
+                        <div className="mt-3 pt-3 border-t border-white/15 space-y-1">
+                          {stats.subscription.currentPeriodStart && (
+                            <div className="flex items-center justify-between">
+                              <span className="text-[11px] opacity-60">Último pago</span>
+                              <span className="text-[11px] opacity-80 font-medium">
+                                {formatDate(stats.subscription.currentPeriodStart)}
+                              </span>
+                            </div>
+                          )}
+                          {stats.subscription.currentPeriodEnd && (
+                            <div className="flex items-center justify-between">
+                              <span className="text-[11px] opacity-60">
+                                {stats.subscription.cancelAtPeriodEnd ? 'Se cancela' : 'Próxima renovación'}
+                              </span>
+                              <span className="text-[11px] opacity-80 font-medium">
+                                {formatDate(stats.subscription.currentPeriodEnd)}
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
 

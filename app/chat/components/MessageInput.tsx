@@ -10,7 +10,8 @@ import {
   memo,
   useEffect,
 } from 'react';
-import { ArrowUp, Globe, MapPin, Paperclip, Plus, Check, Loader2, Image, X, ChevronDown, Lock, Mic, Square, Clock, Video, Blend, Wand2, Zap } from 'lucide-react';
+import { ArrowUp, Globe, MapPin, Paperclip, Plus, Check, Loader2, Image, X, ChevronDown, Lock, Mic, Square, Clock, Video, Blend, Wand2, Zap, Sparkles } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { VideoImageUpload } from './VideoImageUpload';
 import { ImageReferenceUpload } from './ImageReferenceUpload';
 import { GalleryOptionsPanel } from './GalleryOptionsPanel';
@@ -312,6 +313,10 @@ export const MessageInput = memo(function MessageInput() {
   // LISA Wizard state
   const [showLisaWizard, setShowLisaWizard] = useState(false);
   const [isLisaGenerating, setIsLisaGenerating] = useState(false);
+
+  // Plan upgrade banner state
+  const [planUpgradeMessage, setPlanUpgradeMessage] = useState<string | null>(null);
+  const router = useRouter();
 
   const {
     generate: generateVideo,
@@ -777,6 +782,25 @@ export const MessageInput = memo(function MessageInput() {
       return;
     }
 
+    // Pre-check plan limitations before adding messages to chat
+    if (videoUsage) {
+      let planError: string | null = null;
+      if (videoModeType && !videoUsage.allowedModes.includes(videoModeType)) {
+        planError = 'Tu plan actual no incluye este modo de generación.';
+      } else if (videoDuration && !videoUsage.allowedDurations.includes(videoDuration)) {
+        planError = 'Tu plan actual no permite esta duración de video.';
+      } else if (videoUsage.remainingToday <= 0) {
+        planError = 'Has alcanzado el límite diario de generación de videos.';
+      } else if (videoUsage.remainingMonth <= 0) {
+        planError = 'Has alcanzado el límite mensual de generación de videos.';
+      }
+      if (planError) {
+        setPlanUpgradeMessage(planError);
+        generationLockRef.current = false;
+        return;
+      }
+    }
+
     // Check if prompt needs enhancement
     const promptCheck = checkPromptNeedsEnhancement(prompt, 'video');
 
@@ -785,7 +809,7 @@ export const MessageInput = memo(function MessageInput() {
       addMessage({
         id: createId(),
         role: 'user',
-        content: `🎬 ${prompt}`,
+        content: prompt,
       });
       addMessage({
         id: createId(),
@@ -815,7 +839,7 @@ export const MessageInput = memo(function MessageInput() {
           addMessage({
             id: createId(),
             role: 'user',
-            content: `🎬 ${prompt}`,
+            content: prompt,
           });
           addMessage({
             id: createId(),
@@ -832,7 +856,7 @@ export const MessageInput = memo(function MessageInput() {
       addMessage({
         id: createId(),
         role: 'user',
-        content: `🎬 ${prompt}`,
+        content: prompt,
       });
       addMessage({
         id: createId(),
@@ -870,7 +894,7 @@ export const MessageInput = memo(function MessageInput() {
     let currentConversationId = conversationId;
     if (!currentConversationId) {
       try {
-        const title = prompt.length > 50 ? `🎬 ${prompt.substring(0, 47)}...` : `🎬 ${prompt}`;
+        const title = prompt.length > 50 ? `${prompt.substring(0, 50)}...` : prompt;
         const conversation = await createConversationMutation.mutateAsync({
           title,
           projectId: pendingProjectId || undefined,
@@ -899,7 +923,7 @@ export const MessageInput = memo(function MessageInput() {
     progressInterval = setInterval(() => {
       const currentProgress = videoProgressRef.current;
       if (currentProgress) {
-        updateMessage(assistantMessageId, () => `🎬 ${currentProgress}`);
+        updateMessage(assistantMessageId, () => currentProgress);
       }
     }, 1000);
 
@@ -916,9 +940,10 @@ export const MessageInput = memo(function MessageInput() {
     clearInterval(progressInterval);
     progressInterval = null;
 
-    let assistantContent: string;
+    let assistantContent: string = '';
+    let skipSave = false;
     if (result.success) {
-      assistantContent = `🎬 Video en proceso de generación. Puedes cerrar esta ventana y regresar más tarde.`;
+      assistantContent = `Video en proceso de generación. Puedes cerrar esta ventana y regresar más tarde.`;
       updateMessage(assistantMessageId, () => assistantContent);
       updateMessageGenerationState(assistantMessageId, {
         type: 'video',
@@ -926,13 +951,27 @@ export const MessageInput = memo(function MessageInput() {
         jobId: result.jobId,
       });
     } else {
-      assistantContent = `❌ ${result.error}`;
-      updateMessage(assistantMessageId, () => assistantContent);
-      updateMessageGenerationState(assistantMessageId, { type: 'video', status: 'error' });
+      // Check if error is plan-related → show upgrade banner instead of inline error
+      const isPlanError = result.error && (
+        result.error.includes('plan') ||
+        result.error.includes('límite') ||
+        result.error.includes('duración') ||
+        result.error.includes('modo de generación')
+      );
+      if (isPlanError) {
+        updateMessage(assistantMessageId, () => '');
+        updateMessageGenerationState(assistantMessageId, { type: 'video', status: 'error' });
+        setPlanUpgradeMessage(result.error || 'Tu plan actual no permite esta acción.');
+        skipSave = true;
+      } else {
+        assistantContent = `❌ ${result.error}`;
+        updateMessage(assistantMessageId, () => assistantContent);
+        updateMessageGenerationState(assistantMessageId, { type: 'video', status: 'error' });
+      }
     }
 
     // Save assistant message to database with metadata including jobId
-    if (currentConversationId) {
+    if (currentConversationId && !skipSave) {
       try {
         await conversationsApi.createMessage(currentConversationId, {
           role: 'assistant',
@@ -957,7 +996,7 @@ export const MessageInput = memo(function MessageInput() {
       stopGeneration();
       generationLockRef.current = false;
     }
-  }, [input, videoModeType, videoImageUrl, videoDuration, videoAspectRatio, videoGalleryOptions, generateVideo, isGeneratingVideo, addMessage, updateMessage, updateMessageGenerationState, setStreaming, startGeneration, stopGeneration, conversationId, createConversationMutation, setConversationId, queryClient, pendingProjectId, setPendingProjectId, messages]);
+  }, [input, videoModeType, videoImageUrl, videoDuration, videoAspectRatio, videoGalleryOptions, generateVideo, isGeneratingVideo, addMessage, updateMessage, updateMessageGenerationState, setStreaming, startGeneration, stopGeneration, conversationId, createConversationMutation, setConversationId, queryClient, pendingProjectId, setPendingProjectId, messages, videoUsage, router]);
 
   const submitMessage = useCallback(
     async (event?: FormEvent<HTMLFormElement> | MouseEvent<HTMLButtonElement>) => {
@@ -1357,7 +1396,7 @@ export const MessageInput = memo(function MessageInput() {
     const userMessageId = createId();
     const assistantMessageId = createId();
     const isVideo = data.contentType === 'video';
-    const userContent = `${isVideo ? '🎬' : '🖼️'} ${data.prompt}`;
+    const userContent = data.prompt;
 
     // Add user message to UI immediately
     addMessage({
@@ -1382,8 +1421,8 @@ export const MessageInput = memo(function MessageInput() {
     if (!currentConversationId) {
       try {
         const title = data.prompt.length > 50
-          ? `${isVideo ? '🎬' : '🖼️'} ${data.prompt.substring(0, 47)}...`
-          : `${isVideo ? '🎬' : '🖼️'} ${data.prompt}`;
+          ? `${data.prompt.substring(0, 50)}...`
+          : data.prompt;
         const conversation = await createConversationMutation.mutateAsync({
           title,
           projectId: pendingProjectId || undefined,
@@ -1436,7 +1475,7 @@ export const MessageInput = memo(function MessageInput() {
         });
 
         if (result.success) {
-          const generatingContent = '🎬 Video en proceso de generación. Puedes cerrar esta ventana y regresar más tarde.';
+          const generatingContent = 'Video en proceso de generación. Puedes cerrar esta ventana y regresar más tarde.';
           const generationState = {
             type: 'video' as const,
             status: 'generating' as const,
@@ -1450,11 +1489,23 @@ export const MessageInput = memo(function MessageInput() {
           // CRITICAL: Save to backend with jobId so polling resumes on page reload
           await saveAssistantMessage(generatingContent, generationState);
         } else {
-          const errorContent = `❌ ${result.error}`;
-          const errorState = { type: 'video' as const, status: 'error' as const };
-          updateMessage(assistantMessageId, () => errorContent);
-          updateMessageGenerationState(assistantMessageId, errorState);
-          await saveAssistantMessage(errorContent, errorState);
+          const isPlanError = result.error && (
+            result.error.includes('plan') ||
+            result.error.includes('límite') ||
+            result.error.includes('duración') ||
+            result.error.includes('modo de generación')
+          );
+          if (isPlanError) {
+            updateMessage(assistantMessageId, () => '');
+            updateMessageGenerationState(assistantMessageId, { type: 'video', status: 'error' });
+            setPlanUpgradeMessage(result.error || 'Tu plan actual no permite esta acción.');
+          } else {
+            const errorContent = `❌ ${result.error}`;
+            const errorState = { type: 'video' as const, status: 'error' as const };
+            updateMessage(assistantMessageId, () => errorContent);
+            updateMessageGenerationState(assistantMessageId, errorState);
+            await saveAssistantMessage(errorContent, errorState);
+          }
         }
       } else {
         // Generate image
@@ -1665,6 +1716,40 @@ export const MessageInput = memo(function MessageInput() {
                 <p className="text-sm text-[#999]">Preparando...</p>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Plan Upgrade Banner */}
+        {planUpgradeMessage && (
+          <div className="animate-in slide-in-from-bottom-2 fade-in duration-300 mx-auto max-w-lg">
+            <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl border border-amber-200/60 shadow-sm">
+              <div className="flex items-center justify-center size-8 rounded-full bg-gradient-to-br from-[#FF8B3D] to-[#e67a2e] shrink-0">
+                <Sparkles className="size-4 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-800">
+                  {planUpgradeMessage}
+                </p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Desbloquea más funciones mejorando tu plan
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setPlanUpgradeMessage(null);
+                  router.push('/payment');
+                }}
+                className="shrink-0 px-3 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-[#FF8B3D] to-[#e67a2e] rounded-full hover:opacity-90 transition-opacity"
+              >
+                Mejorar plan
+              </button>
+              <button
+                onClick={() => setPlanUpgradeMessage(null)}
+                className="shrink-0 p-1 rounded-full hover:bg-black/5 transition-colors"
+              >
+                <X className="size-3.5 text-gray-400" />
+              </button>
+            </div>
           </div>
         )}
 
