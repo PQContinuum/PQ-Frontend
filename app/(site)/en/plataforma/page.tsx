@@ -89,11 +89,11 @@ export default function PlatformPageEN() {
                     leaving the platform.
                   </p>
                   <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginTop: "1rem" }}>
-                    <span className="badge">Seendance 1.5</span>
+                    <span className="badge">4s clips</span>
                     <span className="badge" style={{ background: "var(--accent)" }}>
-                      Seendance 2.0
+                      12s production
                     </span>
-                    <span className="badge">KLIM 2.5</span>
+                    <span className="badge">Built-in audio</span>
                   </div>
                 </div>
               </div>

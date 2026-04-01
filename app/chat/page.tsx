@@ -61,6 +61,7 @@ import { ConversationHistory } from './components/ConversationHistory';
 import { SettingsDialog } from './components/SettingsDialog';
 import { TTSSettingsModal } from './components/TTSSettingsModal';
 import { PendingJobsBanner } from './components/PendingJobsBanner';
+import { TrialBanner } from './components/TrialBanner';
 import { ScrollNavigation } from './components/ScrollNavigation';
 import { FeedbackWidget } from '@/components/feedback-widget';
 import { useMessages, useReplaceMessages, useSetConversationId, useSetPendingInput, useSetPendingAction } from './store';
@@ -335,6 +336,7 @@ export default function ChatPage() {
       </Sidebar>
 
       <SidebarInset className="flex flex-col h-screen overflow-hidden">
+        <TrialBanner />
         {hasUserMessages && (
           <motion.header
             initial={{ opacity: 0, y: -20 }}
