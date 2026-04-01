@@ -36,11 +36,19 @@ const PLAN_CTA: Record<string, string> = {
   Enterprise: 'Contactar ventas',
 };
 
-// Stripe Price IDs mapped to plan names
+// Stripe Price IDs mapped to plan names (USD prices used by default)
 const STRIPE_PRICE_IDS: Record<string, { monthly: string | null; yearly: string | null }> = {
-  Basic: { monthly: 'PENDING_BASIC_MONTHLY', yearly: 'PENDING_BASIC_YEARLY' },
-  Pro: { monthly: 'PENDING_PRO_MONTHLY', yearly: 'PENDING_PRO_YEARLY' },
-  Premium: { monthly: 'PENDING_PREMIUM_MONTHLY', yearly: 'PENDING_PREMIUM_YEARLY' },
+  Basic: { monthly: 'price_1THRlpJ8yISglBa6GzPs8rqH', yearly: 'price_1THRmFJ8yISglBa6G7mcfzKm' },
+  Pro: { monthly: 'price_1THRiiJ8yISglBa6sDj7MCoF', yearly: 'price_1THRkIJ8yISglBa6Aj8HvZHc' },
+  Premium: { monthly: 'price_1THRnyJ8yISglBa6Zdbx7Xhk', yearly: 'price_1THRoKJ8yISglBa6iVoyiEv6' },
+  Enterprise: { monthly: null, yearly: null },
+};
+
+// MXN Price IDs (for future currency selection support)
+const STRIPE_PRICE_IDS_MXN: Record<string, { monthly: string | null; yearly: string | null }> = {
+  Basic: { monthly: 'price_1THRm5J8yISglBa6QcqoVIkg', yearly: 'price_1THRmMJ8yISglBa612iQdmj9' },
+  Pro: { monthly: 'price_1THRjvJ8yISglBa6IkJ0SEZt', yearly: 'price_1THRkWJ8yISglBa6LTGusE0n' },
+  Premium: { monthly: 'price_1THRoAJ8yISglBa6vOYdDdAu', yearly: 'price_1THRoTJ8yISglBa6LEzhrDBv' },
   Enterprise: { monthly: null, yearly: null },
 };
 
