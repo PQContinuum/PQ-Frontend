@@ -703,7 +703,7 @@ export const MessageInput = memo(function MessageInput() {
       try {
         const res = await conversationsApi.createMessage(currentConversationId, {
           role: 'assistant',
-          content: '',
+          content: '⏳',
           metadata: JSON.stringify({
             generationState: { type: 'image', status: 'generating' }
           }),
