@@ -654,6 +654,8 @@ body.nav-open .mobile-menu-btn span:nth-child(3) {
 .hero-subtitle {
     font-size: clamp(16px, 2vw, 20px);
     max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
     margin-bottom: 40px;
     line-height: 1.6;
 }
