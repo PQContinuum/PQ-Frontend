@@ -168,11 +168,12 @@ const parseSSEChunk = (chunk: string): SSEvent | null => {
   const trimmed = chunk.trim();
   if (!trimmed) return null;
 
-  const lines = trimmed.split('\n');
+  const lines = trimmed.split(/\r?\n/);
   let event = 'message';
   let data = '';
 
   lines.forEach((line) => {
+    if (line.startsWith(':')) return;
     if (line.startsWith('event:')) {
       event = line.slice(6).trim();
     } else if (line.startsWith('data:')) {
@@ -1139,10 +1140,11 @@ export const MessageInput = memo(function MessageInput() {
         let buffer = '';
 
         const processBuffer = () => {
-          let boundary = buffer.indexOf('\n\n');
+          let boundaryMatch = buffer.match(/\r?\n\r?\n/);
+          let boundary = boundaryMatch?.index ?? -1;
           while (boundary !== -1) {
             const chunk = buffer.slice(0, boundary);
-            buffer = buffer.slice(boundary + 2);
+            buffer = buffer.slice(boundary + (boundaryMatch?.[0].length ?? 2));
             const event = parseSSEChunk(chunk);
             if (event) {
               if (event.event === 'response.start' || event.event === 'geocultural.start') {
@@ -1207,7 +1209,8 @@ export const MessageInput = memo(function MessageInput() {
                 }
               }
             }
-            boundary = buffer.indexOf('\n\n');
+            boundaryMatch = buffer.match(/\r?\n\r?\n/);
+            boundary = boundaryMatch?.index ?? -1;
           }
         };
 

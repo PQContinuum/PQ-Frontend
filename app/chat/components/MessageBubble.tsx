@@ -1433,6 +1433,12 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
     </Streamdown>
   );
 
+  const streamingPlainText = (
+    <div className="whitespace-pre-wrap text-[15px] leading-relaxed text-[#111111]">
+      {message.content}
+    </div>
+  );
+
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} w-full`}>
       <div className={`flex flex-col gap-1 min-w-0 ${isUser ? 'max-w-[85%] md:max-w-[75%]' : 'max-w-[90%] md:max-w-[80%]'}`}>
@@ -1450,6 +1456,8 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
             <div className={`max-w-full break-words overflow-hidden ${isUser ? 'text-current' : 'continuum-prose'}`}>
               {isUser ? (
                 messageMarkdown
+              ) : isStreaming ? (
+                streamingPlainText
               ) : message.citations?.length || message.webSearchError ? (
                 <AIResponse
                   content={message.content}

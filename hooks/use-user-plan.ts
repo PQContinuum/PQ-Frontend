@@ -46,16 +46,9 @@ export function useUserPlan() {
             window.location.href = "/auth";
           }
 
-          // Si el usuario existe en Supabase pero el backend da 401,
-          // es un problema de sincronización — retornar plan Basic
-          return {
-            userId: null,
-            email: null,
-            planName: "Basic",
-            status: "unauthenticated",
-            currentPeriodEnd: undefined,
-            subscription: undefined,
-          };
+          // If Supabase still has a user but the backend rejects the JWT,
+          // keep the auth error visible instead of masking it as a Basic plan.
+          throw error;
         }
         throw error;
       }

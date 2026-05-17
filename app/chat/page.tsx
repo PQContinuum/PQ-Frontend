@@ -99,6 +99,7 @@ function SidebarFooterContent({
     return { color: 'text-[#64748B]', bg: 'bg-[#64748B]/10' };
   };
 
+  const planLabel = userPlan?.planName ?? 'Verificando...';
   const planStyle = getPlanStyle(userPlan?.planName);
 
   return (
@@ -141,7 +142,7 @@ function SidebarFooterContent({
                       : 'Usuario'}
                   </span>
                   <span className={`text-[11px] font-semibold ${planStyle.color}`}>
-                    {userPlan?.planName || 'Basic'}
+                    {planLabel}
                   </span>
                 </div>
               </div>

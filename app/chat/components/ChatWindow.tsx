@@ -28,6 +28,12 @@ export const ChatWindow = memo(function ChatWindow() {
   const endRef = useRef<HTMLDivElement>(null);
   const previousMessageCount = useRef(messages.length);
   const previousConversationId = useRef(conversationId);
+  const lastMessage = messages[messages.length - 1];
+  const isAssistantStreamingText =
+    isStreaming &&
+    generationMode === 'none' &&
+    lastMessage?.role === 'assistant' &&
+    lastMessage.content.trim().length > 0;
 
   useLayoutEffect(() => {
     const scrollContainer = containerRef.current?.parentElement?.parentElement;
@@ -66,7 +72,7 @@ export const ChatWindow = memo(function ChatWindow() {
         </div>
       ))}
       {/* Solo mostrar TypingIndicator si NO se está generando imagen o video */}
-      {isStreaming && generationMode === 'none' && (
+      {isStreaming && generationMode === 'none' && !isAssistantStreamingText && (
         <div className="px-2">
           {linkFetch?.status === 'fetching' ? (
             <LinkFetchIndicator linkType={linkFetch.type} />
