@@ -13,7 +13,6 @@ import {
 } from '@/app/chat/store';
 
 import { MessageBubble } from './MessageBubble';
-import { TypingIndicator } from './TypingIndicator';
 import { LinkFetchIndicator } from './LinkFetchIndicator';
 
 export const ChatWindow = memo(function ChatWindow() {
@@ -72,13 +71,9 @@ export const ChatWindow = memo(function ChatWindow() {
         </div>
       ))}
       {/* Solo mostrar TypingIndicator si NO se está generando imagen o video */}
-      {isStreaming && generationMode === 'none' && !isAssistantStreamingText && (
+      {isStreaming && generationMode === 'none' && !isAssistantStreamingText && linkFetch?.status === 'fetching' && (
         <div className="px-2">
-          {linkFetch?.status === 'fetching' ? (
-            <LinkFetchIndicator linkType={linkFetch.type} />
-          ) : (
-            <TypingIndicator />
-          )}
+          <LinkFetchIndicator linkType={linkFetch.type} />
         </div>
       )}
       <div ref={endRef} />

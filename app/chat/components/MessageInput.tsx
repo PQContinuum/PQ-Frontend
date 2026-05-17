@@ -1092,6 +1092,17 @@ export const MessageInput = memo(function MessageInput() {
       let assistantContent = '';
       let geoCulturalContent: (GeoCulturalAnalysisText & Record<string, unknown>) | null = null;
       let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
+      const streamVisualStart = Date.now();
+      const minPendingStateMs = 650;
+      let streamedTextBuffer = '';
+      let streamFlushTimer: ReturnType<typeof setTimeout> | null = null;
+
+      const flushStreamedTextBuffer = () => {
+        if (!streamedTextBuffer) return;
+        const textToAppend = streamedTextBuffer;
+        streamedTextBuffer = '';
+        updateMessage(assistantMessageId, (prev) => prev + textToAppend);
+      };
 
       try {
         // Web Search UI state (shows spinner on the toggle)
@@ -1201,11 +1212,26 @@ export const MessageInput = memo(function MessageInput() {
               } else {
                 if (event.event === 'response.output_text.delta') {
                   const delta = event.data?.delta ?? '';
-                  updateMessage(assistantMessageId, (prev) => {
-                    const newContent = prev + delta;
-                    assistantContent = newContent;
-                    return newContent;
-                  });
+                  if (!delta) return;
+
+                  assistantContent += delta;
+                  streamedTextBuffer += delta;
+
+                  const elapsed = Date.now() - streamVisualStart;
+                  if (elapsed < minPendingStateMs) {
+                    if (!streamFlushTimer) {
+                      streamFlushTimer = setTimeout(() => {
+                        streamFlushTimer = null;
+                        flushStreamedTextBuffer();
+                      }, minPendingStateMs - elapsed);
+                    }
+                  } else {
+                    if (streamFlushTimer) {
+                      clearTimeout(streamFlushTimer);
+                      streamFlushTimer = null;
+                    }
+                    flushStreamedTextBuffer();
+                  }
                 }
               }
             }
@@ -1226,6 +1252,11 @@ export const MessageInput = memo(function MessageInput() {
 
           buffer += decoder.decode();
           processBuffer();
+          if (streamFlushTimer) {
+            clearTimeout(streamFlushTimer);
+            streamFlushTimer = null;
+          }
+          flushStreamedTextBuffer();
         } catch (streamError) {
           console.warn('[Stream] Connection interrupted, preserving partial content:', streamError);
 
@@ -1283,6 +1314,11 @@ export const MessageInput = memo(function MessageInput() {
           updateMessage(assistantMessageId, () => message);
         }
       } finally {
+        if (streamFlushTimer) {
+          clearTimeout(streamFlushTimer);
+          streamFlushTimer = null;
+          flushStreamedTextBuffer();
+        }
         // Cerrar el stream reader para liberar recursos
         if (reader) {
           reader.cancel().catch(() => {});

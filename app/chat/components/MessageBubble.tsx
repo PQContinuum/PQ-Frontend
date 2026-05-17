@@ -7,7 +7,7 @@ import { createMathPlugin } from '@streamdown/math';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, Copy, Share2 } from 'lucide-react';
 
-import type { ChatMessage } from '@/app/chat/store';
+import { TYPING_STATES, useChatStore, type ChatMessage } from '@/app/chat/store';
 import type { LinkType } from '@/types/link-resolver';
 import { GeoCulturalResponse } from './GeoCulturalResponse';
 import { AttachmentsPreview } from './AttachmentsPreview';
@@ -970,6 +970,7 @@ const AssistantActions = ({
 
 export function MessageBubble({ message, isStreaming = false, attachments }: MessageBubbleProps) {
   const isUser = message.role === 'user';
+  const typingStateIndex = useChatStore((state) => state.typingStateIndex);
   const isMediaMessage = !isUser && !!message.content && (
     message.content.includes('![Imagen generada]') || message.content.includes('<video')
   );
@@ -1434,8 +1435,41 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
   );
 
   const streamingPlainText = (
-    <div className="whitespace-pre-wrap text-[15px] leading-relaxed text-[#111111]">
+    <div className="whitespace-pre-wrap text-[15px] leading-relaxed text-[#111111] animate-in fade-in duration-200">
       {message.content}
+      <span className="ml-0.5 inline-block h-4 w-1 translate-y-0.5 animate-pulse rounded-full bg-[#FF8B3D]" />
+    </div>
+  );
+
+  const streamingPendingState = (
+    <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-1 py-0.5 text-sm text-[#4c4c4c]">
+      <span className="font-medium text-[#111111] transition-opacity duration-300">
+        LISA está {TYPING_STATES[typingStateIndex].toLowerCase()}
+      </span>
+      <span className="flex gap-1">
+        {[0, 1, 2].map((dot) => (
+          <span
+            key={dot}
+            className="h-1.5 w-1.5 rounded-full bg-[#FF8B3D]/70"
+            style={{
+              animation: 'lisa-thinking 1.1s infinite ease-in-out',
+              animationDelay: `${dot * 0.16}s`,
+            }}
+          />
+        ))}
+      </span>
+      <style jsx>{`
+        @keyframes lisa-thinking {
+          0%, 100% {
+            opacity: 0.25;
+            transform: translateY(0);
+          }
+          50% {
+            opacity: 1;
+            transform: translateY(-2px);
+          }
+        }
+      `}</style>
     </div>
   );
 
@@ -1457,7 +1491,7 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
               {isUser ? (
                 messageMarkdown
               ) : isStreaming ? (
-                streamingPlainText
+                message.content.trim().length > 0 ? streamingPlainText : streamingPendingState
               ) : message.citations?.length || message.webSearchError ? (
                 <AIResponse
                   content={message.content}
