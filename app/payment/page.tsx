@@ -14,7 +14,6 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { ArrowRight, Check, Zap, Building2, Rocket, Crown, Loader2, LogOut } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useUserPlan } from '@/hooks/use-user-plan';
@@ -30,7 +29,7 @@ const PLAN_ICONS: Record<string, typeof Zap> = {
 };
 
 const PLAN_CTA: Record<string, string> = {
-  Basic: 'Comenzar con Basic',
+  Basic: 'Entrar gratis',
   Pro: 'Actualizar a Pro',
   Premium: 'Actualizar a Premium',
   Enterprise: 'Contactar ventas',
@@ -38,33 +37,121 @@ const PLAN_CTA: Record<string, string> = {
 
 // Stripe Price IDs mapped to plan names (USD prices used by default)
 const STRIPE_PRICE_IDS: Record<string, { monthly: string | null; yearly: string | null }> = {
-  Basic: { monthly: 'price_1THRlpJ8yISglBa6GzPs8rqH', yearly: 'price_1THRmFJ8yISglBa6G7mcfzKm' },
+  Basic: { monthly: null, yearly: null },
   Pro: { monthly: 'price_1THRiiJ8yISglBa6sDj7MCoF', yearly: 'price_1THRkIJ8yISglBa6Aj8HvZHc' },
   Premium: { monthly: 'price_1THRnyJ8yISglBa6Zdbx7Xhk', yearly: 'price_1THRoKJ8yISglBa6iVoyiEv6' },
   Enterprise: { monthly: null, yearly: null },
 };
 
-// MXN Price IDs (for future currency selection support)
-const STRIPE_PRICE_IDS_MXN: Record<string, { monthly: string | null; yearly: string | null }> = {
-  Basic: { monthly: 'price_1THRm5J8yISglBa6QcqoVIkg', yearly: 'price_1THRmMJ8yISglBa612iQdmj9' },
-  Pro: { monthly: 'price_1THRjvJ8yISglBa6IkJ0SEZt', yearly: 'price_1THRkWJ8yISglBa6LTGusE0n' },
-  Premium: { monthly: 'price_1THRoAJ8yISglBa6vOYdDdAu', yearly: 'price_1THRoTJ8yISglBa6LEzhrDBv' },
-  Enterprise: { monthly: null, yearly: null },
-};
-
 const PLAN_PRICES_USD: Record<string, { monthly: number | null; yearly: number | null }> = {
-  Basic: { monthly: 10, yearly: 100 },
+  Basic: { monthly: 0, yearly: 0 },
   Pro: { monthly: 20, yearly: 200 },
   Premium: { monthly: 149, yearly: 1490 },
   Enterprise: { monthly: null, yearly: null },
 };
 
 const PLAN_PRICES_MXN: Record<string, { monthly: number | null; yearly: number | null }> = {
-  Basic: { monthly: 200, yearly: 2000 },
+  Basic: { monthly: 0, yearly: 0 },
   Pro: { monthly: 400, yearly: 4000 },
   Premium: { monthly: 2980, yearly: 29800 },
   Enterprise: { monthly: null, yearly: null },
 };
+
+const FALLBACK_PLAN_CONFIGS: PlanFeatureConfig[] = [
+  {
+    name: 'Basic',
+    display: {
+      name: 'Basic',
+      label: 'Básico',
+      description: 'Para empezar gratis',
+      popular: false,
+      features: [
+        'Chat con Continuum Core',
+        '8 imágenes/día (80/mes)',
+        '3 videos/día (15/mes)',
+        'Calidad media de imágenes',
+        'Videos con audio',
+        'Image-to-Video',
+        'Acceso gratis',
+      ],
+    },
+    chat: { requestsPerMinute: 25, tokensPerDay: 100000, model: { model: 'gpt-5-mini', label: 'Continuum Core', maxTokens: 16000 } },
+    imageGen: { daily: 8, monthly: 80, qualities: ['low', 'medium'], sizes: ['1024x1024', '1024x1536', '1536x1024'], premiumStyles: false },
+    videoGen: { daily: 3, monthly: 15, durations: ['5'], aspectRatios: ['16:9', '9:16', '1:1'], modes: ['text-to-video', 'image-to-video'], audioEnabled: true },
+    tts: { dailyCharacters: 15000, monthlyCharacters: 100000 },
+    context: { maxContextItems: 50, autoExtraction: true, contextTokens: 4000 },
+  },
+  {
+    name: 'Pro',
+    display: {
+      name: 'Pro',
+      label: 'Pro',
+      description: 'Para creadores y equipos',
+      popular: true,
+      features: [
+        'Chat con Continuum Pro',
+        '25 imágenes/día (300/mes)',
+        '8 videos/día (60/mes)',
+        'Máxima calidad',
+        'Videos largos',
+        'Estilos premium',
+        'TTS avanzado',
+        'Memoria inteligente',
+      ],
+    },
+    chat: { requestsPerMinute: 50, tokensPerDay: 350000, model: { model: 'gpt-5.2', label: 'Continuum Pro', maxTokens: 20000 } },
+    imageGen: { daily: 25, monthly: 300, qualities: ['low', 'medium', 'high'], sizes: ['1024x1024', '1024x1536', '1536x1024', 'auto'], premiumStyles: true },
+    videoGen: { daily: 8, monthly: 60, durations: ['5', '10'], aspectRatios: ['16:9', '9:16', '1:1'], modes: ['text-to-video', 'image-to-video'], audioEnabled: true },
+    tts: { dailyCharacters: 60000, monthlyCharacters: 500000 },
+    context: { maxContextItems: 200, autoExtraction: true, contextTokens: 8000 },
+  },
+  {
+    name: 'Premium',
+    display: {
+      name: 'Premium',
+      label: 'Premium',
+      description: 'Para negocios y agencias',
+      popular: false,
+      features: [
+        'Chat con Continuum Pro',
+        '50 imágenes/día (600/mes)',
+        '15 videos/día (120/mes)',
+        'Todas las funciones de Pro',
+        'Volumen alto de generación',
+        'Memoria extendida',
+        'TTS premium',
+      ],
+    },
+    chat: { requestsPerMinute: 75, tokensPerDay: 750000, model: { model: 'gpt-5.2', label: 'Continuum Pro', maxTokens: 20000 } },
+    imageGen: { daily: 50, monthly: 600, qualities: ['low', 'medium', 'high'], sizes: ['1024x1024', '1024x1536', '1536x1024', 'auto'], premiumStyles: true },
+    videoGen: { daily: 15, monthly: 120, durations: ['5', '10'], aspectRatios: ['16:9', '9:16', '1:1'], modes: ['text-to-video', 'image-to-video'], audioEnabled: true },
+    tts: { dailyCharacters: 150000, monthlyCharacters: 1500000 },
+    context: { maxContextItems: 500, autoExtraction: true, contextTokens: 12000 },
+  },
+  {
+    name: 'Enterprise',
+    display: {
+      name: 'Enterprise',
+      label: 'Enterprise',
+      description: 'Para equipos y empresas',
+      popular: false,
+      features: [
+        'Chat con Continuum Pro',
+        '80 imágenes/día (1,000/mes)',
+        '25 videos/día (200/mes)',
+        'Todas las funciones premium',
+        'Volumen máximo de generación',
+        'Memoria extendida',
+        'Soporte prioritario',
+      ],
+    },
+    chat: { requestsPerMinute: 100, tokensPerDay: 1500000, model: { model: 'gpt-5.2', label: 'Continuum Pro', maxTokens: 20000 } },
+    imageGen: { daily: 80, monthly: 1000, qualities: ['low', 'medium', 'high'], sizes: ['1024x1024', '1024x1536', '1536x1024', 'auto'], premiumStyles: true },
+    videoGen: { daily: 25, monthly: 200, durations: ['5', '10'], aspectRatios: ['16:9', '9:16', '1:1'], modes: ['text-to-video', 'image-to-video'], audioEnabled: true },
+    tts: { dailyCharacters: 300000, monthlyCharacters: 3000000 },
+    context: { maxContextItems: 1000, autoExtraction: true, contextTokens: 16000 },
+  },
+];
 
 export default function PaymentPage() {
   const [frequency, setFrequency] = useState<string>('monthly');
@@ -75,14 +162,7 @@ export default function PaymentPage() {
   const { data: userPlan } = useUserPlan();
   const router = useRouter();
 
-  // Fetch plan features from backend (single source of truth)
-  const { data: planFeaturesData } = useQuery({
-    queryKey: ['plan-features'],
-    queryFn: () => billingApi.getPlanFeatures(),
-    staleTime: 1000 * 60 * 30, // 30 min cache
-  });
-
-  const planConfigs = planFeaturesData?.plans ?? [];
+  const planConfigs = FALLBACK_PLAN_CONFIGS;
 
   const handleLogout = useCallback(async () => {
     setIsLoggingOut(true);
@@ -104,6 +184,11 @@ export default function PaymentPage() {
   }, [redirectUrl]);
 
   const handleCheckout = useCallback(async (planName: string) => {
+    if (planName === 'Basic') {
+      router.push('/chat');
+      return;
+    }
+
     const priceId = STRIPE_PRICE_IDS[planName]?.[frequency as 'monthly' | 'yearly'];
     if (!priceId) return;
 
@@ -134,7 +219,7 @@ export default function PaymentPage() {
       setCheckoutError(message);
       setLoadingPlanId(null);
     }
-  }, [frequency]);
+  }, [frequency, router]);
 
   return (
     <div className="min-h-screen bg-black">
@@ -241,7 +326,7 @@ export default function PaymentPage() {
                       {plan.display.label}
                       {isBasic && (
                         <Badge className="ml-2 bg-green-500/20 text-green-400 border-green-500/30 text-xs">
-                          7 días gratis
+                          Gratis
                         </Badge>
                       )}
                     </CardTitle>
@@ -253,19 +338,23 @@ export default function PaymentPage() {
                       {priceUsd != null ? (
                         <div>
                           <div className="font-semibold text-white text-3xl">
-                            ${priceUsd}
+                            {priceUsd === 0 ? '$0' : `$${priceUsd}`}
                             <span className="text-lg text-neutral-400 font-normal">
                               {' '}USD/{frequency === 'monthly' ? 'mes' : 'año'}
                             </span>
                           </div>
                           {priceMxn != null && (
                             <p className="text-xs text-neutral-500 mt-1">
-                              (~${priceMxn.toLocaleString()} MXN/{frequency === 'monthly' ? 'mes' : 'año'})
+                              {priceMxn === 0
+                                ? 'Gratis'
+                                : `(~$${priceMxn.toLocaleString()} MXN/${frequency === 'monthly' ? 'mes' : 'año'})`}
                             </p>
                           )}
-                          <p className="text-xs text-neutral-500 mt-2">
-                            Facturado {frequency === 'monthly' ? 'mensualmente' : 'anualmente'}
-                          </p>
+                          {!isBasic && (
+                            <p className="text-xs text-neutral-500 mt-2">
+                              Facturado {frequency === 'monthly' ? 'mensualmente' : 'anualmente'}
+                            </p>
+                          )}
                         </div>
                       ) : (
                         <div className="font-semibold text-white text-xl">

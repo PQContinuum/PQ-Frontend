@@ -82,15 +82,14 @@ export async function middleware(request: NextRequest) {
 
         if (response.ok) {
           const userData = await response.json()
-          // Solo ir a /chat si tiene suscripción activa
-          if (userData.hasActiveSubscription) {
+          // Basic is the free access tier; no paid Stripe subscription required.
+          if (userData.hasActiveSubscription || userData.planName === 'Basic') {
             return NextResponse.redirect(new URL('/chat', request.url))
           }
         }
       }
 
-      // Sin suscripción activa o error → payment
-      return NextResponse.redirect(new URL('/payment', request.url))
+      return NextResponse.redirect(new URL('/chat', request.url))
     } catch {
       // En caso de error de red, dejar pasar a /chat como fallback
       return NextResponse.redirect(new URL('/chat', request.url))

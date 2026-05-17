@@ -10,8 +10,8 @@ export const metadata: Metadata = {
 const plans = [
   {
     name: "BASIC",
-    price: "$10 USD/mes",
-    priceSub: "~$200 MXN/mes | 7 dias de prueba gratis",
+    price: "$0 USD/mes",
+    priceSub: "Gratis",
     label: "Para creadores que inician",
     target: "",
     cta: { text: "Comenzar", href: "/payment", variant: "outline" as const },

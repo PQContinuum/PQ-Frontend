@@ -947,7 +947,7 @@ export const userApi = {
 
     return {
       planName: data.planName || "Basic",
-      status: data.hasActiveSubscription ? "active" : "inactive",
+      status: data.hasActiveSubscription || data.planName === "Basic" ? "active" : "inactive",
     } as UserPlan;
   },
 

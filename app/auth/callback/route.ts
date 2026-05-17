@@ -82,17 +82,16 @@ export async function GET(request: Request) {
         }
 
         if (userData) {
-          // Si tiene subscription activa, ir a chat
-          if (userData.hasActiveSubscription) {
+          // Basic is the free access tier; no paid Stripe subscription required.
+          if (userData.hasActiveSubscription || userData.planName === 'Basic') {
             return NextResponse.redirect(`${origin}/chat`)
           }
         }
 
-        // Usuario nuevo, sin subscription, o error del backend → payment
-        return NextResponse.redirect(`${origin}/payment`)
+        return NextResponse.redirect(`${origin}/chat`)
       } catch (error) {
         console.error('Error syncing user with backend:', error)
-        return NextResponse.redirect(`${origin}/payment`)
+        return NextResponse.redirect(`${origin}/chat`)
       }
     }
   }
