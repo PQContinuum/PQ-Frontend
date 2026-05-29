@@ -116,16 +116,24 @@ function SpeechButtonComponent({ text, className = '' }: SpeechButtonProps) {
     return 'Reproducir mensaje';
   };
 
+  const getLabel = () => {
+    if (isLoading) return 'Cargando';
+    if (isPlaying) return 'Pausar';
+    if (isPaused) return 'Reanudar';
+    return 'Escuchar';
+  };
+
   return (
     <button
       type="button"
       onClick={handleClick}
       disabled={isLoading}
       className={`
-        inline-flex items-center justify-center
-        rounded-full p-1.5
+        inline-flex items-center justify-center gap-1.5
+        rounded-full px-2.5 py-1.5
         text-[#4c4c4c] hover:text-[#FF8B3D]
         hover:bg-[#FF8B3D]/10
+        text-xs font-medium
         transition-all duration-200
         focus:outline-none focus:ring-2 focus:ring-[#FF8B3D]/30 focus:ring-offset-1
         disabled:cursor-wait
@@ -138,6 +146,7 @@ function SpeechButtonComponent({ text, className = '' }: SpeechButtonProps) {
       title={getTitle()}
     >
       {getIcon()}
+      <span>{getLabel()}</span>
     </button>
   );
 }

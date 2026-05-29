@@ -314,7 +314,8 @@ export async function apiPostFormData<T>(
  */
 export async function apiPostStream(
   endpoint: string,
-  body?: unknown
+  body?: unknown,
+  options?: { signal?: AbortSignal }
 ): Promise<Response> {
   const headers = await getAuthHeaders();
 
@@ -322,6 +323,7 @@ export async function apiPostStream(
     method: "POST",
     headers,
     body: body ? JSON.stringify(body) : undefined,
+    signal: options?.signal,
   });
 
   if (!response.ok) {
@@ -882,26 +884,18 @@ export const cloudflareApi = {
 
 export interface TtsRequest {
   text: string;
-  voice?:
-    | "alloy"
-    | "ash"
-    | "ballad"
-    | "coral"
-    | "echo"
-    | "fable"
-    | "nova"
-    | "onyx"
-    | "sage"
-    | "shimmer"
-    | "verse";
-  format?: "pcm" | "mp3";
+  voice?: string;
+  language?: string;
+  speakingRate?: number;
+  format?: "pcm" | "mp3" | "linear16";
 }
 
 export const ttsApi = {
   /**
    * Generate speech from text (returns audio stream)
    */
-  generate: (request: TtsRequest) => apiPostStream("/tts", request),
+  generate: (request: TtsRequest, signal?: AbortSignal) =>
+    apiPostStream("/tts", request, { signal }),
 };
 
 // ============================================================================
