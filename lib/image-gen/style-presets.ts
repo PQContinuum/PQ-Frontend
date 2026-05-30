@@ -31,7 +31,7 @@ export const IMAGE_STYLE_PRESETS: ImageStylePreset[] = [
   {
     id: 'auto',
     name: 'Auto',
-    description: 'El modelo decide el mejor estilo',
+    description: 'Se elige el mejor estilo automáticamente',
     icon: '✨',
     color: 'text-gray-600',
     bgColor: 'bg-gray-100',

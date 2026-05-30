@@ -2185,7 +2185,7 @@ export const MessageInput = memo(function MessageInput() {
               <div className="flex items-center justify-between mt-2">
                 <div className="flex items-center gap-1.5 text-xs text-gray-400">
                   <Video className="size-3" />
-                  <span>Continuum V0.1 Pro{videoUsage?.audioEnabled ? ' + Audio' : ''}</span>
+                <span>Generación de video{videoUsage?.audioEnabled ? ' + audio' : ''}</span>
                 </div>
                 {videoUsage && (
                   <span className="text-xs text-gray-400">
