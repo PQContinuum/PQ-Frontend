@@ -248,10 +248,10 @@ export function useVideoGeneration(): UseVideoGenerationReturn {
             prev
               ? {
                   ...prev,
-                  remainingToday: prev.dailyLimit - data.usage.dailyCount,
-                  remainingMonth: prev.monthlyLimit - data.usage.monthlyCount,
-                  todayCount: data.usage.dailyCount,
-                  monthCount: data.usage.monthlyCount,
+                  remainingToday: data.usage.remainingToday,
+                  remainingMonth: data.usage.remainingMonth,
+                  todayCount: Math.max(0, data.usage.dailyLimit - data.usage.remainingToday),
+                  monthCount: Math.max(0, data.usage.monthlyLimit - data.usage.remainingMonth),
                 }
               : null
           );

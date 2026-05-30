@@ -815,8 +815,8 @@ export interface VideoGenResponse {
   message: string;
   queuePosition?: number;
   usage: {
-    dailyCount: number;
-    monthlyCount: number;
+    remainingToday: number;
+    remainingMonth: number;
     dailyLimit: number;
     monthlyLimit: number;
   };
