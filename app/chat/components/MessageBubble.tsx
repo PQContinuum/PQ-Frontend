@@ -1434,9 +1434,9 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
     </Streamdown>
   );
 
-  const streamingPlainText = (
-    <div className="whitespace-pre-wrap text-[15px] leading-relaxed text-[#111111] animate-in fade-in duration-200">
-      {message.content}
+  const streamingMarkdown = (
+    <div className="animate-in fade-in duration-200">
+      {messageMarkdown}
       <span className="ml-0.5 inline-block h-4 w-1 translate-y-0.5 animate-pulse rounded-full bg-[#FF8B3D]" />
     </div>
   );
@@ -1491,7 +1491,7 @@ export function MessageBubble({ message, isStreaming = false, attachments }: Mes
               {isUser ? (
                 messageMarkdown
               ) : isStreaming ? (
-                message.content.trim().length > 0 ? streamingPlainText : streamingPendingState
+                message.content.trim().length > 0 ? streamingMarkdown : streamingPendingState
               ) : message.citations?.length || message.webSearchError ? (
                 <AIResponse
                   content={message.content}
