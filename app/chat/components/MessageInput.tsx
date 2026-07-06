@@ -1205,12 +1205,17 @@ export const MessageInput = memo(function MessageInput() {
                     updateMessage(assistantMessageId, () => assistantContent);
                   }
                 } else if (event.event === 'error') {
-                  const error = (event.data as { error?: { message?: string } })?.error?.message ?? 'Error en el stream.';
+                  const error = (event.data as { message?: string })?.message ?? 'Error en el stream.';
                   updateMessage(assistantMessageId, (prev) => prev + `\n\nError: ${error}`);
                   assistantContent += `\n\nError: ${error}`;
                 }
               } else {
-                if (event.event === 'response.output_text.delta') {
+                if (event.event === 'error') {
+                  const error = (event.data as { message?: string })?.message ?? 'Error en el stream.';
+                  flushStreamedTextBuffer();
+                  updateMessage(assistantMessageId, (prev) => prev + `\n\nError: ${error}`);
+                  assistantContent += `\n\nError: ${error}`;
+                } else if (event.event === 'response.output_text.delta') {
                   const delta = event.data?.delta ?? '';
                   if (!delta) return;
 

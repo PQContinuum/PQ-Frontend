@@ -5,8 +5,9 @@
 
 // Mapeo de identificadores de modelo a nombres Continuum
 export const MODEL_DISPLAY_NAMES: Record<string, string> = {
-  // Chat — Kimi (Moonshot AI)
-  'kimi-k2.6': 'Continuum Ultra',
+  // Chat — AI Gateway (Vercel AI SDK)
+  'xai/grok-4.1-fast-reasoning': 'Continuum Ultra',
+  'openai/gpt-4o-mini': 'Continuum Lite',
   // Imagen — fal.ai / Flux
   'fal-ai/flux/dev': 'Continuum Canvas',
   'fal-ai/flux/schnell': 'Continuum Canvas',
@@ -37,9 +38,9 @@ const TEXT_REPLACEMENTS: [RegExp, string][] = [
   [/minimax.*speech/gi, 'Continuum Voice'],
   // Transcripción — nuevos proveedores
   [/fal[.-]ai\/whisper/gi, 'Continuum Listen'],
-  // Chat — Kimi
-  [/kimi[- ]?k2(?:\.\d+)?/gi, 'Continuum Ultra'],
-  [/moonshot[- ]?ai/gi, 'Continuum'],
+  // Chat — AI Gateway
+  [/xai\/grok[- ]?4(?:\.\d+)?(?:-fast-reasoning)?/gi, 'Continuum Ultra'],
+  [/grok[- ]?4(?:\.\d+)?/gi, 'Continuum Ultra'],
   // Embeddings
   [/embed[- ]?v4(?:\.\d+)?/gi, 'Continuum Embed'],
   // Imagen — legacy (respuestas del backend pueden aún mencionar estos)
