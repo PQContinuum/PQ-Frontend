@@ -295,7 +295,7 @@ export function useTextToSpeech(): UseTextToSpeechReturn {
           text: cleanText,
           voice,
           language: languageCode,
-          speakingRate: 1,
+          speakingRate: 1.15,
           format: 'pcm',
         },
         abortRef.current.signal,
